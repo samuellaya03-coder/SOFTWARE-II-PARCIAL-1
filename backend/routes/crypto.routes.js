@@ -1,0 +1,137 @@
+import { Router } from 'express';
+import {
+  encryptAESGCM,
+  decryptAESGCM,
+  generateRSAKeyPair,
+  hybridEncrypt,
+  hybridDecrypt
+} from '../services/crypto.service.js';
+
+const router = Router();
+
+/**
+ * POST /api/crypto/encrypt
+ * Cifra un texto o payload binario con AES-256-GCM y deriva la clave con PBKDF2-SHA512.
+ */
+router.post('/encrypt', (req, res) => {
+  try {
+    const { plaintext, password } = req.body;
+
+    if (!plaintext) {
+      return res.status(400).json({ error: 'El campo "plaintext" es requerido.' });
+    }
+    if (!password) {
+      return res.status(400).json({ error: 'El campo "password" es requerido.' });
+    }
+
+    const result = encryptAESGCM(plaintext, password);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/crypto/decrypt
+ * Desempaqueta y descifra un flujo binario [Salt|IV|Tag|Ciphertext] verificando la autenticación GCM.
+ */
+router.post('/decrypt', (req, res) => {
+  try {
+    const { packedData, password } = req.body;
+
+    if (!packedData) {
+      return res.status(400).json({ error: 'El campo "packedData" (Base64 o Hex) es requerido.' });
+    }
+    if (!password) {
+      return res.status(400).json({ error: 'El campo "password" es requerido.' });
+    }
+
+    const result = decryptAESGCM(packedData, password);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/crypto/rsa/keygen
+ * Genera un par de claves RSA de 4096 bits.
+ */
+router.get('/rsa/keygen', (req, res) => {
+  try {
+    const keyPair = generateRSAKeyPair();
+    res.status(200).json({
+      success: true,
+      data: keyPair
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/crypto/rsa/hybrid-encrypt
+ * Cifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
+ */
+router.post('/rsa/hybrid-encrypt', (req, res) => {
+  try {
+    const { plaintext, publicKeyPem } = req.body;
+    if (!plaintext || !publicKeyPem) {
+      return res.status(400).json({ error: 'Se requieren "plaintext" y "publicKeyPem".' });
+    }
+
+    const result = hybridEncrypt(plaintext, publicKeyPem);
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/crypto/rsa/hybrid-decrypt
+ * Descifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
+ */
+router.post('/rsa/hybrid-decrypt', (req, res) => {
+  try {
+    const { encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, privateKeyPem } = req.body;
+    if (!encryptedKeyBase64 || !ivHex || !tagHex || !ciphertextBase64 || !privateKeyPem) {
+      return res.status(400).json({ error: 'Faltan parámetros requeridos para el descifrado híbrido.' });
+    }
+
+    const plaintext = hybridDecrypt(encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, privateKeyPem);
+    res.status(200).json({
+      success: true,
+      data: { plaintext }
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+export default router;
