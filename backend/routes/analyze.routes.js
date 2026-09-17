@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { PNG } from 'pngjs';
-import { runForensicAnalysis } from '../services/forensics/index.js';
+import { getForensicsPool } from '../services/forensics/pool.js';
 
 const router = Router();
 
@@ -12,59 +11,46 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_BYTES }
 });
 
-/** Decodifica un PNG a RGBA crudo. */
-function parsePng(imageBuffer) {
-  return new Promise((resolve, reject) => {
-    new PNG().parse(imageBuffer, (error, parsed) => {
-      if (error) {
-        reject(new Error(
-          `No se pudo decodificar la imagen como PNG: ${error.message}. El analisis exige un `
-          + 'formato sin perdida, porque la cuantizacion DCT de JPEG destruye los LSB.'
-        ));
-        return;
-      }
-      resolve({ width: parsed.width, height: parsed.height, data: parsed.data });
-    });
-  });
-}
-
 /**
  * POST /api/analyze/image
  *
  * Acepta un PNG por multipart ("image") o por JSON en Base64 ("imageBase64") y
  * devuelve el informe forense completo: veredicto por fusion de evidencia, los
  * tres estimadores con sus metricas internas, entropia LSB e histogramas.
+ *
+ * La decodificacion y el analisis se delegan a un worker: son JavaScript puro e
+ * intensivos en CPU, y ejecutarlos en el hilo principal congelaria el servidor.
  */
 router.post('/image', upload.single('image'), async (req, res) => {
+  let imageBuffer;
+
+  if (req.file) {
+    imageBuffer = req.file.buffer;
+  } else if (typeof req.body?.imageBase64 === 'string' && req.body.imageBase64.length > 0) {
+    const cleanBase64 = req.body.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    imageBuffer = Buffer.from(cleanBase64, 'base64');
+  } else {
+    return res.status(400).json({
+      success: false,
+      error: 'Debe proporcionar un PNG mediante multipart "image" o JSON "imageBase64".'
+    });
+  }
+
+  if (imageBuffer.length === 0) {
+    return res.status(400).json({ success: false, error: 'La imagen recibida esta vacia.' });
+  }
+
   try {
-    let imageBuffer;
-
-    if (req.file) {
-      imageBuffer = req.file.buffer;
-    } else if (req.body?.imageBase64) {
-      const cleanBase64 = req.body.imageBase64.replace(/^data:image\/\w+;base64,/, '');
-      imageBuffer = Buffer.from(cleanBase64, 'base64');
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Debe proporcionar un PNG mediante multipart "image" o JSON "imageBase64".'
-      });
-    }
-
-    if (imageBuffer.length === 0) {
-      return res.status(400).json({ success: false, error: 'La imagen recibida esta vacia.' });
-    }
-
-    const { width, height, data } = await parsePng(imageBuffer);
-    const report = runForensicAnalysis(data, width, height);
-
+    const report = await getForensicsPool().analyze(imageBuffer);
     res.status(200).json({ success: true, data: report });
   } catch (error) {
-    // Un PNG invalido es un error del cliente, no del servidor.
-    const isDecodeError = error.message.includes('decodificar');
-    res.status(isDecodeError ? 400 : 500).json({
+    // Un PNG invalido es un error del cliente; un worker caido, del servidor.
+    res.status(error.isDecodeError ? 400 : 500).json({
       success: false,
-      error: error.message
+      error: error.isDecodeError
+        ? `${error.message}. El analisis exige un formato sin perdida, porque la cuantizacion DCT `
+          + 'de JPEG destruye los LSB.'
+        : error.message
     });
   }
 });

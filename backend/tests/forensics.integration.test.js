@@ -220,4 +220,4 @@ tests.push(['Los histogramas tienen 256 niveles y suman el total de pixeles', ()
   }
 }]);
 
-runSuite('ANALISIS FORENSE DE EXTREMO A EXTREMO (forensics/index.js)', tests);
+await runSuite('ANALISIS FORENSE DE EXTREMO A EXTREMO (forensics/index.js)', tests);

@@ -1,30 +1,39 @@
 import crypto from 'crypto';
+import { promisify } from 'node:util';
 
 /**
- * SERVICIO CRIPTOGRÁFICO AVANZADO ("MODO DIFÍCIL")
- * 
- * Estándares implementados:
- * - Cifrado Simétrico Autenticado: AES-256-GCM (NIST SP 800-38D).
- * - Derivación de Clave (KDF): PBKDF2-HMAC-SHA512 con 600,000 iteraciones (OWASP 2023+).
- * - Generador Pseudo-Aleatorio Criptográfico: crypto.randomBytes (CSPRNG).
- * - Cifrado Asimétrico / Híbrido: RSA-OAEP (4096 bits) con función hash SHA-256 y MGF1-SHA256.
- * 
- * Estructura del Payload Binario Empaquetado:
- * [ Salt (16 Bytes) | IV (12 Bytes) | AuthTag (16 Bytes) | Ciphertext (N Bytes) ]
- * Tamaño mínimo del paquete = 44 Bytes.
+ * SERVICIO CRIPTOGRAFICO
+ *
+ * - Cifrado simetrico autenticado: AES-256-GCM (NIST SP 800-38D).
+ * - Derivacion de clave: PBKDF2-HMAC-SHA512, 600.000 iteraciones (OWASP).
+ * - Aleatoriedad: crypto.randomBytes (CSPRNG).
+ * - Asimetrico e hibrido: RSA-OAEP 4096 bits con SHA-256 y MGF1-SHA256.
+ *
+ * Paquete binario: [ Salt (16B) | IV (12B) | AuthTag (16B) | Ciphertext (NB) ]
+ * Tamano minimo = 44 bytes.
+ *
+ * TODAS las operaciones costosas son ASINCRONAS a proposito. `pbkdf2Sync` y
+ * `generateKeyPairSync` bloquean el event loop, y con ello el servidor entero:
+ * medido con 12 peticiones concurrentes a /encrypt, un simple health check
+ * pasaba de microsegundos a 2559 ms. Las variantes async de Node delegan el
+ * trabajo a la threadpool de libuv, donde OpenSSL opera fuera del hilo
+ * principal.
  */
+
+const pbkdf2 = promisify(crypto.pbkdf2);
+const generateKeyPair = promisify(crypto.generateKeyPair);
 
 export const CRYPTO_CONFIG = {
   KDF: {
     ALGORITHM: 'sha512',
     ITERATIONS: 600000,
-    KEY_LENGTH: 32, // 256 bits para AES-256
-    SALT_LENGTH: 16 // 128 bits de sal única
+    KEY_LENGTH: 32,  // 256 bits para AES-256
+    SALT_LENGTH: 16  // 128 bits
   },
   CIPHER: {
     ALGORITHM: 'aes-256-gcm',
-    IV_LENGTH: 12, // 96 bits recomendado por NIST para GCM
-    TAG_LENGTH: 16 // 128 bits de autenticación criptográfica
+    IV_LENGTH: 12,   // 96 bits, recomendado por NIST para GCM
+    TAG_LENGTH: 16   // 128 bits
   },
   RSA: {
     MODULUS_LENGTH: 4096,
@@ -33,21 +42,26 @@ export const CRYPTO_CONFIG = {
   }
 };
 
+const HEADER_SIZE =
+  CRYPTO_CONFIG.KDF.SALT_LENGTH
+  + CRYPTO_CONFIG.CIPHER.IV_LENGTH
+  + CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
+
 /**
- * Deriva una clave simétrica de 256 bits a partir de una contraseña y salt usando PBKDF2-SHA512.
- * @param {string} password - Contraseña maestra.
- * @param {Buffer} salt - Sal criptográfica de 16 bytes.
- * @returns {Buffer} Clave derivada de 32 bytes (256 bits).
+ * Deriva una clave de 256 bits con PBKDF2-SHA512.
+ * @param {string} password
+ * @param {Buffer} salt - Exactamente SALT_LENGTH bytes.
+ * @returns {Promise<Buffer>} Clave de 32 bytes.
  */
-export function deriveKey(password, salt) {
+export async function deriveKey(password, salt) {
   if (!password || typeof password !== 'string') {
-    throw new Error('La contraseña debe ser una cadena no vacía.');
+    throw new Error('La contrasena debe ser una cadena no vacia.');
   }
   if (!Buffer.isBuffer(salt) || salt.length !== CRYPTO_CONFIG.KDF.SALT_LENGTH) {
     throw new Error(`El salt debe ser un Buffer de exactamente ${CRYPTO_CONFIG.KDF.SALT_LENGTH} bytes.`);
   }
 
-  return crypto.pbkdf2Sync(
+  return pbkdf2(
     password,
     salt,
     CRYPTO_CONFIG.KDF.ITERATIONS,
@@ -57,31 +71,21 @@ export function deriveKey(password, salt) {
 }
 
 /**
- * Cifra datos utilizando AES-256-GCM con PBKDF2 y empaqueta en formato binario.
- * @param {Buffer|string} plaintext - Datos a cifrar.
- * @param {string} password - Contraseña maestra.
- * @returns {{ packedBuffer: Buffer, saltHex: string, ivHex: string, tagHex: string, ciphertextHex: string }}
+ * Cifra con AES-256-GCM y empaqueta en formato binario.
+ * @param {Buffer|string} plaintext
+ * @param {string} password
  */
-export function encryptAESGCM(plaintext, password) {
+export async function encryptAESGCM(plaintext, password) {
   const dataBuffer = Buffer.isBuffer(plaintext) ? plaintext : Buffer.from(plaintext, 'utf-8');
 
-  // 1. Generación de Salt e IV con CSPRNG
   const salt = crypto.randomBytes(CRYPTO_CONFIG.KDF.SALT_LENGTH);
   const iv = crypto.randomBytes(CRYPTO_CONFIG.CIPHER.IV_LENGTH);
+  const key = await deriveKey(password, salt);
 
-  // 2. Derivación de clave segura
-  const key = deriveKey(password, salt);
-
-  // 3. Inicialización del cifrador AES-256-GCM
   const cipher = crypto.createCipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, key, iv);
-
-  // 4. Cifrado de datos
   const ciphertext = Buffer.concat([cipher.update(dataBuffer), cipher.final()]);
-
-  // 5. Extracción del Authentication Tag (GCM MAC)
   const authTag = cipher.getAuthTag();
 
-  // 6. Empaquetado binario: [ Salt (16B) | IV (12B) | Tag (16B) | Ciphertext (NB) ]
   const packedBuffer = Buffer.concat([salt, iv, authTag, ciphertext]);
 
   return {
@@ -102,45 +106,36 @@ export function encryptAESGCM(plaintext, password) {
 }
 
 /**
- * Desempaqueta y descifra un flujo binario protegido con AES-256-GCM.
- * @param {Buffer|string} packedData - Buffer empaquetado o cadena Base64/Hex.
- * @param {string} password - Contraseña maestra.
- * @returns {Buffer} Texto claro descifrado.
+ * Desempaqueta y descifra un flujo [Salt|IV|Tag|Ciphertext].
+ * @param {Buffer|string} packedData - Buffer, o cadena Base64 o Hex.
+ * @param {string} password
  */
-export function decryptAESGCM(packedData, password) {
+export async function decryptAESGCM(packedData, password) {
   let buffer;
   if (Buffer.isBuffer(packedData)) {
     buffer = packedData;
   } else if (typeof packedData === 'string') {
-    // Si viene en Base64 o Hex
     const isHex = /^[0-9a-fA-F]+$/.test(packedData) && packedData.length % 2 === 0;
     buffer = Buffer.from(packedData, isHex ? 'hex' : 'base64');
   } else {
-    throw new Error('Datos cifrados inválidos: se esperaba Buffer o String codificado.');
+    throw new Error('Datos cifrados invalidos: se esperaba Buffer o String codificado.');
   }
 
-  const HEADER_SIZE = CRYPTO_CONFIG.KDF.SALT_LENGTH + CRYPTO_CONFIG.CIPHER.IV_LENGTH + CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
   if (buffer.length < HEADER_SIZE) {
-    throw new Error(`El paquete es demasiado corto (${buffer.length} bytes). Se requieren al menos ${HEADER_SIZE} bytes de cabecera.`);
+    throw new Error(
+      `El paquete es demasiado corto (${buffer.length} bytes). Se requieren al menos `
+      + `${HEADER_SIZE} bytes de cabecera.`
+    );
   }
 
-  // Desempaquetado con offsets exactos
   let offset = 0;
-  const salt = buffer.subarray(offset, offset + CRYPTO_CONFIG.KDF.SALT_LENGTH);
-  offset += CRYPTO_CONFIG.KDF.SALT_LENGTH;
-
-  const iv = buffer.subarray(offset, offset + CRYPTO_CONFIG.CIPHER.IV_LENGTH);
-  offset += CRYPTO_CONFIG.CIPHER.IV_LENGTH;
-
-  const authTag = buffer.subarray(offset, offset + CRYPTO_CONFIG.CIPHER.TAG_LENGTH);
-  offset += CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
-
+  const salt = buffer.subarray(offset, offset += CRYPTO_CONFIG.KDF.SALT_LENGTH);
+  const iv = buffer.subarray(offset, offset += CRYPTO_CONFIG.CIPHER.IV_LENGTH);
+  const authTag = buffer.subarray(offset, offset += CRYPTO_CONFIG.CIPHER.TAG_LENGTH);
   const ciphertext = buffer.subarray(offset);
 
-  // Derivación de clave idéntica usando el Salt original
-  const key = deriveKey(password, salt);
+  const key = await deriveKey(password, salt);
 
-  // Inicialización del descifrador
   const decipher = crypto.createDecipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
 
@@ -153,36 +148,39 @@ export function decryptAESGCM(packedData, password) {
       ivHex: iv.toString('hex'),
       tagHex: authTag.toString('hex')
     };
-  } catch (error) {
-    throw new Error('FALLO DE INTEGRIDAD / AUTENTICACIÓN: El texto cifrado ha sido manipulado, la contraseña es incorrecta o el tag GCM no coincide.');
+  } catch {
+    // GCM no distingue entre contrasena incorrecta y manipulacion: en ambos
+    // casos el tag no cuadra. Eso es deseable, porque un mensaje de error mas
+    // especifico seria un oraculo para el atacante.
+    throw new Error(
+      'FALLO DE INTEGRIDAD / AUTENTICACION: el texto cifrado ha sido manipulado, la contrasena '
+      + 'es incorrecta o el tag GCM no coincide.'
+    );
   }
 }
 
 /**
- * Genera un par de claves asimétricas RSA de 4096 bits en formato PEM.
- * @returns {{ publicKey: string, privateKey: string }}
+ * Genera un par RSA de 4096 bits en PEM.
+ *
+ * La busqueda de primos es probabilista y su duracion no tiene techo garantizado,
+ * asi que ejecutarla de forma sincrona es el peor caso posible para el event loop.
  */
-export function generateRSAKeyPair() {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+export async function generateRSAKeyPair() {
+  const { publicKey, privateKey } = await generateKeyPair('rsa', {
     modulusLength: CRYPTO_CONFIG.RSA.MODULUS_LENGTH,
-    publicKeyEncoding: {
-      type: 'spki',
-      format: 'pem'
-    },
-    privateKeyEncoding: {
-      type: 'pkcs8',
-      format: 'pem'
-    }
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
   });
 
   return { publicKey, privateKey };
 }
 
 /**
- * Cifrado asimétrico con RSA-OAEP (SHA-256)
- * @param {Buffer|string} data 
- * @param {string} publicKeyPem 
- * @returns {Buffer}
+ * Cifrado RSA-OAEP con SHA-256.
+ *
+ * Node no ofrece variante asincrona de publicEncrypt, pero una operacion con
+ * exponente publico 65537 sobre 4096 bits cuesta decenas de microsegundos: es
+ * acotada y no compromete el event loop, al contrario que la generacion de claves.
  */
 export function encryptRSA(data, publicKeyPem) {
   const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data, 'utf-8');
@@ -197,10 +195,10 @@ export function encryptRSA(data, publicKeyPem) {
 }
 
 /**
- * Descifrado asimétrico con RSA-OAEP (SHA-256)
- * @param {Buffer} encryptedBuffer 
- * @param {string} privateKeyPem 
- * @returns {Buffer}
+ * Descifrado RSA-OAEP con SHA-256.
+ *
+ * La operacion privada es mas costosa que la publica (unos pocos milisegundos
+ * sobre 4096 bits), pero sigue siendo acotada.
  */
 export function decryptRSA(encryptedBuffer, privateKeyPem) {
   return crypto.privateDecrypt(
@@ -214,20 +212,16 @@ export function decryptRSA(encryptedBuffer, privateKeyPem) {
 }
 
 /**
- * Esquema de Cifrado Híbrido:
- * 1. Genera una clave efímera AES-256 de 32 bytes con CSPRNG.
- * 2. Cifra el contenido con AES-256-GCM.
- * 3. Cifra la clave efímera con la clave pública RSA (4096 bits).
- * @param {Buffer|string} plaintext 
- * @param {string} recipientPublicKeyPem 
- * @returns {{ encryptedKeyBase64: string, ivHex: string, tagHex: string, ciphertextBase64: string }}
+ * Cifrado hibrido: AES-256-GCM protege los datos con una clave de sesion
+ * efimera, y RSA-OAEP protege unicamente esa clave. Asi el volumen de datos deja
+ * de estar limitado por el modulo RSA.
  */
 export function hybridEncrypt(plaintext, recipientPublicKeyPem) {
   const ephemeralKey = crypto.randomBytes(32);
-  const iv = crypto.randomBytes(12);
+  const iv = crypto.randomBytes(CRYPTO_CONFIG.CIPHER.IV_LENGTH);
   const dataBuffer = Buffer.isBuffer(plaintext) ? plaintext : Buffer.from(plaintext, 'utf-8');
 
-  const cipher = crypto.createCipheriv('aes-256-gcm', ephemeralKey, iv);
+  const cipher = crypto.createCipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, ephemeralKey, iv);
   const ciphertext = Buffer.concat([cipher.update(dataBuffer), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
@@ -241,21 +235,20 @@ export function hybridEncrypt(plaintext, recipientPublicKeyPem) {
   };
 }
 
-/**
- * Descifrado Híbrido:
- * 1. Descifra la clave efímera con la clave privada RSA.
- * 2. Descifra el contenido con AES-256-GCM verificando el AuthTag.
- */
+/** Descifrado hibrido: abre la clave de sesion con RSA y verifica el tag GCM. */
 export function hybridDecrypt(encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, recipientPrivateKeyPem) {
-  const encryptedKey = Buffer.from(encryptedKeyBase64, 'base64');
-  const ephemeralKey = decryptRSA(encryptedKey, recipientPrivateKeyPem);
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(tagHex, 'hex');
-  const ciphertext = Buffer.from(ciphertextBase64, 'base64');
+  const ephemeralKey = decryptRSA(Buffer.from(encryptedKeyBase64, 'base64'), recipientPrivateKeyPem);
 
-  const decipher = crypto.createDecipheriv('aes-256-gcm', ephemeralKey, iv);
-  decipher.setAuthTag(authTag);
+  const decipher = crypto.createDecipheriv(
+    CRYPTO_CONFIG.CIPHER.ALGORITHM,
+    ephemeralKey,
+    Buffer.from(ivHex, 'hex')
+  );
+  decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
 
-  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  const plaintext = Buffer.concat([
+    decipher.update(Buffer.from(ciphertextBase64, 'base64')),
+    decipher.final()
+  ]);
   return plaintext.toString('utf-8');
 }

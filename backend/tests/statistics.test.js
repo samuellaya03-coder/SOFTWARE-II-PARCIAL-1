@@ -114,4 +114,4 @@ tests.push(['df <= 0 devuelve 1 en lugar de NaN', () => {
   assertClose(chiSquareSurvival(10, 0), 1, 0);
 }]);
 
-runSuite('NÚCLEO ESTADÍSTICO (statistics.js)', tests);
+await runSuite('NÚCLEO ESTADÍSTICO (statistics.js)', tests);

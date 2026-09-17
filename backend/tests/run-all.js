@@ -17,6 +17,7 @@ const SUITES = [
   'rsAnalysis.test.js',
   'samplePairAnalysis.test.js',
   'forensics.integration.test.js',
+  'pool.test.js',
   'crypto.test.js'
 ];
 

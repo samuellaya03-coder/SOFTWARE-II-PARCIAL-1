@@ -189,4 +189,4 @@ tests.push(['Los tres canales concuerdan sobre la misma tasa', () => {
   }
 }]);
 
-runSuite('SAMPLE PAIR ANALYSIS (samplePairAnalysis.js)', tests);
+await runSuite('SAMPLE PAIR ANALYSIS (samplePairAnalysis.js)', tests);

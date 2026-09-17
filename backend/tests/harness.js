@@ -76,16 +76,69 @@ export function assertThrows(fn, message) {
   }
 }
 
+/**
+ * Equivalente asincrono: verifica que una promesa se rechace.
+ * @param {() => Promise<unknown>} fn
+ * @returns {Promise<Error>} El error capturado, para poder inspeccionar su mensaje.
+ */
+export async function assertRejects(fn, message) {
+  try {
+    await fn();
+  } catch (error) {
+    return error;
+  }
+  throw new AssertionError(message || 'esperaba que la promesa se rechazara y se resolvió');
+}
+
 /** Inserta un encabezado de seccion en la lista de pruebas. */
 export function section(tests, title) {
   tests.push(['__section__', title]);
 }
 
 /**
+ * Ejecuta `fn` midiendo cuanto tiempo queda bloqueado el event loop.
+ *
+ * La metrica util es el HUECO MAXIMO entre ticks de un temporizador de intervalo
+ * fijo, no el numero de ticks: contar ticks confunde "el bucle estaba bloqueado"
+ * con "el trabajo termino rapido". Si el bucle esta libre el hueco se mantiene
+ * cerca del intervalo; si algo lo bloquea, el hueco mide exactamente ese bloqueo.
+ *
+ * @param {() => Promise<unknown>} fn
+ * @param {number} [intervalMs=4]
+ * @returns {Promise<{ maxGapMs: number, ticks: number, elapsedMs: number, result: unknown }>}
+ */
+export async function measureEventLoopBlocking(fn, intervalMs = 4) {
+  const gaps = [];
+  let last = process.hrtime.bigint();
+
+  const timer = setInterval(() => {
+    const now = process.hrtime.bigint();
+    gaps.push(Number(now - last) / 1e6);
+    last = now;
+  }, intervalMs);
+
+  const started = process.hrtime.bigint();
+  let result;
+  try {
+    result = await fn();
+  } finally {
+    clearInterval(timer);
+  }
+  const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+
+  // Sin ningun tick no hay medicion: se reporta el intervalo completo como hueco.
+  const maxGapMs = gaps.length > 0 ? Math.max(...gaps) : elapsedMs;
+
+  return { maxGapMs, ticks: gaps.length, elapsedMs, result };
+}
+
+/**
  * Ejecuta una lista de pruebas [nombre, fn] y marca exitCode 1 si falla alguna.
+ * Las funciones pueden ser sincronas o asincronas; se esperan en serie para que
+ * la salida conserve el orden y las mediciones no se solapen.
  * @param {Array<[string, Function]>} tests
  */
-export function runSuite(suiteName, tests) {
+export async function runSuite(suiteName, tests) {
   console.log(`\n${BOLD}${CYAN}${'='.repeat(74)}${RESET}`);
   console.log(`${BOLD}${CYAN} ${suiteName}${RESET}`);
   console.log(`${BOLD}${CYAN}${'='.repeat(74)}${RESET}`);
@@ -101,7 +154,7 @@ export function runSuite(suiteName, tests) {
     }
 
     try {
-      fn();
+      await fn();
       passed++;
       console.log(`  ${GREEN}OK${RESET} ${DIM}${name}${RESET}`);
     } catch (error) {

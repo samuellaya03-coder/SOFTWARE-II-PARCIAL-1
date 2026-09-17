@@ -272,4 +272,4 @@ tests.push(['La curva entrega exactamente el numero de puntos solicitado', () =>
   assertClose(result.curve[63].fraction, 1, 1e-9);
 }]);
 
-runSuite('ATAQUE X2 PROGRESIVO (chiSquareAttack.js)', tests);
+await runSuite('ATAQUE X2 PROGRESIVO (chiSquareAttack.js)', tests);

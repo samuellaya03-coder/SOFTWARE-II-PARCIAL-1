@@ -248,4 +248,4 @@ tests.push(['Los tres canales concuerdan sobre la misma tasa', () => {
   }
 }]);
 
-runSuite('RS ANALYSIS (rsAnalysis.js)', tests);
+await runSuite('RS ANALYSIS (rsAnalysis.js)', tests);

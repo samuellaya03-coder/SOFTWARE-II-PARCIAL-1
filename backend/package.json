@@ -9,7 +9,9 @@
     "dev": "node --watch server.js",
     "test": "node tests/run-all.js",
     "test:crypto": "node tests/crypto.test.js",
-    "test:forensics": "node tests/forensics.integration.test.js"
+    "test:forensics": "node tests/forensics.integration.test.js",
+    "benchmark": "node tests/benchmark-eventloop.js",
+    "test:pool": "node tests/pool.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

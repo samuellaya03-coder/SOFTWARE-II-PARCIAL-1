@@ -9,128 +9,118 @@ import {
 
 const router = Router();
 
+/** Comprueba que los campos indicados esten presentes y sean cadenas no vacias. */
+function missingFields(body, fields) {
+  return fields.filter((field) => {
+    const value = body?.[field];
+    return typeof value !== 'string' || value.length === 0;
+  });
+}
+
 /**
  * POST /api/crypto/encrypt
- * Cifra un texto o payload binario con AES-256-GCM y deriva la clave con PBKDF2-SHA512.
+ * Cifra con AES-256-GCM derivando la clave con PBKDF2-SHA512.
  */
-router.post('/encrypt', (req, res) => {
-  try {
-    const { plaintext, password } = req.body;
-
-    if (!plaintext) {
-      return res.status(400).json({ error: 'El campo "plaintext" es requerido.' });
-    }
-    if (!password) {
-      return res.status(400).json({ error: 'El campo "password" es requerido.' });
-    }
-
-    const result = encryptAESGCM(plaintext, password);
-
-    res.status(200).json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    res.status(500).json({
+router.post('/encrypt', async (req, res, next) => {
+  const missing = missingFields(req.body, ['plaintext', 'password']);
+  if (missing.length > 0) {
+    return res.status(400).json({
       success: false,
-      error: error.message
+      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
     });
+  }
+
+  try {
+    const result = await encryptAESGCM(req.body.plaintext, req.body.password);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
   }
 });
 
 /**
  * POST /api/crypto/decrypt
- * Desempaqueta y descifra un flujo binario [Salt|IV|Tag|Ciphertext] verificando la autenticación GCM.
+ * Desempaqueta y descifra [Salt|IV|Tag|Ciphertext] verificando el tag GCM.
  */
-router.post('/decrypt', (req, res) => {
-  try {
-    const { packedData, password } = req.body;
-
-    if (!packedData) {
-      return res.status(400).json({ error: 'El campo "packedData" (Base64 o Hex) es requerido.' });
-    }
-    if (!password) {
-      return res.status(400).json({ error: 'El campo "password" es requerido.' });
-    }
-
-    const result = decryptAESGCM(packedData, password);
-
-    res.status(200).json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    res.status(400).json({
+router.post('/decrypt', async (req, res) => {
+  const missing = missingFields(req.body, ['packedData', 'password']);
+  if (missing.length > 0) {
+    return res.status(400).json({
       success: false,
-      error: error.message
+      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
     });
+  }
+
+  try {
+    const result = await decryptAESGCM(req.body.packedData, req.body.password);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    // Un fallo de autenticacion es un error del cliente, no del servidor.
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 
 /**
  * GET /api/crypto/rsa/keygen
- * Genera un par de claves RSA de 4096 bits.
+ * Genera un par RSA de 4096 bits.
  */
-router.get('/rsa/keygen', (req, res) => {
+router.get('/rsa/keygen', async (req, res, next) => {
   try {
-    const keyPair = generateRSAKeyPair();
-    res.status(200).json({
-      success: true,
-      data: keyPair
-    });
+    const keyPair = await generateRSAKeyPair();
+    res.status(200).json({ success: true, data: keyPair });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 });
 
 /**
  * POST /api/crypto/rsa/hybrid-encrypt
- * Cifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
+ * Cifrado hibrido RSA-OAEP 4096 + AES-256-GCM.
  */
 router.post('/rsa/hybrid-encrypt', (req, res) => {
-  try {
-    const { plaintext, publicKeyPem } = req.body;
-    if (!plaintext || !publicKeyPem) {
-      return res.status(400).json({ error: 'Se requieren "plaintext" y "publicKeyPem".' });
-    }
-
-    const result = hybridEncrypt(plaintext, publicKeyPem);
-    res.status(200).json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    res.status(500).json({
+  const missing = missingFields(req.body, ['plaintext', 'publicKeyPem']);
+  if (missing.length > 0) {
+    return res.status(400).json({
       success: false,
-      error: error.message
+      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
     });
+  }
+
+  try {
+    const result = hybridEncrypt(req.body.plaintext, req.body.publicKeyPem);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    // Una clave PEM malformada es entrada invalida del cliente.
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 
 /**
  * POST /api/crypto/rsa/hybrid-decrypt
- * Descifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
+ * Descifrado hibrido RSA-OAEP 4096 + AES-256-GCM.
  */
 router.post('/rsa/hybrid-decrypt', (req, res) => {
-  try {
-    const { encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, privateKeyPem } = req.body;
-    if (!encryptedKeyBase64 || !ivHex || !tagHex || !ciphertextBase64 || !privateKeyPem) {
-      return res.status(400).json({ error: 'Faltan parámetros requeridos para el descifrado híbrido.' });
-    }
-
-    const plaintext = hybridDecrypt(encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, privateKeyPem);
-    res.status(200).json({
-      success: true,
-      data: { plaintext }
-    });
-  } catch (error) {
-    res.status(400).json({
+  const missing = missingFields(req.body, [
+    'encryptedKeyBase64', 'ivHex', 'tagHex', 'ciphertextBase64', 'privateKeyPem'
+  ]);
+  if (missing.length > 0) {
+    return res.status(400).json({
       success: false,
-      error: error.message
+      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
     });
+  }
+
+  try {
+    const plaintext = hybridDecrypt(
+      req.body.encryptedKeyBase64,
+      req.body.ivHex,
+      req.body.tagHex,
+      req.body.ciphertextBase64,
+      req.body.privateKeyPem
+    );
+    res.status(200).json({ success: true, data: { plaintext } });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 
