@@ -18,6 +18,8 @@ const SUITES = [
   'samplePairAnalysis.test.js',
   'forensics.integration.test.js',
   'pool.test.js',
+  'lsbContainer.test.js',
+  'webcrypto.interop.test.js',
   'crypto.test.js'
 ];
 

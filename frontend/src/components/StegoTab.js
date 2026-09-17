@@ -1,497 +1,624 @@
-import { StegoEngine } from '../services/stegoEngine.js';
-import { ApiService } from '../services/api.js';
+import {
+  loadImage,
+  describeCapacity,
+  hide,
+  revealAuto,
+  exportToPngBlob,
+  downloadBlob,
+  HEADER_SIZE
+} from '../services/stegoEngine.js';
+import {
+  encryptPacket,
+  decryptPacket,
+  deriveWalkSeed,
+  readFileBytes,
+  PACKET_HEADER_BYTES
+} from '../services/webcrypto.js';
+
+const numberFormat = new Intl.NumberFormat('es-ES');
+
+function formatBytes(value) {
+  if (value < 1024) return `${numberFormat.format(value)} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
+  return `${(value / (1024 * 1024)).toFixed(2)} MiB`;
+}
 
 export function renderStegoTab(container, onNavigateToAnalysis) {
   container.innerHTML = `
-    <div class="space-y-6">
-      <!-- Encabezado de la Pestaña -->
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Esteganografía en Canvas HTML5</h2>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">
-            Ocultación de payloads mediante inyección bit a bit en los Bits Menos Significativos (LSB) de los canales R, G y B.
+    <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+      <div>
+        <h2 style="font-size:1.5rem; margin-bottom:0.25rem;">Esteganografia LSB en Canvas HTML5</h2>
+        <p style="color:var(--text-secondary); font-size:0.875rem;">
+          Inyeccion bit a bit en los LSB de los canales R, G y B. Todo el proceso, incluido el
+          cifrado, ocurre en el navegador: la contrasena nunca sale del cliente.
+        </p>
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <span class="badge badge-cyan">Canvas API</span>
+        <span class="badge badge-emerald">WebCrypto</span>
+        <span class="badge badge-purple">PNG sin perdida</span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+      <button id="mode-hide" class="btn btn-primary" style="flex:1;">Ocultar informacion</button>
+      <button id="mode-reveal" class="btn btn-secondary" style="flex:1;">Revelar informacion</button>
+    </div>
+
+    <!-- ================= OCULTAR ================= -->
+    <div id="section-hide" style="margin-top:1.5rem;">
+      <div class="grid-2" style="gap:1.5rem;">
+
+        <div class="card" style="display:flex; flex-direction:column; gap:1.1rem;">
+          <h3 style="font-size:1.1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+            1. Imagen portadora
+          </h3>
+
+          <div id="dropzone-carrier" class="dropzone">
+            <input type="file" id="input-carrier" accept="image/png, image/jpeg, image/webp" style="display:none;" />
+            <div style="font-size:2.5rem; margin-bottom:0.5rem;">&#128443;</div>
+            <p style="font-weight:600; color:var(--text-primary);">Arrastra una imagen o haz clic</p>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
+              PNG, JPEG o WebP. La salida sera siempre PNG sin perdida.
+            </p>
+          </div>
+
+          <div id="carrier-info" class="font-mono" style="display:none; background:rgba(0,0,0,0.25); padding:0.85rem; border-radius:8px; font-size:0.82rem; line-height:1.9;"></div>
+
+          <div id="carrier-preview" class="image-preview-box" style="display:none;">
+            <img id="carrier-img" alt="Imagen portadora" />
+          </div>
+        </div>
+
+        <div class="card" style="display:flex; flex-direction:column; gap:1.1rem;">
+          <h3 style="font-size:1.1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+            2. Datos a ocultar
+          </h3>
+
+          <div>
+            <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem;">
+              Tipo de payload
+            </label>
+            <select id="payload-kind">
+              <option value="text">Texto escrito a mano</option>
+              <option value="file">Archivo arbitrario (cualquier tipo)</option>
+            </select>
+          </div>
+
+          <div id="payload-text-group">
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem;">
+              <label style="font-size:0.85rem; color:var(--text-secondary);">Mensaje secreto</label>
+              <span id="payload-size" class="font-mono" style="font-size:0.75rem; color:var(--text-muted);">0 B</span>
+            </div>
+            <textarea id="payload-text" rows="4" placeholder="Escribe el texto confidencial..."></textarea>
+          </div>
+
+          <div id="payload-file-group" style="display:none;">
+            <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem;">
+              Archivo a ocultar
+            </label>
+            <input type="file" id="input-payload-file" />
+            <div id="payload-file-info" class="font-mono" style="display:none; margin-top:0.5rem; font-size:0.78rem; color:var(--accent-cyan);"></div>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem;">
+              Proteccion criptografica
+            </label>
+            <select id="crypto-mode">
+              <option value="aes">AES-256-GCM con PBKDF2-SHA512 (600.000 iteraciones)</option>
+              <option value="plain">Ninguna: esteganografia pura</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem;">
+              Colocacion de los bits
+            </label>
+            <select id="walk-mode">
+              <option value="scattered">Dispersa: permutacion sembrada por la contrasena</option>
+              <option value="sequential">Secuencial: desde el primer pixel</option>
+            </select>
+            <p id="walk-hint" style="font-size:0.74rem; color:var(--text-muted); margin-top:0.35rem;"></p>
+          </div>
+
+          <div id="password-group">
+            <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.35rem;">
+              Contrasena maestra
+            </label>
+            <input type="password" id="password" placeholder="Clave para derivar la clave AES y la permutacion..." />
+          </div>
+
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.3rem;">
+              <span style="color:var(--text-muted);">Ocupacion de la capacidad</span>
+              <span id="capacity-label" class="font-mono">0%</span>
+            </div>
+            <div class="progress-container">
+              <div id="capacity-bar" class="progress-bar progress-normal" style="width:0%;"></div>
+            </div>
+          </div>
+
+          <button id="btn-inject" class="btn btn-primary" style="width:100%;" disabled>
+            Ejecutar inyeccion LSB
+          </button>
+        </div>
+      </div>
+
+      <div id="hide-result" class="card card-glow-emerald" style="display:none; margin-top:1.5rem;">
+        <h3 style="color:var(--accent-emerald); font-size:1.2rem; margin-bottom:1rem;">
+          Inyeccion completada
+        </h3>
+
+        <div class="grid-2" style="gap:1.5rem; align-items:start;">
+          <div class="image-preview-box">
+            <canvas id="output-canvas"></canvas>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div id="hide-stats" class="font-mono" style="font-size:0.82rem; background:rgba(0,0,0,0.3); padding:1rem; border-radius:8px; line-height:1.9;"></div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+              <button id="btn-download" class="btn btn-emerald" style="flex:1;">Descargar PNG</button>
+              <button id="btn-to-analysis" class="btn btn-secondary" style="flex:1;">Enviar a estegoanalisis</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= REVELAR ================= -->
+    <div id="section-reveal" style="display:none; margin-top:1.5rem;">
+      <div class="card" style="max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:1.1rem;">
+        <h3 style="font-size:1.2rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+          Extraccion inversa
+        </h3>
+
+        <div id="dropzone-stego" class="dropzone">
+          <input type="file" id="input-stego" accept="image/png" style="display:none;" />
+          <div style="font-size:2.5rem; margin-bottom:0.5rem;">&#128269;</div>
+          <p style="font-weight:600; color:var(--text-primary);">Sube el PNG sospechoso</p>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
+            El motor busca la cabecera "STG1" y verifica el CRC-32 del contenido
           </p>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <span class="badge badge-cyan">Canvas API</span>
-          <span class="badge badge-emerald">LSB 3-Channel</span>
-          <span class="badge badge-purple">PNG Lossless</span>
-        </div>
-      </div>
 
-      <!-- Selector de Modo de Operación (Ocultar vs Extraer) -->
-      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-        <button id="stego-mode-hide-btn" class="btn btn-primary" style="flex: 1;">
-          📥 Ocultar Información (Inyección LSB)
+        <div id="stego-preview" class="image-preview-box" style="display:none;">
+          <img id="stego-img" alt="Imagen estego" />
+        </div>
+
+        <div>
+          <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Contrasena (necesaria para el modo disperso y para descifrar)
+          </label>
+          <input type="password" id="reveal-password" placeholder="Contrasena maestra..." />
+        </div>
+
+        <button id="btn-extract" class="btn btn-primary" style="width:100%;" disabled>
+          Extraer contenedor
         </button>
-        <button id="stego-mode-reveal-btn" class="btn btn-secondary" style="flex: 1;">
-          🔍 Revelar Información (Extracción LSB)
-        </button>
-      </div>
 
-      <!-- SECCIÓN 1: OCULTAR INFORMACIÓN -->
-      <div id="stego-hide-section" style="margin-top: 1.5rem;">
-        <div class="grid-2">
-          <!-- Columna Izquierda: Carga de Imagen y Configuración -->
-          <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1.25rem;">
-            <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              1. Imagen Portadora (Carrier)
-            </h3>
+        <div id="reveal-result" style="display:none; flex-direction:column; gap:1rem;">
+          <div id="reveal-alert" class="alert-box"></div>
+          <div id="reveal-details" class="font-mono" style="display:none; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:1rem; border-radius:8px; line-height:1.9;"></div>
 
-            <div id="dropzone-hide" class="dropzone">
-              <input type="file" id="carrier-input" accept="image/png, image/jpeg, image/webp" style="display: none;" />
-              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
-              <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen o haz clic para seleccionarla</p>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, WebP (Se convertirá a PNG sin pérdida)</p>
-            </div>
-
-            <div id="carrier-info" style="display: none; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <span style="color: var(--text-muted);">Resolución:</span>
-                <span id="carrier-res" class="font-mono text-white">-</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <span style="color: var(--text-muted);">Capacidad Máxima LSB:</span>
-                <span id="carrier-cap" class="font-mono text-white" style="color: var(--accent-cyan);">-</span>
-              </div>
-            </div>
-
-            <!-- Preview Imagen Portadora -->
-            <div id="carrier-preview-box" class="image-preview-box" style="display: none;">
-              <img id="carrier-img" alt="Imagen Portadora" />
-            </div>
+          <div id="reveal-text-group" style="display:none;">
+            <label style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.3rem; display:block;">
+              Contenido revelado
+            </label>
+            <textarea id="reveal-text" rows="6" readonly class="font-mono"></textarea>
           </div>
 
-          <!-- Columna Derecha: Carga de Payload y Cifrado -->
-          <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1.25rem;">
-            <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              2. Datos a Ocultar (Payload)
-            </h3>
-
-            <div>
-              <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                Modo de Protección Criptográfica:
-              </label>
-              <select id="stego-crypto-mode" style="margin-bottom: 1rem;">
-                <option value="aes">🛡️ Cripto-Esteganografía (Cifrado AES-256-GCM con PBKDF2)</option>
-                <option value="plain">📄 Esteganografía Pura (Texto Plano directo)</option>
-              </select>
-            </div>
-
-            <div id="password-group">
-              <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">
-                Contraseña Maestra para Derivación (PBKDF2 600,000 iteraciones):
-              </label>
-              <input type="password" id="stego-password" placeholder="Ingresa una clave segura..." />
-            </div>
-
-            <div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
-                <label style="font-size: 0.85rem; color: var(--text-secondary);">Mensaje o Secreto:</label>
-                <span id="payload-size-counter" class="font-mono" style="font-size: 0.75rem; color: var(--text-muted);">0 bytes</span>
-              </div>
-              <textarea id="stego-message" rows="4" placeholder="Escribe aquí el texto confidencial o mensaje secreto que deseas camuflar..."></textarea>
-            </div>
-
-            <!-- Barra de Capacidad en Tiempo Real -->
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
-                <span style="color: var(--text-muted);">Ocupación de Capacidad:</span>
-                <span id="capacity-percentage" class="font-mono">0%</span>
-              </div>
-              <div class="progress-container">
-                <div id="capacity-bar" class="progress-bar progress-normal" style="width: 0%;"></div>
-              </div>
-            </div>
-
-            <button id="btn-inject-data" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" disabled>
-              ⚡ Ejecutar Inyección LSB en Canvas
-            </button>
-          </div>
-        </div>
-
-        <!-- Resultados de la Inyección LSB -->
-        <div id="stego-result-container" class="card card-glow-emerald" style="display: none; margin-top: 1.5rem;">
-          <h3 style="color: var(--accent-emerald); font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            ✅ Inyección LSB Finalizada Exitosamente
-          </h3>
-
-          <div class="grid-2" style="align-items: center;">
-            <div>
-              <div class="image-preview-box">
-                <canvas id="stego-output-canvas"></canvas>
-              </div>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-              <div class="alert-box alert-success">
-                <div>
-                  <strong>Protocolo de 32 bits aplicado:</strong> Los primeros 4 bytes registran la longitud exacta del payload en formato Big-Endian, seguido por la secuencia de bits inyectada en los LSBs RGB.
-                </div>
-              </div>
-
-              <div id="stego-stats-details" class="font-mono" style="font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; line-height: 1.6;">
-                <!-- Se llena dinámicamente -->
-              </div>
-
-              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button id="btn-download-stego" class="btn btn-emerald" style="flex: 1;">
-                  💾 Descargar PNG Esteganografiado
-                </button>
-                <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1;">
-                  🔬 Enviar a Estegoanálisis Forense
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SECCIÓN 2: REVELAR INFORMACIÓN -->
-      <div id="stego-reveal-section" style="display: none; margin-top: 1.5rem;">
-        <div class="card space-y-4" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem;">
-          <h3 style="font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-            Extracción Inversa de Datos Ocultos
-          </h3>
-
-          <div id="dropzone-reveal" class="dropzone">
-            <input type="file" id="stego-input-file" accept="image/png" style="display: none;" />
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🕵️‍♂️</div>
-            <p style="font-weight: 600; color: var(--text-primary);">Sube la imagen PNG sospechosa de contener datos</p>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">El motor LSB leerá la cabecera de 32 bits y reconstruirá el payload</p>
-          </div>
-
-          <div id="reveal-image-preview-box" class="image-preview-box" style="display: none;">
-            <img id="reveal-img" alt="Imagen Estego" />
-          </div>
-
-          <button id="btn-extract-data" class="btn btn-primary" style="width: 100%;" disabled>
-            🔓 Extraer Payload LSB
-          </button>
-
-          <!-- Resultado de la Extracción -->
-          <div id="reveal-result-container" style="display: none; display: flex; flex-direction: column; gap: 1rem;">
-            <div id="reveal-status-alert" class="alert-box alert-info">
-              <!-- Mensaje de estado -->
-            </div>
-
-            <!-- Si el payload extraído es un paquete cifrado AES-GCM -->
-            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: rgba(0,0,0,0.35); border-color: rgba(168, 85, 247, 0.4); display: flex; flex-direction: column; gap: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span class="badge badge-purple">AES-256-GCM Detectado</span>
-                <span style="font-size: 0.85rem; color: var(--text-secondary);">El payload extraído corresponde a un paquete criptográfico [Salt|IV|Tag|Ciphertext].</span>
-              </div>
-              <input type="password" id="reveal-decrypt-password" placeholder="Ingresa la contraseña para descifrar el paquete..." />
-              <button id="btn-decrypt-revealed" class="btn btn-emerald">
-                🔑 Descifrar y Verificar Autenticidad (GCM Tag)
-              </button>
-            </div>
-
-            <div>
-              <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">
-                Contenido Revelado:
-              </label>
-              <textarea id="revealed-content-text" rows="5" readonly class="font-mono"></textarea>
-            </div>
+          <div id="reveal-file-group" style="display:none;">
+            <button id="btn-download-payload" class="btn btn-emerald" style="width:100%;"></button>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  // --- Elementos del DOM ---
-  const hideBtn = container.querySelector('#stego-mode-hide-btn');
-  const revealBtn = container.querySelector('#stego-mode-reveal-btn');
-  const hideSection = container.querySelector('#stego-hide-section');
-  const revealSection = container.querySelector('#stego-reveal-section');
+  // --- Elementos ---
+  const modeHide = container.querySelector('#mode-hide');
+  const modeReveal = container.querySelector('#mode-reveal');
+  const sectionHide = container.querySelector('#section-hide');
+  const sectionReveal = container.querySelector('#section-reveal');
 
-  const dropzoneHide = container.querySelector('#dropzone-hide');
-  const carrierInput = container.querySelector('#carrier-input');
+  const dropzoneCarrier = container.querySelector('#dropzone-carrier');
+  const inputCarrier = container.querySelector('#input-carrier');
   const carrierInfo = container.querySelector('#carrier-info');
-  const carrierRes = container.querySelector('#carrier-res');
-  const carrierCap = container.querySelector('#carrier-cap');
-  const carrierPreviewBox = container.querySelector('#carrier-preview-box');
+  const carrierPreview = container.querySelector('#carrier-preview');
   const carrierImg = container.querySelector('#carrier-img');
 
-  const cryptoModeSelect = container.querySelector('#stego-crypto-mode');
+  const payloadKind = container.querySelector('#payload-kind');
+  const payloadTextGroup = container.querySelector('#payload-text-group');
+  const payloadFileGroup = container.querySelector('#payload-file-group');
+  const payloadText = container.querySelector('#payload-text');
+  const payloadSize = container.querySelector('#payload-size');
+  const inputPayloadFile = container.querySelector('#input-payload-file');
+  const payloadFileInfo = container.querySelector('#payload-file-info');
+
+  const cryptoMode = container.querySelector('#crypto-mode');
+  const walkMode = container.querySelector('#walk-mode');
+  const walkHint = container.querySelector('#walk-hint');
   const passwordGroup = container.querySelector('#password-group');
-  const stegoPassword = container.querySelector('#stego-password');
-  const stegoMessage = container.querySelector('#stego-message');
-  const payloadSizeCounter = container.querySelector('#payload-size-counter');
+  const password = container.querySelector('#password');
+
+  const capacityLabel = container.querySelector('#capacity-label');
   const capacityBar = container.querySelector('#capacity-bar');
-  const capacityPercentage = container.querySelector('#capacity-percentage');
-  const btnInjectData = container.querySelector('#btn-inject-data');
+  const btnInject = container.querySelector('#btn-inject');
 
-  const resultContainer = container.querySelector('#stego-result-container');
-  const outputCanvas = container.querySelector('#stego-output-canvas');
-  const stegoStatsDetails = container.querySelector('#stego-stats-details');
-  const btnDownloadStego = container.querySelector('#btn-download-stego');
-  const btnSendToAnalysis = container.querySelector('#btn-send-to-analysis');
+  const hideResult = container.querySelector('#hide-result');
+  const outputCanvas = container.querySelector('#output-canvas');
+  const hideStats = container.querySelector('#hide-stats');
+  const btnDownload = container.querySelector('#btn-download');
+  const btnToAnalysis = container.querySelector('#btn-to-analysis');
 
-  // Reveal elements
-  const dropzoneReveal = container.querySelector('#dropzone-reveal');
-  const stegoInputFile = container.querySelector('#stego-input-file');
-  const revealPreviewBox = container.querySelector('#reveal-image-preview-box');
-  const revealImg = container.querySelector('#reveal-img');
-  const btnExtractData = container.querySelector('#btn-extract-data');
-  const revealResultContainer = container.querySelector('#reveal-result-container');
-  const revealStatusAlert = container.querySelector('#reveal-status-alert');
-  const revealCryptoDecryptBox = container.querySelector('#reveal-crypto-decrypt-box');
-  const revealDecryptPassword = container.querySelector('#reveal-decrypt-password');
-  const btnDecryptRevealed = container.querySelector('#btn-decrypt-revealed');
-  const revealedContentText = container.querySelector('#revealed-content-text');
+  const dropzoneStego = container.querySelector('#dropzone-stego');
+  const inputStego = container.querySelector('#input-stego');
+  const stegoPreview = container.querySelector('#stego-preview');
+  const stegoImg = container.querySelector('#stego-img');
+  const revealPassword = container.querySelector('#reveal-password');
+  const btnExtract = container.querySelector('#btn-extract');
+  const revealResult = container.querySelector('#reveal-result');
+  const revealAlert = container.querySelector('#reveal-alert');
+  const revealDetails = container.querySelector('#reveal-details');
+  const revealTextGroup = container.querySelector('#reveal-text-group');
+  const revealTextArea = container.querySelector('#reveal-text');
+  const revealFileGroup = container.querySelector('#reveal-file-group');
+  const btnDownloadPayload = container.querySelector('#btn-download-payload');
 
-  // --- Estado local ---
-  let loadedCarrierImage = null;
-  let currentMaxCapacityBytes = 0;
-  let lastInjectedCanvas = null;
-  let loadedRevealImage = null;
-  let extractedRawBytes = null;
+  // --- Estado ---
+  let carrierImage = null;
+  let carrierCapacity = null;
+  let payloadFile = null;
+  let payloadFileBytes = null;
+  let injectedCanvas = null;
+  let stegoImage = null;
+  let extractedPayload = null;
+  let extractedMeta = null;
 
-  // --- Alternancia de modos (Ocultar / Revelar) ---
-  hideBtn.addEventListener('click', () => {
-    hideBtn.className = 'btn btn-primary';
-    revealBtn.className = 'btn btn-secondary';
-    hideSection.style.display = 'block';
-    revealSection.style.display = 'none';
+  const WALK_HINTS = {
+    scattered:
+      'El payload se reparte por toda la imagen segun una permutacion derivada de la contrasena. '
+      + 'Destruye el prefijo contiguo que localiza el ataque chi-cuadrado progresivo, y sin la '
+      + 'contrasena no se puede ni localizar la cabecera.',
+    sequential:
+      'El payload ocupa un prefijo contiguo desde el primer pixel. Permite detectar el contenedor '
+      + 'sin contrasena, pero el ataque chi-cuadrado progresivo puede medir su longitud exacta.'
+  };
+
+  // --- Alternancia de modo ---
+  modeHide.addEventListener('click', () => {
+    modeHide.className = 'btn btn-primary';
+    modeReveal.className = 'btn btn-secondary';
+    sectionHide.style.display = 'block';
+    sectionReveal.style.display = 'none';
   });
 
-  revealBtn.addEventListener('click', () => {
-    revealBtn.className = 'btn btn-primary';
-    hideBtn.className = 'btn btn-secondary';
-    revealSection.style.display = 'block';
-    hideSection.style.display = 'none';
+  modeReveal.addEventListener('click', () => {
+    modeReveal.className = 'btn btn-primary';
+    modeHide.className = 'btn btn-secondary';
+    sectionReveal.style.display = 'block';
+    sectionHide.style.display = 'none';
   });
 
-  // Alternar campo de contraseña según modo
-  cryptoModeSelect.addEventListener('change', () => {
-    passwordGroup.style.display = cryptoModeSelect.value === 'aes' ? 'block' : 'none';
-    updateCapacityMetrics();
-  });
+  // --- Portadora ---
+  function wireDropzone(zone, input, handler) {
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      zone.classList.add('dragover');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      zone.classList.remove('dragover');
+      if (event.dataTransfer.files.length > 0) handler(event.dataTransfer.files[0]);
+    });
+    input.addEventListener('change', (event) => {
+      if (event.target.files.length > 0) handler(event.target.files[0]);
+    });
+  }
 
-  // --- Carga de Imagen Portadora ---
-  dropzoneHide.addEventListener('click', () => carrierInput.click());
-  dropzoneHide.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzoneHide.classList.add('dragover');
-  });
-  dropzoneHide.addEventListener('dragleave', () => dropzoneHide.classList.remove('dragover'));
-  dropzoneHide.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropzoneHide.classList.remove('dragover');
-    if (e.dataTransfer.files.length > 0) handleCarrierFile(e.dataTransfer.files[0]);
-  });
-  carrierInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) handleCarrierFile(e.target.files[0]);
-  });
-
-  async function handleCarrierFile(file) {
+  wireDropzone(dropzoneCarrier, inputCarrier, async (file) => {
     try {
-      const img = await StegoEngine.loadImage(file);
-      loadedCarrierImage = img;
-      carrierImg.src = img.src;
-      carrierPreviewBox.style.display = 'flex';
+      carrierImage = await loadImage(file);
+      carrierCapacity = describeCapacity(carrierImage);
+
+      carrierImg.src = carrierImage.src;
+      carrierPreview.style.display = 'flex';
+
       carrierInfo.style.display = 'block';
+      carrierInfo.innerHTML = `
+        <div>Resolucion: <span style="color:var(--text-primary);">${carrierCapacity.width} x ${carrierCapacity.height} px</span></div>
+        <div>Muestras RGB: <span style="color:var(--text-primary);">${numberFormat.format(carrierCapacity.totalSamples)}</span></div>
+        <div>Capacidad total: <span style="color:var(--accent-cyan);">${formatBytes(carrierCapacity.containerCapacityBytes)}</span></div>
+        <div>Capacidad util: <span style="color:var(--accent-emerald);">${formatBytes(carrierCapacity.payloadCapacityBytes)}</span>
+          <span style="color:var(--text-muted);">(menos ${HEADER_SIZE} B de cabecera)</span></div>
+      `;
 
-      const width = img.naturalWidth || img.width;
-      const height = img.naturalHeight || img.height;
-      const cap = StegoEngine.calculateCapacity(width, height);
-      currentMaxCapacityBytes = cap.maxBytes;
-
-      carrierRes.textContent = `${width} × ${height} px (${(cap.totalPixels / 1e6).toFixed(2)} MP)`;
-      carrierCap.textContent = `${cap.maxBytes.toLocaleString()} bytes (~${(cap.maxBytes / 1024).toFixed(1)} KB)`;
-
-      updateCapacityMetrics();
-      checkInjectReadiness();
-    } catch (err) {
-      alert(`Error cargando imagen: ${err.message}`);
+      updateCapacity();
+    } catch (error) {
+      alert(error.message);
     }
-  }
+  });
 
-  // --- Métricas de Capacidad en Vivo ---
-  stegoMessage.addEventListener('input', updateCapacityMetrics);
+  // --- Payload ---
+  payloadKind.addEventListener('change', () => {
+    const isFile = payloadKind.value === 'file';
+    payloadTextGroup.style.display = isFile ? 'none' : 'block';
+    payloadFileGroup.style.display = isFile ? 'block' : 'none';
+    updateCapacity();
+  });
 
-  function updateCapacityMetrics() {
-    const text = stegoMessage.value;
-    const textBytes = new TextEncoder().encode(text).length;
-    // Si es AES, el paquete añade 44 bytes de cabecera [Salt(16)+IV(12)+Tag(16)]
-    const isAes = cryptoModeSelect.value === 'aes';
-    const estimatedPayloadBytes = isAes ? (textBytes + 44) : textBytes;
+  inputPayloadFile.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    payloadSizeCounter.textContent = `${estimatedPayloadBytes} bytes ${isAes ? '(incluye cabecera criptográfica 44B)' : ''}`;
-
-    if (currentMaxCapacityBytes > 0) {
-      const pct = Math.min(100, (estimatedPayloadBytes / currentMaxCapacityBytes) * 100);
-      capacityPercentage.textContent = `${pct.toFixed(2)}%`;
-      capacityBar.style.width = `${pct}%`;
-
-      if (pct < 70) {
-        capacityBar.className = 'progress-bar progress-normal';
-      } else if (pct <= 100) {
-        capacityBar.className = 'progress-bar progress-warning';
-      } else {
-        capacityBar.className = 'progress-bar progress-danger';
-      }
-    }
-    checkInjectReadiness();
-  }
-
-  function checkInjectReadiness() {
-    const hasImage = !!loadedCarrierImage;
-    const hasText = stegoMessage.value.trim().length > 0;
-    const isAes = cryptoModeSelect.value === 'aes';
-    const hasPass = isAes ? stegoPassword.value.length > 0 : true;
-
-    btnInjectData.disabled = !(hasImage && hasText && hasPass);
-  }
-
-  stegoPassword.addEventListener('input', checkInjectReadiness);
-
-  // --- Inyección LSB ---
-  btnInjectData.addEventListener('click', async () => {
     try {
-      btnInjectData.disabled = true;
-      btnInjectData.innerHTML = '⏳ Procesando inyección en Canvas...';
+      payloadFile = file;
+      payloadFileBytes = await readFileBytes(file);
+      payloadFileInfo.style.display = 'block';
+      payloadFileInfo.textContent =
+        `${file.name} — ${formatBytes(payloadFileBytes.length)} — ${file.type || 'tipo desconocido'}`;
+      updateCapacity();
+    } catch (error) {
+      alert(`No se pudo leer el archivo: ${error.message}`);
+    }
+  });
 
-      let payloadBytes;
-      const text = stegoMessage.value;
-      const isAes = cryptoModeSelect.value === 'aes';
+  payloadText.addEventListener('input', updateCapacity);
+  password.addEventListener('input', updateCapacity);
 
-      if (isAes) {
-        const password = stegoPassword.value;
-        const cryptoResult = await ApiService.encryptAESGCM(text, password);
-        // cryptoResult.packedBuffer viene en Base64 desde el backend
-        const binaryString = atob(cryptoResult.packedBase64);
-        payloadBytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          payloadBytes[i] = binaryString.charCodeAt(i);
+  cryptoMode.addEventListener('change', () => {
+    // El modo disperso necesita contrasena para derivar la permutacion, aunque no
+    // se cifre; solo el par "sin cifrado + secuencial" puede prescindir de ella.
+    const needsPassword = cryptoMode.value === 'aes' || walkMode.value === 'scattered';
+    passwordGroup.style.display = needsPassword ? 'block' : 'none';
+    updateCapacity();
+  });
+
+  walkMode.addEventListener('change', () => {
+    walkHint.textContent = WALK_HINTS[walkMode.value];
+    const needsPassword = cryptoMode.value === 'aes' || walkMode.value === 'scattered';
+    passwordGroup.style.display = needsPassword ? 'block' : 'none';
+    updateCapacity();
+  });
+
+  walkHint.textContent = WALK_HINTS.scattered;
+
+  /** Tamano y metadatos del payload actual, sin incluir la capa criptografica. */
+  function currentPayload() {
+    if (payloadKind.value === 'file') {
+      if (!payloadFileBytes) return null;
+      return {
+        bytes: payloadFileBytes,
+        meta: {
+          name: payloadFile.name,
+          type: payloadFile.type || 'application/octet-stream',
+          size: payloadFileBytes.length
         }
-      } else {
-        payloadBytes = new TextEncoder().encode(text);
+      };
+    }
+
+    const text = payloadText.value;
+    if (text.length === 0) return null;
+    return { bytes: new TextEncoder().encode(text), meta: null };
+  }
+
+  function updateCapacity() {
+    const payload = currentPayload();
+    const rawBytes = payload ? payload.bytes.length : 0;
+
+    // El cifrado anade la cabecera [salt|iv|tag] al payload.
+    const encrypted = cryptoMode.value === 'aes';
+    const payloadBytes = rawBytes + (encrypted && rawBytes >= 0 ? PACKET_HEADER_BYTES : 0);
+    const metaBytes = payload?.meta
+      ? new TextEncoder().encode(JSON.stringify(payload.meta)).length
+      : 0;
+    const containerBytes = HEADER_SIZE + metaBytes + payloadBytes;
+
+    payloadSize.textContent = formatBytes(rawBytes);
+
+    if (carrierCapacity) {
+      const ratio = containerBytes / carrierCapacity.containerCapacityBytes;
+      const percentage = Math.min(100, ratio * 100);
+
+      capacityLabel.textContent = `${percentage.toFixed(2)}% — ${formatBytes(containerBytes)}`;
+      capacityBar.style.width = `${percentage}%`;
+      capacityBar.className = ratio > 1
+        ? 'progress-bar progress-danger'
+        : ratio > 0.7 ? 'progress-bar progress-warning' : 'progress-bar progress-normal';
+    }
+
+    const needsPassword = cryptoMode.value === 'aes' || walkMode.value === 'scattered';
+    const fits = carrierCapacity && containerBytes <= carrierCapacity.containerCapacityBytes;
+
+    btnInject.disabled = !(
+      carrierImage && payload && fits && (!needsPassword || password.value.length > 0)
+    );
+  }
+
+  // --- Inyeccion ---
+  btnInject.addEventListener('click', async () => {
+    const original = btnInject.innerHTML;
+
+    try {
+      btnInject.disabled = true;
+      btnInject.innerHTML = 'Derivando clave (600.000 iteraciones)...';
+
+      const payload = currentPayload();
+      const encrypted = cryptoMode.value === 'aes';
+      const scattered = walkMode.value === 'scattered';
+
+      let bytes = payload.bytes;
+      if (encrypted) {
+        const sealed = await encryptPacket(bytes, password.value);
+        bytes = sealed.packed;
       }
 
-      // Ejecutar inyección LSB
-      const { canvas, stats } = StegoEngine.hideData(loadedCarrierImage, payloadBytes);
-      lastInjectedCanvas = canvas;
+      const seedBytes = scattered ? await deriveWalkSeed(password.value) : null;
 
-      // Mostrar en el canvas del resultado
+      btnInject.innerHTML = 'Inyectando en el canvas...';
+      const { canvas, stats } = hide({
+        image: carrierImage,
+        payload: bytes,
+        meta: payload.meta,
+        encrypted,
+        seedBytes
+      });
+
+      injectedCanvas = canvas;
       outputCanvas.width = canvas.width;
       outputCanvas.height = canvas.height;
-      const ctx = outputCanvas.getContext('2d');
-      ctx.drawImage(canvas, 0, 0);
+      outputCanvas.getContext('2d').drawImage(canvas, 0, 0);
 
-      stegoStatsDetails.innerHTML = `
-        <div>• <strong>Dimensiones de Imagen:</strong> ${stats.width} × ${stats.height} px</div>
-        <div>• <strong>Tamaño del Payload Inyectado:</strong> ${stats.payloadBytes} bytes</div>
-        <div>• <strong>Canales RGB Alterados:</strong> ${stats.modifiedChannels.toLocaleString()} bits</div>
-        <div>• <strong>Capacidad Utilizada:</strong> ${stats.capacityUsedPercentage}% de ${stats.capacityMaxBytes.toLocaleString()} bytes</div>
-        <div>• <strong>Seguridad:</strong> ${isAes ? 'AES-256-GCM + PBKDF2-SHA512' : 'Texto Plano LSB'}</div>
+      hideStats.innerHTML = `
+        <div>Dimensiones: <span style="color:var(--text-primary);">${stats.width} x ${stats.height} px</span></div>
+        <div>Contenedor: <span style="color:var(--accent-cyan);">${formatBytes(stats.containerBytes)}</span>
+          <span style="color:var(--text-muted);">(${HEADER_SIZE} B cabecera + ${stats.metaBytes} B metadatos + ${formatBytes(stats.payloadBytes)} payload)</span></div>
+        <div>Muestras alteradas: <span style="color:var(--text-primary);">${numberFormat.format(stats.samplesUsed)}</span> de ${numberFormat.format(stats.totalSamples)}</div>
+        <div>Ocupacion: <span style="color:var(--text-primary);">${stats.capacityUsedPercentage}%</span></div>
+        <div>Colocacion: <span style="color:var(--accent-purple);">${stats.scattered ? 'dispersa (permutacion por contrasena)' : 'secuencial'}</span></div>
+        <div>Cifrado: <span style="color:${encrypted ? 'var(--accent-emerald)' : 'var(--accent-amber)'};">${encrypted ? 'AES-256-GCM en el navegador' : 'ninguno'}</span></div>
       `;
 
-      resultContainer.style.display = 'block';
-      resultContainer.scrollIntoView({ behavior: 'smooth' });
-    } catch (err) {
-      alert(`Error en inyección LSB: ${err.message}`);
+      hideResult.style.display = 'block';
+      hideResult.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+      alert(`Error en la inyeccion: ${error.message}`);
     } finally {
-      btnInjectData.disabled = false;
-      btnInjectData.innerHTML = '⚡ Ejecutar Inyección LSB en Canvas';
+      btnInject.disabled = false;
+      btnInject.innerHTML = original;
+      updateCapacity();
     }
   });
 
-  // --- Descargar Imagen Stego como PNG sin pérdida ---
-  btnDownloadStego.addEventListener('click', async () => {
-    if (!lastInjectedCanvas) return;
-    const blob = await StegoEngine.exportToPngBlob(lastInjectedCanvas);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `stego_image_${Date.now()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
+  btnDownload.addEventListener('click', async () => {
+    if (!injectedCanvas) return;
+    const blob = await exportToPngBlob(injectedCanvas);
+    downloadBlob(blob, `stego_${Date.now()}.png`);
   });
 
-  // --- Enviar a Estegoanálisis ---
-  btnSendToAnalysis.addEventListener('click', async () => {
-    if (!lastInjectedCanvas) return;
-    const blob = await StegoEngine.exportToPngBlob(lastInjectedCanvas);
-    if (onNavigateToAnalysis) {
-      onNavigateToAnalysis(blob);
-    }
+  btnToAnalysis.addEventListener('click', async () => {
+    if (!injectedCanvas || !onNavigateToAnalysis) return;
+    onNavigateToAnalysis(await exportToPngBlob(injectedCanvas));
   });
 
-  // --- SECCIÓN REVELAR / EXTRAER ---
-  dropzoneReveal.addEventListener('click', () => stegoInputFile.click());
-  stegoInputFile.addEventListener('change', async (e) => {
-    if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      try {
-        const img = await StegoEngine.loadImage(file);
-        loadedRevealImage = img;
-        revealImg.src = img.src;
-        revealPreviewBox.style.display = 'flex';
-        btnExtractData.disabled = false;
-        revealResultContainer.style.display = 'none';
-      } catch (err) {
-        alert(err.message);
-      }
-    }
-  });
-
-  btnExtractData.addEventListener('click', () => {
+  // --- Extraccion ---
+  wireDropzone(dropzoneStego, inputStego, async (file) => {
     try {
-      if (!loadedRevealImage) return;
-      const extracted = StegoEngine.extractData(loadedRevealImage);
-      extractedRawBytes = extracted.rawBytes;
-
-      revealResultContainer.style.display = 'flex';
-
-      // Verificar si es un paquete binario AES-GCM (>= 44 bytes de cabecera)
-      if (extracted.length >= 44 && extracted.isBinary) {
-        revealStatusAlert.className = 'alert-box alert-warning';
-        revealStatusAlert.innerHTML = `
-          <strong>Payload Cifrado Detectado:</strong> Se han extraído con éxito ${extracted.length} bytes binarios. El flujo contiene una cabecera con Salt, IV y Authentication Tag.
-        `;
-        revealCryptoDecryptBox.style.display = 'flex';
-        // Mostrar Base64 del paquete
-        const binaryStr = Array.from(extracted.rawBytes).map(b => String.fromCharCode(b)).join('');
-        revealedContentText.value = `[PAQUETE CIFRADO AES-256-GCM - ${extracted.length} BYTES]\nBase64: ${btoa(binaryStr)}`;
-      } else {
-        revealCryptoDecryptBox.style.display = 'none';
-        revealStatusAlert.className = 'alert-box alert-success';
-        revealStatusAlert.innerHTML = `
-          <strong>Extracción Exitosa:</strong> Se han recuperado ${extracted.length} bytes en texto plano UTF-8.
-        `;
-        revealedContentText.value = extracted.text || '(Datos no legibles como UTF-8)';
-      }
-    } catch (err) {
-      revealResultContainer.style.display = 'flex';
-      revealCryptoDecryptBox.style.display = 'none';
-      revealStatusAlert.className = 'alert-box alert-danger';
-      revealStatusAlert.innerHTML = `<strong>Error de Extracción:</strong> ${err.message}`;
-      revealedContentText.value = '';
+      stegoImage = await loadImage(file);
+      stegoImg.src = stegoImage.src;
+      stegoPreview.style.display = 'flex';
+      btnExtract.disabled = false;
+      revealResult.style.display = 'none';
+    } catch (error) {
+      alert(error.message);
     }
   });
 
-  btnDecryptRevealed.addEventListener('click', async () => {
+  btnExtract.addEventListener('click', async () => {
+    const original = btnExtract.innerHTML;
+
     try {
-      const password = revealDecryptPassword.value;
-      if (!password) {
-        alert('Por favor ingresa la contraseña maestra para descifrar.');
+      btnExtract.disabled = true;
+      btnExtract.innerHTML = 'Buscando contenedor...';
+
+      const seedBytes = revealPassword.value
+        ? await deriveWalkSeed(revealPassword.value)
+        : null;
+
+      const attempt = revealAuto(stegoImage, seedBytes);
+      revealResult.style.display = 'flex';
+      revealTextGroup.style.display = 'none';
+      revealFileGroup.style.display = 'none';
+      revealDetails.style.display = 'none';
+
+      if (!attempt.found) {
+        const needsPassword = !revealPassword.value;
+        revealAlert.className = 'alert-box alert-danger';
+        revealAlert.innerHTML = `
+          <div>
+            <strong>No se encontro ningun contenedor.</strong>
+            ${needsPassword
+              ? ' Si la inyeccion fue dispersa, la contrasena es imprescindible para localizar la cabecera.'
+              : ''}
+            <div style="margin-top:0.5rem; font-size:0.78rem; color:var(--text-muted);">
+              ${attempt.errors.map((line) => `<div>${line}</div>`).join('')}
+            </div>
+          </div>
+        `;
         return;
       }
-      const binaryStr = Array.from(extractedRawBytes).map(b => String.fromCharCode(b)).join('');
-      const base64Data = btoa(binaryStr);
 
-      const decrypted = await ApiService.decryptAESGCM(base64Data, password);
+      const { result, mode } = attempt;
+      extractedMeta = result.meta;
 
-      revealStatusAlert.className = 'alert-box alert-success';
-      revealStatusAlert.innerHTML = `
-        <strong>¡Autenticación y Descifrado Exitosos!</strong> El Authentication Tag de 16 bytes coincidió matemáticamente. La integridad y confidencialidad fueron verificadas.
+      revealDetails.style.display = 'block';
+      revealDetails.innerHTML = `
+        <div>Modo detectado: <span style="color:var(--accent-purple);">${mode}</span></div>
+        <div>Version del contenedor: <span style="color:var(--text-primary);">${result.header.version}</span></div>
+        <div>Payload: <span style="color:var(--accent-cyan);">${formatBytes(result.header.payloadLength)}</span></div>
+        <div>CRC-32: <span style="color:var(--accent-emerald);">verificado</span></div>
+        <div>Cifrado: <span style="color:var(--text-primary);">${result.encrypted ? 'si, AES-256-GCM' : 'no'}</span></div>
+        ${result.isFile ? `<div>Archivo: <span style="color:var(--text-primary);">${result.meta.name}</span> (${result.meta.type})</div>` : ''}
       `;
-      revealedContentText.value = decrypted.plaintextUtf8;
-    } catch (err) {
-      revealStatusAlert.className = 'alert-box alert-danger';
-      revealStatusAlert.innerHTML = `<strong>Fallo de Integridad / Clave Incorrecta:</strong> ${err.message}`;
+
+      let payload = result.payload;
+
+      if (result.encrypted) {
+        if (!revealPassword.value) {
+          revealAlert.className = 'alert-box alert-warning';
+          revealAlert.innerHTML =
+            '<div><strong>Contenedor cifrado localizado.</strong> Introduce la contrasena para '
+            + 'descifrarlo y verificar el tag GCM.</div>';
+          return;
+        }
+
+        btnExtract.innerHTML = 'Descifrando (600.000 iteraciones)...';
+        payload = await decryptPacket(payload, revealPassword.value);
+      }
+
+      extractedPayload = payload;
+
+      revealAlert.className = 'alert-box alert-success';
+      revealAlert.innerHTML = `
+        <div>
+          <strong>Extraccion correcta.</strong>
+          ${result.encrypted
+            ? 'El tag de autenticacion GCM coincidio: confidencialidad e integridad verificadas.'
+            : 'El CRC-32 del contenedor coincidio.'}
+        </div>
+      `;
+
+      if (result.isFile) {
+        revealFileGroup.style.display = 'block';
+        btnDownloadPayload.textContent = `Descargar ${result.meta.name} (${formatBytes(payload.length)})`;
+      } else {
+        revealTextGroup.style.display = 'block';
+        try {
+          revealTextArea.value = new TextDecoder('utf-8', { fatal: true }).decode(payload);
+        } catch {
+          revealTextArea.value =
+            `[${payload.length} bytes binarios no representables como UTF-8]\n`
+            + 'Cambia el tipo de payload a archivo para descargarlo.';
+        }
+      }
+    } catch (error) {
+      revealResult.style.display = 'flex';
+      revealAlert.className = 'alert-box alert-danger';
+      revealAlert.innerHTML = `<div><strong>Error:</strong> ${error.message}</div>`;
+    } finally {
+      btnExtract.disabled = false;
+      btnExtract.innerHTML = original;
     }
+  });
+
+  btnDownloadPayload.addEventListener('click', () => {
+    if (!extractedPayload || !extractedMeta) return;
+    downloadBlob(
+      new Blob([extractedPayload], { type: extractedMeta.type || 'application/octet-stream' }),
+      extractedMeta.name || 'payload.bin'
+    );
   });
 }

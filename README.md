@@ -20,19 +20,25 @@ Este proyecto es una plataforma académica integral que combina **criptografía 
 │   │       ├── rsAnalysis.js              # RS Analysis (Fridrich et al.)
 │   │       ├── samplePairAnalysis.js      # SPA (Dumitrescu et al.)
 │   │       ├── entropy.js                 # Entropía LSB (métrica descriptiva)
-│   │       └── verdict.js                 # Fusión de evidencia
+│   │       ├── verdict.js                 # Fusión de evidencia
+│   │       ├── pool.js                    # Pool de worker_threads
+│   │       └── analysis.worker.js         # Worker: decodifica PNG y analiza
 │   ├── routes/
 │   │   ├── crypto.routes.js               # Cifrado, descifrado y RSA
 │   │   └── analyze.routes.js              # Estegoanálisis con decodificación PNG
-│   └── tests/                             # 232 pruebas, sin dependencias externas
+│   └── tests/                             # 295 pruebas, sin dependencias externas
 │       ├── run-all.js                     # Runner agregado (npm test)
-│       ├── harness.js                     # Aserciones y salida con exitCode
+│       ├── harness.js                     # Aserciones y medición del event loop
+│       ├── benchmark-eventloop.js         # Retardo del bucle bajo carga
 │       ├── fixtures/imageFactory.js       # Portadoras e inyectores con verdad conocida
 │       ├── statistics.test.js
 │       ├── chiSquareAttack.test.js
 │       ├── rsAnalysis.test.js
 │       ├── samplePairAnalysis.test.js
 │       ├── forensics.integration.test.js
+│       ├── pool.test.js
+│       ├── lsbContainer.test.js
+│       ├── webcrypto.interop.test.js
 │       └── crypto.test.js
 │
 ├── frontend/
@@ -42,7 +48,9 @@ Este proyecto es una plataforma académica integral que combina **criptografía 
 │       ├── style.css                      # Sistema de diseño en modo oscuro
 │       ├── services/
 │       │   ├── api.js                     # Cliente REST
-│       │   └── stegoEngine.js             # Motor LSB en Canvas HTML5
+│       │   ├── webcrypto.js               # AES-256-GCM y PBKDF2 en el navegador
+│       │   ├── lsbContainer.js            # Formato binario y colocación de bits (puro)
+│       │   └── stegoEngine.js             # Capa de Canvas sobre el contenedor
 │       └── components/
 │           ├── StegoTab.js                # Inyección LSB y extracción inversa
 │           ├── CryptoTab.js               # AES-256-GCM y RSA-4096
@@ -87,17 +95,72 @@ $$\Big[\;\text{Salt (16B)}\;\Big|\;\text{IV (12B)}\;\Big|\;\text{AuthTag (16B)}\
 
 ## 🎨 3. Motor de Esteganografía LSB en Canvas HTML5
 
-El proceso de inyección y extracción se realiza **100% en el cliente (navegador)** utilizando JavaScript puro y la API `<canvas>`:
+Todo el proceso ocurre **en el cliente**, con JavaScript puro y la API `<canvas>`: los píxeles y la contraseña nunca salen del navegador.
 
-1. **Lectura de Píxeles:** La imagen se proyecta en el canvas y se extrae el búfer `ImageData.data` (`Uint8ClampedArray`), compuesto por secuencias de 4 bytes por píxel: `[R, G, B, A, R, G, B, A, ...]`.
-2. **Preservación del Canal Alfa:** Solo se alteran los canales **R, G y B**. El canal de transparencia $A$ permanece intacto en `255` para evitar aberraciones visuales.
-3. **Protocolo Binario de 32 bits:**
-   * **Bytes 0..3 (Cabecera):** Entero de 32 bits (Big-Endian) que define la longitud exacta $L$ en bytes del payload oculto.
-   * **Bytes 4..($4+L$):** El cuerpo de datos (texto plano o paquete AES-GCM).
-4. **Máscara a Nivel de Bits:**
-   $$\text{canal}' = (\text{canal} \ \& \ \text{0xFE}) \ | \ \text{bit}$$
-   Esto sustituye el bit menos significativo con una alteración fotométrica máxima de $\pm 1$ sobre 255 niveles (imperceptible para el ojo humano).
-5. **Exportación:** Se descarga forzosamente en formato `image/png` sin compresión con pérdida (los formatos JPEG destruirían los LSBs por la cuantización de la DCT).
+El formato binario y la colocación de bits viven en `lsbContainer.js`, un módulo sin dependencias del navegador. Esa separación no es cosmética: permite que las pruebas del backend importen y validen **el mismo código que ejecuta el navegador**, en lugar de una reimplementación que podría divergir en silencio.
+
+### A. Formato del contenedor
+
+```
+offset  tam  campo
+0       4    magic "STG1"
+4       1    versión
+5       1    flags
+6       4    longitud del payload      (big-endian)
+10      2    longitud de los metadatos (big-endian)
+12      4    CRC-32 de (metadatos || payload)
+16      ml   metadatos, JSON UTF-8
+16+ml   pl   payload
+```
+
+Los `flags` señalan si el payload está cifrado (`0x01`), si es un archivo (`0x02`) y si la colocación es dispersa (`0x04`).
+
+**Por qué el magic y el CRC-32.** La versión anterior sólo guardaba una longitud de 32 bits, y decidía si había mensaje comprobando si esa longitud cabía en la imagen. Eso confunde tres situaciones distintas: *no hay nada*, *hay algo y está corrupto*, y *hay algo y la contraseña es incorrecta*. Una imagen limpia produce bits aleatorios que con frecuencia pasan esa comprobación, y el motor devolvía basura como si fuera un mensaje.
+
+Con el magic la ausencia de contenedor es una respuesta definida (`NO_CONTAINER`), y con el CRC-32 sobre metadatos y payload la corrupción se detecta **sin necesidad de la contraseña** (`CRC_MISMATCH`). El CRC usa el polinomio reflejado `0xEDB88320` de IEEE 802.3, validado contra vectores conocidos.
+
+### B. Máscara a nivel de bits
+
+$$\text{canal}' = (\text{canal} \mathbin{\&} \text{0xFE}) \mathbin{|} \text{bit}$$
+
+Alteración fotométrica máxima de $\pm 1$ sobre 255 niveles, verificada por prueba. Sólo se tocan R, G y B; el canal alfa permanece intacto, también verificado.
+
+Cada muestra transporta 1 bit, así que la capacidad es $\lfloor 3 \cdot W \cdot H / 8 \rfloor$ bytes menos la cabecera y los metadatos.
+
+### C. Colocación: secuencial frente a dispersa
+
+**Secuencial** ocupa un prefijo contiguo desde el primer píxel. Permite detectar el contenedor sin contraseña, pero es exactamente el patrón que el ataque χ² progresivo localiza y mide.
+
+**Dispersa** reparte los bits por toda la imagen mediante una permutación sembrada por la contraseña, generada con un **Fisher-Yates perezoso**: se obtiene el $i$-ésimo elemento de una permutación uniforme usando memoria $O(k)$ en los $k$ bits que realmente se necesitan, en lugar de $O(N)$. Eso importa porque una imagen de 12 MP tiene 36 millones de muestras y materializar la permutación completa costaría 144 MB.
+
+El efecto medido sobre el propio detector del laboratorio:
+
+| Portadora de cámara, 60% de capacidad | χ² progresivo | Tasa estimada (real 60%) |
+|---|---|---|
+| Secuencial | `INYECCION_SECUENCIAL_LOCALIZADA` | 38.5% (sesgada) |
+| **Dispersa** | `SIN_INYECCION_SECUENCIAL` | **62.5%** (exacta) |
+
+El modo disperso **derrota la localización del ataque clásico**: no queda prefijo contiguo que medir. La inyección sigue siendo detectable, pero sólo por RS Analysis y SPA, que no asumen ninguna localización — y resultan *más* precisos, porque la dispersión satisface su supuesto de tasa homogénea, que la inyección secuencial rompe.
+
+Sin la contraseña no se puede ni localizar la cabecera: la extracción falla con `NO_CONTAINER`, no con una lectura de basura.
+
+La semilla se deriva con `SHA-256("lsb-walk-v1:" || contraseña)`, no con PBKDF2. Es deliberado y conviene decirlo con precisión: esta semilla **no protege confidencialidad**, sólo determina el orden de colocación, y debe poder recalcularse en la extracción sin almacenar nada en la imagen. La confidencialidad la aporta íntegramente la capa AES-GCM, que sí usa PBKDF2 con salt aleatorio. La consecuencia asumida es que la misma contraseña produce siempre la misma permutación: es una capa que encarece el estegoanálisis clásico, no un sustituto del cifrado.
+
+### D. Criptografía en el navegador con WebCrypto
+
+La contraseña maestra ya no viaja al servidor. El cliente deriva la clave con `PBKDF2-HMAC-SHA-512` de 600.000 iteraciones y cifra con `AES-256-GCM` mediante `crypto.subtle`, produciendo **exactamente el mismo paquete** `[Salt 16B | IV 12B | Tag 16B | Ciphertext]` que el backend.
+
+Un detalle de formato que hay que tratar explícitamente: WebCrypto devuelve el tag de GCM **concatenado al final** del texto cifrado, mientras el formato del laboratorio lo coloca antes. De ahí el troceado en ambas direcciones.
+
+La interoperabilidad no se da por supuesta: una suite de pruebas cifra con WebCrypto y descifra con el servicio de Node, y al contrario, comparando salt, IV, tag y ciphertext byte a byte. Si los formatos divergieran, el fallo aparecería en las pruebas y no en producción.
+
+### E. Payload de archivos
+
+El enunciado pide ocultar «texto o archivos». Los metadatos del contenedor guardan nombre, tipo MIME y tamaño en JSON, de modo que la extracción reconstruye el archivo con su nombre original y lo ofrece como descarga. El payload es binario arbitrario: cualquier tipo de archivo, hasta el límite de capacidad de la portadora.
+
+### F. Exportación
+
+Se descarga forzosamente en `image/png`. JPEG destruiría los LSB por la cuantización de la DCT, y con ellos el payload completo.
 
 ---
 
@@ -338,43 +401,90 @@ npm run dev
 
 ## 🧪 6. Guía de Demostración para la Defensa
 
-1. **Flujo de Inyección Cripto-Esteganográfica (Pestaña 1):**
-   * Carga cualquier imagen portadora (ej. un fondo o fotografía PNG/JPEG).
-   * Observa la resolución y capacidad máxima calculada en bytes.
-   * Selecciona el modo **Cripto-Esteganografía (AES-256-GCM con PBKDF2)**.
-   * Ingresa un mensaje secreto y una contraseña. Observa la barra de capacidad en vivo.
-   * Haz clic en **"Ejecutar Inyección LSB en Canvas"**.
-   * Descarga la imagen PNG generada. Visualmente es idéntica a la original.
+### 1. Inyección cripto-esteganográfica (Pestaña 1)
 
-2. **Flujo de Extracción Inversa y Autenticación:**
-   * En la misma Pestaña 1, cambia a **"Revelar Información"**.
-   * Sube la imagen PNG descargada en el paso anterior.
-   * El motor leerá la cabecera de 32 bits y detectará un paquete cifrado `[Salt|IV|Tag|Ciphertext]`.
-   * Ingresa la contraseña y haz clic en **"Descifrar y Verificar Autenticidad"**.
-   * Verás el mensaje original recuperado.
+* Carga una imagen portadora. Observa la resolución, las muestras RGB disponibles, la capacidad total y la capacidad útil ya descontada la cabecera de 16 bytes.
+* Deja el tipo de payload en **texto**, la protección en **AES-256-GCM** y la colocación en **dispersa**. Escribe un mensaje y una contraseña; la barra de ocupación se actualiza en vivo e incluye los 44 bytes de la cabecera criptográfica.
+* Ejecuta la inyección. El botón anuncia primero *«Derivando clave (600.000 iteraciones)»*: eso es PBKDF2-SHA512 corriendo **en el navegador**, no en el servidor. Merece la pena señalarlo — la contraseña no sale del cliente.
+* El panel de resultados desglosa el contenedor en cabecera, metadatos y payload, y cuántas muestras se alteraron sobre el total.
+* Descarga el PNG. Visualmente es idéntico al original: la alteración máxima es de ±1 nivel sobre 255.
 
-3. **Demostración de Detección de Manipulación (Pestaña 2):**
-   * En el Laboratorio Criptográfico, cifra un texto para ver el desglose en hexadecimal de Salt, IV, Tag y Ciphertext.
-   * Haz clic en el botón **"Simular Ataque (Bit-Flip)"**. Esto alterará 1 bit del texto cifrado.
-   * Al intentar descifrar, el `Authentication Tag` detectará la alteración y abortará inmediatamente con un error de integridad.
+### 2. Ocultar un archivo, no sólo texto
 
-4. **Demostración de Estegoanálisis Forense (Pestaña 3):**
-   * Sube primero una **fotografía limpia**. El veredicto será `LIMPIA`, y aun así verás que la entropía LSB vale ≈ 0.99999: esa es la prueba visible de que un umbral de entropía habría dado un falso positivo del 95%.
-   * Sube ahora la imagen esteganografiada. El veredicto pasa a `INYECCION_CONFIRMADA`, con la tasa de inyección estimada y el tamaño del payload en bytes.
-   * Observa la **curva χ²/df**: se mantiene en ≈ 1 a lo largo del prefijo inyectado y se dispara varios órdenes de magnitud justo en el borde del payload. Ese punto de ruptura es la medición de la longitud.
-   * Compara el bloque de **estimadores de tasa**: RS y SPA, que no comparten ningún supuesto, coinciden dentro de unas milésimas.
-   * Si la portadora tiene histograma liso, el χ² se declarará `INCONCLUYENTE_HISTOGRAMA_LISO` y el veredicto lo sostendrán RS y SPA en solitario. Merece la pena provocar ese caso: demuestra que el sistema conoce los límites de cada método.
+* Cambia el tipo de payload a **archivo** y sube cualquier cosa: un PDF, un ZIP, otra imagen.
+* Al extraerlo, el contenedor reconstruye el nombre original y el tipo MIME desde sus metadatos, y lo ofrece como descarga.
+
+### 3. Extracción inversa y autenticación
+
+* Cambia a **«Revelar información»** y sube el PNG generado.
+* Sin contraseña y con inyección dispersa, el motor responde `NO_CONTAINER`: sin la semilla no se puede ni localizar la cabecera. Es el resultado correcto, no un fallo.
+* Introduce la contraseña. El motor localiza el magic `STG1`, verifica el CRC-32, detecta el flag de cifrado y descifra verificando el tag GCM.
+* **Prueba el caso interesante:** cambia un solo carácter de la contraseña. El error es de integridad, no de relleno, y no distingue entre contraseña incorrecta y manipulación — eso es deliberado, porque un mensaje más específico sería un oráculo para el atacante.
+
+### 4. Detección de manipulación (Pestaña 2)
+
+* Cifra un texto para ver el desglose hexadecimal de Salt, IV, Tag y Ciphertext.
+* Pulsa **«Simular ataque (bit-flip)»**: altera 1 bit del texto cifrado.
+* Al descifrar, el tag de autenticación de 16 bytes detecta la alteración y aborta antes de procesar un solo byte espurio.
+
+### 5. Estegoanálisis forense (Pestaña 3)
+
+* Sube primero una **fotografía limpia**. El veredicto será `LIMPIA`, y aun así la entropía LSB valdrá ≈ 0.99999: la prueba visible de que un umbral de entropía habría dado un falso positivo del 95%.
+* Sube ahora una imagen esteganografiada **en modo secuencial**. El veredicto pasa a `INYECCION_CONFIRMADA`, con la tasa estimada y el tamaño del payload.
+* Observa la **curva χ²/df**: se mantiene en ≈ 1 a lo largo del prefijo inyectado y se dispara varios órdenes de magnitud justo en el borde. Ese punto de ruptura *mide* la longitud del payload.
+* Compara el bloque de **estimadores de tasa**: RS y SPA, que no comparten ningún supuesto, coinciden dentro de unas milésimas.
+
+### 6. El remate: el motor disperso contra el propio detector
+
+* Repite la inyección con la misma imagen y el mismo payload, pero en **modo disperso**, y analízala.
+* El χ² pasa a `SIN_INYECCION_SECUENCIAL` y la localización desaparece: no queda prefijo contiguo que medir. El ataque clásico de 1999 ha sido derrotado.
+* Y sin embargo el veredicto sigue siendo de detección, sostenido por RS Analysis y SPA. Más aún: su estimación de la tasa es **más precisa** que en el caso secuencial, porque la dispersión satisface el supuesto de tasa homogénea que la inyección secuencial rompe.
+* Si además usas una portadora de histograma liso, el χ² se declarará `INCONCLUYENTE_HISTOGRAMA_LISO`. Provocar ese caso demuestra que el sistema conoce los límites de cada método en lugar de fingir certeza.
+
+### 7. Concurrencia
+
+* Ejecuta `npm run benchmark` en `/backend`. Muestra el retardo del event loop bajo carga concurrente, con el antes y el después documentados en la sección 7.
+* Con el servidor en marcha, `GET /api/health` reporta el estado del pool de workers.
 
 ---
 
-## ✅ 7. Validación
+## ⚡ 7. Concurrencia: nada intensivo en el event loop
 
-El proyecto se valida con **232 pruebas** sin dependencias externas. Se ejecutan desde `/backend`:
+Node ejecuta JavaScript en un solo hilo. Una operación síncrona costosa no ralentiza sólo su propia petición: **congela el servidor entero**, incluido el health check. El proyecto lo mide en lugar de suponerlo, sondeando `/api/health` cada 25 ms mientras corre la carga:
+
+```bash
+cd backend
+npm run benchmark
+```
+
+| Endpoint | `health` p99 antes | después | factor |
+|---|---|---|---|
+| `POST /api/crypto/encrypt` | **2559 ms** | **24 ms** | 106× |
+| `GET /api/crypto/rsa/keygen` | **1527 ms** | **2.2 ms** | 694× |
+| `POST /api/analyze/image` | **330 ms** | **25 ms** | 13× |
+
+Con 12 peticiones simultáneas a `/encrypt`, sólo 2 de las ~100 sondas esperadas lograban pasar: el bucle estaba ocupado en `pbkdf2Sync` y ninguna otra petición avanzaba. Ahora pasan entre 25 y 41.
+
+La solución usa **dos mecanismos distintos según la naturaleza del trabajo**, y la distinción es el punto interesante:
+
+**OpenSSL sabe trabajar fuera del hilo principal.** El KDF y la generación de claves pasan a `crypto.pbkdf2` y `crypto.generateKeyPair`, que delegan a la threadpool de libuv. `publicEncrypt` y `privateDecrypt` siguen siendo síncronos a propósito: su coste está acotado (decenas de microsegundos y unos pocos milisegundos respectivamente), al contrario que la búsqueda probabilista de primos, que no tiene techo garantizado.
+
+**La decodificación PNG y los estimadores son JavaScript puro** y no pueden usar esa threadpool, así que van a un pool de `worker_threads`. El worker recibe el PNG crudo —descomprimirlo es también trabajo intensivo— y el búfer se **transfiere** en lugar de copiarse. Un worker que muere rechaza su trabajo en curso y se sustituye; los trabajos colgados caducan.
+
+El estado del pool se expone en `/api/health`.
+
+---
+
+## ✅ 8. Validación
+
+El proyecto se valida con **295 pruebas** sin dependencias externas. Se ejecutan desde `/backend`:
 
 ```bash
 npm test                # todas las suites
-npm run test:crypto     # solo criptografía
-npm run test:forensics  # solo el análisis forense de extremo a extremo
+npm run test:crypto     # criptografía
+npm run test:forensics  # análisis forense de extremo a extremo
+npm run test:pool       # pool de workers
+npm run benchmark       # retardo del event loop bajo carga
 ```
 
 | Suite | Pruebas | Qué demuestra |
@@ -383,12 +493,21 @@ npm run test:forensics  # solo el análisis forense de extremo a extremo
 | `chiSquareAttack.test.js` | 24 | Cero falsos positivos, medición de la longitud del payload, la ceguera del χ² global frente al progresivo, y el reconocimiento del límite en histogramas lisos |
 | `rsAnalysis.test.js` | 26 | Exactitud del estimador contra tasas conocidas y la geometría del diagrama RS que predice el paper |
 | `samplePairAnalysis.test.js` | 26 | Exactitud de SPA y su concordancia con RS, dos métodos sin supuestos compartidos |
-| `forensics.integration.test.js` | 31 | Cero falsos positivos sobre 18 portadoras limpias distintas, y detección en los tres regímenes: secuencial, dispersa e histograma liso |
-| `crypto.test.js` | 28 | AES-GCM verificado contra AES-CTR desde `IV \|\| 0x00000002`, PBKDF2-SHA512 contra la recurrencia de RFC 8018 implementada a mano, y detección de manipulación en cada campo del paquete |
+| `forensics.integration.test.js` | 36 | Cero falsos positivos sobre 18 portadoras limpias, detección en los tres regímenes, y el caso adversarial: el motor disperso contra el propio detector |
+| `pool.test.js` | 11 | Reparto entre workers, cola, propagación de errores, caducidad, integridad del búfer del llamante, y ausencia de bloqueo |
+| `lsbContainer.test.js` | 27 | El formato del contenedor, el CRC-32 contra vectores conocidos, la permutación sin repeticiones, y los viajes de ida y vuelta de texto y archivos |
+| `webcrypto.interop.test.js` | 19 | Que lo cifrado en el navegador se descifra en el servidor y al contrario, comparando salt, IV, tag y ciphertext byte a byte |
+| `crypto.test.js` | 29 | AES-GCM verificado contra AES-CTR, PBKDF2-SHA512 contra RFC 8018, detección de manipulación en cada campo, y ausencia de bloqueo del event loop |
 
-Las pruebas no comprueban que el código "no se rompa": comprueban que **los estimadores recuperan tasas de inyección que se conocen por construcción**. La fábrica de fixtures (`tests/fixtures/imageFactory.js`) genera portadoras con ruido de sensor, portadoras con pipeline de cámara e inyectores LSB —secuencial y disperso— con tasa exacta, todo determinista a partir de una semilla.
+Las pruebas no comprueban que el código «no se rompa»: comprueban que **los estimadores recuperan tasas de inyección conocidas por construcción**. La fábrica de fixtures genera portadoras con ruido de sensor, portadoras con pipeline de cámara e inyectores LSB con tasa exacta, todo determinista a partir de una semilla.
 
-Dos verificaciones merecen mención aparte porque no reutilizan el código que validan:
+### Verificaciones que no reutilizan el código que validan
 
 * **AES-256-GCM contra AES-256-CTR.** La confidencialidad de GCM es CTR con un bloque contador determinado: con IV de 96 bits, $J_0 = IV \,\|\, \texttt{0x00000001}$ y el flujo de clave arranca en $\mathrm{inc}_{32}(J_0)$. Si ambos textos cifrados coinciden, la construcción y el manejo del IV son correctos.
-* **PBKDF2-HMAC-SHA512 contra RFC 8018.** Se reimplementa la recurrencia $U_1 = \mathrm{HMAC}(P, S \,\|\, \mathrm{INT}(i))$, $U_j = \mathrm{HMAC}(P, U_{j-1})$, $T_i = U_1 \oplus \dots \oplus U_c$ sobre HMAC directo y se compara con la primitiva de Node.
+* **PBKDF2-HMAC-SHA512 contra RFC 8018.** Se reimplementa la recurrencia $U_1 = \mathrm{HMAC}(P, S \,\|\, \mathrm{INT}(i))$, $U_j = \mathrm{HMAC}(P, U_{j-1})$, $T_i = U_1 \oplus \dots \oplus U_c$ sobre HMAC directo.
+* **CRC-32 contra vectores publicados.** `""`, `"a"`, `"abc"` y `"123456789"`.
+* **El contenedor LSB se valida importando el módulo del frontend**, no una réplica: las pruebas ejercitan el mismo código que corre en el navegador.
+
+### Medición del bloqueo del event loop
+
+El arnés incluye `measureEventLoopBlocking`, que mide el **hueco máximo entre ticks** de un temporizador de intervalo fijo. La métrica importa: contar ticks confunde «el bucle estaba bloqueado» con «el trabajo terminó rápido», mientras el hueco máximo mide exactamente la duración del bloqueo y es independiente de cuánto durase la carga.

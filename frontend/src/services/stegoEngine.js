@@ -1,285 +1,191 @@
 /**
- * MOTOR DE ESTEGANOGRAFÍA LSB EN CANVAS HTML5
- * 
- * Protocolo Binario:
- * - Cabecera (Header): 32 bits (4 bytes, Big-Endian) que especifican la longitud L (en bytes) del payload.
- * - Cuerpo (Payload): L * 8 bits del mensaje o flujo binario cifrado.
- * - Portador: Canales R, G y B del ImageData.
- * - Conservación: Canal Alfa (A) intacto (255) para evitar distorsiones de opacidad.
- * - Operación a nivel de bits: (byte & 0xFE) | bit
+ * Motor de esteganografia LSB sobre la API de Canvas de HTML5.
+ *
+ * Esta capa se limita a la entrada/salida: cargar la imagen, proyectarla en un
+ * canvas, obtener el búfer de pixeles y volcarlo. Todo el formato binario y la
+ * colocacion de bits vive en lsbContainer.js, que es puro y por tanto verificable
+ * fuera del navegador. Las pruebas del backend validan ese modulo directamente.
+ *
+ * El proceso completo ocurre en el cliente: los pixeles nunca salen del navegador.
  */
 
-export class StegoEngine {
-  /**
-   * Calcula la capacidad máxima en bytes soportada por una imagen de dimensiones width x height.
-   * @param {number} width 
-   * @param {number} height 
-   * @returns {{ totalPixels: number, availableBits: number, maxBytes: number }}
-   */
-  static calculateCapacity(width, height) {
-    const totalPixels = width * height;
-    const availableBits = totalPixels * 3; // R, G, B (1 bit LSB por canal)
-    const totalBytes = Math.floor(availableBits / 8);
-    const maxPayloadBytes = Math.max(0, totalBytes - 4); // Menos 4 bytes del header de 32 bits
+import {
+  injectContainer,
+  extractContainer,
+  capacityBytes,
+  payloadCapacityBytes,
+  countSamples,
+  HEADER_SIZE
+} from './lsbContainer.js';
 
-    return {
-      totalPixels,
-      availableBits,
-      maxBytes: maxPayloadBytes
+export { HEADER_SIZE, capacityBytes, payloadCapacityBytes };
+
+/**
+ * Carga un archivo de imagen en un HTMLImageElement.
+ * @param {File|Blob} file
+ * @returns {Promise<HTMLImageElement>}
+ */
+export function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
     };
-  }
-
-  /**
-   * Carga un archivo de imagen en un elemento HTMLImageElement.
-   * @param {File|Blob} file 
-   * @returns {Promise<HTMLImageElement>}
-   */
-  static loadImage(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = (err) => reject(new Error('No se pudo cargar la imagen: formato no soportado.'));
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  /**
-   * Oculta un payload (Uint8Array o string) dentro de los píxeles de una imagen usando LSB.
-   * @param {HTMLImageElement} imageElement 
-   * @param {Uint8Array|string} payload 
-   * @returns {{ canvas: HTMLCanvasElement, stats: object }}
-   */
-  static hideData(imageElement, payload) {
-    // 1. Convertir payload a Uint8Array si es string
-    let payloadBytes;
-    if (typeof payload === 'string') {
-      payloadBytes = new TextEncoder().encode(payload);
-    } else if (payload instanceof Uint8Array) {
-      payloadBytes = payload;
-    } else {
-      throw new Error('El payload debe ser una cadena o un Uint8Array.');
-    }
-
-    const payloadLength = payloadBytes.length;
-    const width = imageElement.naturalWidth || imageElement.width;
-    const height = imageElement.naturalHeight || imageElement.height;
-
-    const capacity = this.calculateCapacity(width, height);
-    if (payloadLength > capacity.maxBytes) {
-      throw new Error(
-        `El payload (${payloadLength} bytes) excede la capacidad máxima de la imagen (${capacity.maxBytes} bytes).`
-      );
-    }
-
-    // 2. Preparar el Canvas y extraer ImageData
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(imageElement, 0, 0);
-
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data; // Uint8ClampedArray: [R, G, B, A, R, G, B, A, ...]
-
-    // 3. Crear el buffer con la Cabecera de 32 bits (Big Endian) + Payload
-    const totalBuffer = new Uint8Array(4 + payloadLength);
-    // Header de 4 bytes (longitud del payload)
-    totalBuffer[0] = (payloadLength >>> 24) & 0xFF;
-    totalBuffer[1] = (payloadLength >>> 16) & 0xFF;
-    totalBuffer[2] = (payloadLength >>> 8) & 0xFF;
-    totalBuffer[3] = payloadLength & 0xFF;
-    // Copiar payload
-    totalBuffer.set(payloadBytes, 4);
-
-    // 4. Inyección bit a bit en los LSB de los canales R, G, B
-    let bufferByteIndex = 0;
-    let bitOffset = 7; // Desde MSB (bit 7) a LSB (bit 0) de cada byte del payload
-    let modifiedChannels = 0;
-
-    for (let i = 0; i < data.length; i += 4) {
-      // Canales R (i), G (i+1), B (i+2). El canal Alfa (i+3) se mantiene intacto.
-      for (let channelOffset = 0; channelOffset < 3; channelOffset++) {
-        if (bufferByteIndex >= totalBuffer.length) {
-          break; // Todo el flujo ha sido incrustado
-        }
-
-        const currentByte = totalBuffer[bufferByteIndex];
-        const bit = (currentByte >>> bitOffset) & 1;
-
-        const pixelIndex = i + channelOffset;
-        // Aplicar máscara: poner a 0 el bit menos significativo y colocar el bit del payload
-        data[pixelIndex] = (data[pixelIndex] & 0xFE) | bit;
-        modifiedChannels++;
-
-        bitOffset--;
-        if (bitOffset < 0) {
-          bitOffset = 7;
-          bufferByteIndex++;
-        }
-      }
-
-      if (bufferByteIndex >= totalBuffer.length) {
-        break;
-      }
-    }
-
-    // 5. Volcar los píxeles modificados de vuelta al canvas
-    ctx.putImageData(imageData, 0, 0);
-
-    return {
-      canvas,
-      stats: {
-        width,
-        height,
-        payloadBytes: payloadLength,
-        headerBytes: 4,
-        totalInjectedBytes: totalBuffer.length,
-        modifiedChannels,
-        capacityMaxBytes: capacity.maxBytes,
-        capacityUsedPercentage: Number(((payloadLength / capacity.maxBytes) * 100).toFixed(2))
-      }
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo cargar la imagen: formato no soportado o archivo corrupto.'));
     };
-  }
 
-  /**
-   * Extrae los datos ocultos dentro de una imagen esteganográfica.
-   * @param {HTMLImageElement|HTMLCanvasElement} source 
-   * @returns {{ rawBytes: Uint8Array, text: string|null, isBinary: boolean, length: number }}
-   */
-  static extractData(source) {
-    let canvas;
-    let width, height;
+    image.src = url;
+  });
+}
 
-    if (source instanceof HTMLCanvasElement) {
-      canvas = source;
-      width = canvas.width;
-      height = canvas.height;
-    } else {
-      width = source.naturalWidth || source.width;
-      height = source.naturalHeight || source.height;
-      canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(source, 0, 0);
+/** Dimensiones reales de un elemento de imagen o canvas. */
+function dimensionsOf(source) {
+  return {
+    width: source.naturalWidth || source.width,
+    height: source.naturalHeight || source.height
+  };
+}
+
+/**
+ * Proyecta una imagen en un canvas y devuelve su ImageData.
+ *
+ * `willReadFrequently` evita que el navegador mantenga el búfer en memoria de
+ * GPU, donde cada getImageData obligaria a una transferencia costosa.
+ */
+function toImageData(source) {
+  const { width, height } = dimensionsOf(source);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(source, 0, 0);
+
+  return { canvas, context, imageData: context.getImageData(0, 0, width, height) };
+}
+
+/**
+ * Capacidad de una imagen, en bytes.
+ * @param {HTMLImageElement|HTMLCanvasElement} source
+ * @param {number} [metaLength=0]
+ */
+export function describeCapacity(source, metaLength = 0) {
+  const { width, height } = dimensionsOf(source);
+  const rgbaLength = width * height * 4;
+
+  return {
+    width,
+    height,
+    totalPixels: width * height,
+    totalSamples: countSamples(rgbaLength),
+    containerCapacityBytes: capacityBytes(rgbaLength),
+    payloadCapacityBytes: payloadCapacityBytes(rgbaLength, metaLength)
+  };
+}
+
+/**
+ * Inyecta un payload en los LSB de una imagen.
+ *
+ * @param {object} input
+ * @param {HTMLImageElement|HTMLCanvasElement} input.image
+ * @param {Uint8Array} input.payload
+ * @param {object|null} [input.meta] - Nombre y tipo MIME si el payload es un archivo.
+ * @param {boolean} [input.encrypted] - Marca el payload como paquete AES-GCM.
+ * @param {Uint8Array|null} [input.seedBytes] - Semilla del recorrido disperso.
+ * @returns {{ canvas: HTMLCanvasElement, stats: object }}
+ */
+export function hide({ image, payload, meta = null, encrypted = false, seedBytes = null }) {
+  const { canvas, context, imageData } = toImageData(image);
+
+  const stats = injectContainer(imageData.data, { payload, meta, encrypted, seedBytes });
+  context.putImageData(imageData, 0, 0);
+
+  const { width, height } = dimensionsOf(image);
+
+  return {
+    canvas,
+    stats: {
+      ...stats,
+      width,
+      height,
+      containerCapacityBytes: capacityBytes(width * height * 4),
+      capacityUsedPercentage: Number((stats.capacityUsedRatio * 100).toFixed(2))
     }
+  };
+}
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
+/**
+ * Extrae el contenedor oculto en una imagen.
+ *
+ * @param {HTMLImageElement|HTMLCanvasElement} source
+ * @param {Uint8Array|null} [seedBytes] - Semilla del recorrido, o null para secuencial.
+ * @returns {{ meta: object|null, payload: Uint8Array, encrypted: boolean, isFile: boolean, scattered: boolean, header: object }}
+ */
+export function reveal(source, seedBytes = null) {
+  const { imageData } = toImageData(source);
+  return extractContainer(imageData.data, seedBytes);
+}
 
-    const capacity = this.calculateCapacity(width, height);
+/**
+ * Intenta extraer en modo secuencial y, si se aporta semilla, tambien en disperso.
+ *
+ * El orden importa: el modo secuencial no necesita contrasena, asi que se prueba
+ * primero para poder informar de la presencia de un contenedor aunque el usuario
+ * no haya escrito nada.
+ *
+ * @param {HTMLImageElement|HTMLCanvasElement} source
+ * @param {Uint8Array|null} seedBytes
+ * @returns {{ found: boolean, mode: 'secuencial'|'disperso'|null, result: object|null, errors: string[] }}
+ */
+export function revealAuto(source, seedBytes = null) {
+  const { imageData } = toImageData(source);
+  const errors = [];
 
-    // 1. Extraer los primeros 32 bits para obtener la longitud del payload
-    let currentByte = 0;
-    let bitOffset = 7;
-    let headerBytes = new Uint8Array(4);
-    let headerByteIndex = 0;
-    let streamIndex = 0;
-
-    for (let i = 0; i < data.length; i += 4) {
-      for (let channelOffset = 0; channelOffset < 3; channelOffset++) {
-        if (headerByteIndex >= 4) break;
-
-        const pixelIndex = i + channelOffset;
-        const bit = data[pixelIndex] & 1;
-
-        currentByte = (currentByte << 1) | bit;
-        bitOffset--;
-
-        if (bitOffset < 0) {
-          headerBytes[headerByteIndex] = currentByte;
-          headerByteIndex++;
-          currentByte = 0;
-          bitOffset = 7;
-        }
-        streamIndex++;
-      }
-      if (headerByteIndex >= 4) break;
-    }
-
-    // Reconstruir entero de 32 bits (Big Endian)
-    const payloadLength = (
-      (headerBytes[0] << 24) |
-      (headerBytes[1] << 16) |
-      (headerBytes[2] << 8) |
-      headerBytes[3]
-    ) >>> 0;
-
-    // Validación de coherencia
-    if (payloadLength === 0 || payloadLength > capacity.maxBytes) {
-      throw new Error(
-        `Cabecera LSB no válida o imagen sin mensaje oculto. Longitud leída: ${payloadLength} bytes (Capacidad máx: ${capacity.maxBytes} bytes).`
-      );
-    }
-
-    // 2. Extraer los payloadLength bytes subsiguientes
-    const payloadBuffer = new Uint8Array(payloadLength);
-    let payloadByteIndex = 0;
-    currentByte = 0;
-    bitOffset = 7;
-
-    let currentBitInStream = 0;
-    const targetBitOffset = 32; // Ya leímos 32 bits del header
-
-    for (let i = 0; i < data.length; i += 4) {
-      for (let channelOffset = 0; channelOffset < 3; channelOffset++) {
-        if (currentBitInStream < targetBitOffset) {
-          currentBitInStream++;
-          continue; // Saltar bits del header
-        }
-
-        if (payloadByteIndex >= payloadLength) break;
-
-        const pixelIndex = i + channelOffset;
-        const bit = data[pixelIndex] & 1;
-
-        currentByte = (currentByte << 1) | bit;
-        bitOffset--;
-
-        if (bitOffset < 0) {
-          payloadBuffer[payloadByteIndex] = currentByte;
-          payloadByteIndex++;
-          currentByte = 0;
-          bitOffset = 7;
-        }
-      }
-      if (payloadByteIndex >= payloadLength) break;
-    }
-
-    // 3. Determinar si es texto UTF-8 o datos binarios
-    let text = null;
-    let isBinary = false;
+  for (const attempt of [
+    { mode: 'secuencial', seed: null },
+    ...(seedBytes ? [{ mode: 'disperso', seed: seedBytes }] : [])
+  ]) {
     try {
-      const decoder = new TextDecoder('utf-8', { fatal: true });
-      text = decoder.decode(payloadBuffer);
-    } catch {
-      isBinary = true;
+      return { found: true, mode: attempt.mode, result: extractContainer(imageData.data, attempt.seed), errors };
+    } catch (error) {
+      errors.push(`${attempt.mode}: ${error.message}`);
     }
-
-    return {
-      rawBytes: payloadBuffer,
-      text,
-      isBinary,
-      length: payloadLength
-    };
   }
 
-  /**
-   * Exporta un elemento canvas como Blob PNG sin pérdida.
-   * @param {HTMLCanvasElement} canvas 
-   * @returns {Promise<Blob>}
-   */
-  static exportToPngBlob(canvas) {
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob);
-      }, 'image/png');
-    });
-  }
+  return { found: false, mode: null, result: null, errors };
+}
+
+/**
+ * Exporta un canvas como PNG sin perdida.
+ *
+ * PNG es obligatorio: la cuantizacion DCT de JPEG destruiria los LSB y con ellos
+ * el payload completo.
+ *
+ * @param {HTMLCanvasElement} canvas
+ * @returns {Promise<Blob>}
+ */
+export function exportToPngBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('El navegador no pudo exportar el canvas como PNG.'));
+    }, 'image/png');
+  });
+}
+
+/** Descarga un Blob con el nombre indicado. */
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  // La revocacion inmediata puede cancelar la descarga en algunos navegadores.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }

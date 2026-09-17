@@ -24,6 +24,10 @@ import {
   embedLsbRandomSpread,
   embedLsbSequential
 } from './fixtures/imageFactory.js';
+import {
+  injectContainer,
+  payloadCapacityBytes
+} from '../../frontend/src/services/lsbContainer.js';
 import { assertClose, assertEquals, assertInRange, assertTrue, runSuite, section } from './harness.js';
 
 const tests = [];
@@ -189,6 +193,80 @@ tests.push(['Portadora limpia con ruido sigma=10 => nunca INYECCION', () => {
     report.verdict.evidence.disagreement > 0.05,
     `esperaba discordancia alta entre RS y SPA, fue ${report.verdict.evidence.disagreement}`
   );
+}]);
+
+section(tests, 'ADVERSARIAL: el motor disperso contra el propio detector');
+
+// El modo disperso del contenedor LSB coloca el payload mediante una permutacion
+// sembrada por la contrasena, de modo que no queda ningun prefijo contiguo. Estas
+// pruebas comprueban que el detector reacciona como debe: el X2 pierde la
+// localizacion, y son RS y SPA los que sostienen el veredicto.
+const walkSeed = new Uint8Array(16);
+for (let i = 0; i < 16; i++) walkSeed[i] = i * 7 + 1;
+
+/** Inyecta con el motor de produccion, en modo secuencial o disperso. */
+function injectWithEngine(carrierData, capacityFraction, scattered) {
+  const carrier = Buffer.from(carrierData);
+  const capacity = payloadCapacityBytes(carrier.length);
+  const payload = createRandomPayload(Math.floor(capacity * capacityFraction), 171);
+
+  injectContainer(carrier, { payload, seedBytes: scattered ? walkSeed : null });
+  return carrier;
+}
+
+for (const fraction of [0.30, 0.60]) {
+  tests.push([`Disperso al ${(fraction * 100).toFixed(0)}%: el X2 pierde la localizacion`, () => {
+    const report = analyze(injectWithEngine(cameraCarrier.data, fraction, true));
+    const chi = report.estimators.chiSquareProgressive;
+
+    // El X2 es concluyente sobre esta portadora (histograma con peine) y responde
+    // correctamente que NO hay inyeccion secuencial: en efecto, no la hay.
+    assertEquals(chi.conclusive, true, 'el X2 deberia seguir siendo concluyente');
+    assertEquals(chi.status, 'SIN_INYECCION_SECUENCIAL', 'estado del X2');
+    assertTrue(report.verdict.localization === null, 'localizo un payload disperso');
+
+    // Y aun asi la inyeccion se detecta, por la via de la tasa.
+    assertTrue(report.verdict.detected, 'no detecto la inyeccion dispersa');
+    assertEquals(report.verdict.payloadSource, 'TASA_RS_SPA', 'fuente de la estimacion');
+  }]);
+}
+
+tests.push(['Disperso: RS y SPA son MAS exactos que con inyeccion secuencial', () => {
+  // El modo disperso cumple el supuesto de tasa homogenea que asumen ambos
+  // metodos, mientras el secuencial lo rompe y los sesga hacia 0.5. Medido al
+  // 60% de la capacidad: disperso estima ~62%, secuencial ~38%.
+  const scattered = analyze(injectWithEngine(cameraCarrier.data, 0.60, true));
+  const sequential = analyze(injectWithEngine(cameraCarrier.data, 0.60, false));
+
+  const scatteredError = Math.abs(scattered.verdict.estimatedRate - 0.60);
+  const sequentialError = Math.abs(sequential.verdict.estimatedRate - 0.60);
+
+  assertTrue(
+    scatteredError < sequentialError,
+    `esperaba menor error en disperso: ${scatteredError.toFixed(3)} vs ${sequentialError.toFixed(3)}`
+  );
+  assertTrue(
+    scatteredError < 0.08,
+    `la estimacion sobre inyeccion dispersa deberia ser precisa, error ${scatteredError.toFixed(3)}`
+  );
+}]);
+
+tests.push(['Disperso sobre histograma liso: solo RS y SPA pueden verlo', () => {
+  const report = analyze(injectWithEngine(smoothCarrier.data, 0.50, true));
+
+  assertEquals(
+    report.estimators.chiSquareProgressive.conclusive, false,
+    'el X2 deberia declararse inconcluyente'
+  );
+  assertTrue(report.verdict.detected, 'no detecto la inyeccion');
+  assertClose(report.verdict.estimatedRate, 0.50, 0.08);
+}]);
+
+tests.push(['El motor de produccion no genera falsos positivos al no inyectar nada', () => {
+  // Portadora que pasa por el mismo camino de copia pero sin inyeccion.
+  const untouched = Buffer.from(cameraCarrier.data);
+  const report = analyze(untouched);
+  assertEquals(report.verdict.status, VERDICT_STATUS.CLEAN, 'veredicto');
 }]);
 
 section(tests, 'Estructura del informe');
