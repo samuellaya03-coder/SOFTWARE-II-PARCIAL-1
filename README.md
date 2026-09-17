@@ -9,7 +9,11 @@ Este proyecto es una plataforma académica integral que combina **criptografía 
 
 ```SOFTWARE-II-PARCIAL-1/
 ├── backend/
-│   ├── server.js                          # Express, CORS, límites y auditoría
+│   ├── server.js                          # Express, middleware, apagado ordenado
+│   ├── config.js                          # Configuración por entorno validada con Zod
+│   ├── middleware/
+│   │   ├── security.js                    # helmet, CORS y limitación de peticiones
+│   │   └── validate.js                    # Esquemas Zod del cuerpo de peticiones
 │   ├── services/
 │   │   ├── crypto.service.js              # AES-256-GCM, PBKDF2-SHA512, RSA-OAEP 4096
 │   │   └── forensics/
@@ -26,7 +30,7 @@ Este proyecto es una plataforma académica integral que combina **criptografía 
 │   ├── routes/
 │   │   ├── crypto.routes.js               # Cifrado, descifrado y RSA
 │   │   └── analyze.routes.js              # Estegoanálisis con decodificación PNG
-│   └── tests/                             # 295 pruebas, sin dependencias externas
+│   └── tests/                             # 313 pruebas, sin dependencias externas
 │       ├── run-all.js                     # Runner agregado (npm test)
 │       ├── harness.js                     # Aserciones y medición del event loop
 │       ├── benchmark-eventloop.js         # Retardo del bucle bajo carga
@@ -57,6 +61,9 @@ Este proyecto es una plataforma académica integral que combina **criptografía 
 │           └── AnalysisTab.js             # Forense: veredicto, curva χ² e histogramas
 │
 ├── package.json                           # Scripts globales del monorepo
+├── eslint.config.js                       # Linter centrado en errores, no en estilo
+├── .env.example                           # Catálogo de variables de entorno
+├── .github/workflows/ci.yml               # Auditoría, linter, pruebas y build
 └── README.md                              # Memoria técnica y defensa matemática
 ```
 
@@ -477,13 +484,14 @@ El estado del pool se expone en `/api/health`.
 
 ## ✅ 8. Validación
 
-El proyecto se valida con **295 pruebas** sin dependencias externas. Se ejecutan desde `/backend`:
+El proyecto se valida con **313 pruebas** sin dependencias externas. Se ejecutan desde `/backend`:
 
 ```bash
 npm test                # todas las suites
 npm run test:crypto     # criptografía
 npm run test:forensics  # análisis forense de extremo a extremo
 npm run test:pool       # pool de workers
+npm run test:http       # endurecimiento HTTP contra un servidor real
 npm run benchmark       # retardo del event loop bajo carga
 ```
 
@@ -498,6 +506,7 @@ npm run benchmark       # retardo del event loop bajo carga
 | `lsbContainer.test.js` | 27 | El formato del contenedor, el CRC-32 contra vectores conocidos, la permutación sin repeticiones, y los viajes de ida y vuelta de texto y archivos |
 | `webcrypto.interop.test.js` | 19 | Que lo cifrado en el navegador se descifra en el servidor y al contrario, comparando salt, IV, tag y ciphertext byte a byte |
 | `crypto.test.js` | 29 | AES-GCM verificado contra AES-CTR, PBKDF2-SHA512 contra RFC 8018, detección de manipulación en cada campo, y ausencia de bloqueo del event loop |
+| `http.security.test.js` | 18 | Cabeceras, CORS, validación con detalle por campo, límites de tamaño, firma PNG y limitación de peticiones, contra un servidor real |
 
 Las pruebas no comprueban que el código «no se rompa»: comprueban que **los estimadores recuperan tasas de inyección conocidas por construcción**. La fábrica de fixtures genera portadoras con ruido de sensor, portadoras con pipeline de cámara e inyectores LSB con tasa exacta, todo determinista a partir de una semilla.
 
@@ -511,3 +520,44 @@ Las pruebas no comprueban que el código «no se rompa»: comprueban que **los e
 ### Medición del bloqueo del event loop
 
 El arnés incluye `measureEventLoopBlocking`, que mide el **hueco máximo entre ticks** de un temporizador de intervalo fijo. La métrica importa: contar ticks confunde «el bucle estaba bloqueado» con «el trabajo terminó rápido», mientras el hueco máximo mide exactamente la duración del bloqueo y es independiente de cuánto durase la carga.
+
+---
+
+## 🔒 9. Endurecimiento HTTP e ingeniería
+
+### Superficie de ataque cerrada
+
+| Antes | Ahora |
+|---|---|
+| `cors({ origin: '*' })` | Orígenes declarados en `CORS_ORIGINS`; `*` prohibido si `NODE_ENV=production` |
+| Sin cabeceras de seguridad | `helmet` con CSP `default-src 'none'`, `nosniff`, `no-referrer`, sin `X-Powered-By` |
+| Sin limitación de peticiones | Cupo general más **cupo aparte para las rutas costosas** |
+| Cuerpo JSON de 50 MB | 2 MB por defecto, configurable |
+| Comprobación manual de campos | Esquemas Zod con detalle por campo en la respuesta |
+| PNG inválido llegaba al decodificador | Firma de 8 bytes verificada antes de ocupar un worker |
+| `multer@1.4.5` (vulnerabilidades conocidas) | `multer@2.x`, `npm audit` sin hallazgos |
+| Errores internos filtrados al cliente | Mensaje genérico con `NODE_ENV=production` |
+
+**Por qué un cupo aparte para las rutas costosas.** El KDF de 600.000 iteraciones, la generación de RSA-4096 y el análisis forense consumen CPU real. Sin un límite específico, un cliente puede saturar la threadpool de libuv y el pool de workers respetando el límite general: sería una denegación de servicio gratuita, y precisamente contra las rutas más caras. El cupo estricto (20/minuto por defecto) no arrastra al resto de la API — hay una prueba que comprueba que el health check sigue respondiendo con el cupo costoso agotado.
+
+**Por qué verificar la firma PNG antes del worker.** Rechazar de entrada lo que evidentemente no es un PNG evita gastar un hilo del pool en un trabajo condenado a fallar, que es justo lo que buscaría alguien intentando agotar el pool con basura.
+
+### Configuración por entorno
+
+`config.js` valida las variables de entorno con Zod **al arrancar**. Un valor mal escrito rompe el arranque con un mensaje claro en lugar de producir comportamiento silenciosamente incorrecto. Ver `.env.example` para el catálogo completo.
+
+### Linter e integración continua
+
+```bash
+npm run lint    # desde la raíz del monorepo
+```
+
+La configuración de ESLint está centrada en detectar **errores reales** —variables sin usar, claves duplicadas, código inalcanzable, comparaciones sospechosas— y no en imponer estilo: el formato ya es consistente y un linter de estilo sólo generaría ruido. En su primera ejecución encontró dos variables muertas en `main.js`.
+
+El workflow de GitHub Actions (`.github/workflows/ci.yml`) ejecuta en cada push y pull request: `npm audit --audit-level=high` en ambos paquetes, el linter sobre todo el código, las 313 pruebas del backend y la compilación del frontend.
+
+### Lo que queda fuera a propósito
+
+* **HTTPS** lo resolvería un proxy inverso en despliegue, no la aplicación.
+* **Autenticación**: el laboratorio es una herramienta local de demostración, sin datos de usuario que proteger. Añadir sesiones complicaría el sistema sin cerrar ningún riesgo real en este contexto.
+* **`publicEncrypt` y `privateDecrypt` siguen síncronos**, con la justificación medida en la sección 7.

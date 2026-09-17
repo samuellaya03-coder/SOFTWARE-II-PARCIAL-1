@@ -6,30 +6,20 @@ import {
   hybridEncrypt,
   hybridDecrypt
 } from '../services/crypto.service.js';
+import { schemas, validateBody } from '../middleware/validate.js';
+import { heavyRateLimit } from '../middleware/security.js';
 
 const router = Router();
 
-/** Comprueba que los campos indicados esten presentes y sean cadenas no vacias. */
-function missingFields(body, fields) {
-  return fields.filter((field) => {
-    const value = body?.[field];
-    return typeof value !== 'string' || value.length === 0;
-  });
-}
+// El KDF de 600.000 iteraciones y la generacion de RSA-4096 consumen CPU real,
+// asi que estas rutas llevan un cupo aparte del general.
+const heavy = heavyRateLimit();
 
 /**
  * POST /api/crypto/encrypt
  * Cifra con AES-256-GCM derivando la clave con PBKDF2-SHA512.
  */
-router.post('/encrypt', async (req, res, next) => {
-  const missing = missingFields(req.body, ['plaintext', 'password']);
-  if (missing.length > 0) {
-    return res.status(400).json({
-      success: false,
-      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
-    });
-  }
-
+router.post('/encrypt', heavy, validateBody(schemas.encrypt), async (req, res, next) => {
   try {
     const result = await encryptAESGCM(req.body.plaintext, req.body.password);
     res.status(200).json({ success: true, data: result });
@@ -42,15 +32,7 @@ router.post('/encrypt', async (req, res, next) => {
  * POST /api/crypto/decrypt
  * Desempaqueta y descifra [Salt|IV|Tag|Ciphertext] verificando el tag GCM.
  */
-router.post('/decrypt', async (req, res) => {
-  const missing = missingFields(req.body, ['packedData', 'password']);
-  if (missing.length > 0) {
-    return res.status(400).json({
-      success: false,
-      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
-    });
-  }
-
+router.post('/decrypt', heavy, validateBody(schemas.decrypt), async (req, res) => {
   try {
     const result = await decryptAESGCM(req.body.packedData, req.body.password);
     res.status(200).json({ success: true, data: result });
@@ -64,7 +46,7 @@ router.post('/decrypt', async (req, res) => {
  * GET /api/crypto/rsa/keygen
  * Genera un par RSA de 4096 bits.
  */
-router.get('/rsa/keygen', async (req, res, next) => {
+router.get('/rsa/keygen', heavy, async (req, res, next) => {
   try {
     const keyPair = await generateRSAKeyPair();
     res.status(200).json({ success: true, data: keyPair });
@@ -77,20 +59,12 @@ router.get('/rsa/keygen', async (req, res, next) => {
  * POST /api/crypto/rsa/hybrid-encrypt
  * Cifrado hibrido RSA-OAEP 4096 + AES-256-GCM.
  */
-router.post('/rsa/hybrid-encrypt', (req, res) => {
-  const missing = missingFields(req.body, ['plaintext', 'publicKeyPem']);
-  if (missing.length > 0) {
-    return res.status(400).json({
-      success: false,
-      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
-    });
-  }
-
+router.post('/rsa/hybrid-encrypt', validateBody(schemas.hybridEncrypt), (req, res) => {
   try {
     const result = hybridEncrypt(req.body.plaintext, req.body.publicKeyPem);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
-    // Una clave PEM malformada es entrada invalida del cliente.
+    // Una clave PEM sintacticamente correcta pero invalida la rechaza OpenSSL.
     res.status(400).json({ success: false, error: error.message });
   }
 });
@@ -99,17 +73,7 @@ router.post('/rsa/hybrid-encrypt', (req, res) => {
  * POST /api/crypto/rsa/hybrid-decrypt
  * Descifrado hibrido RSA-OAEP 4096 + AES-256-GCM.
  */
-router.post('/rsa/hybrid-decrypt', (req, res) => {
-  const missing = missingFields(req.body, [
-    'encryptedKeyBase64', 'ivHex', 'tagHex', 'ciphertextBase64', 'privateKeyPem'
-  ]);
-  if (missing.length > 0) {
-    return res.status(400).json({
-      success: false,
-      error: `Campos requeridos ausentes o vacios: ${missing.join(', ')}.`
-    });
-  }
-
+router.post('/rsa/hybrid-decrypt', validateBody(schemas.hybridDecrypt), (req, res) => {
   try {
     const plaintext = hybridDecrypt(
       req.body.encryptedKeyBase64,

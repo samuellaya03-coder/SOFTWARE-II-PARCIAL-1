@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, demo]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (lint + 295 pruebas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependencias del backend
+        working-directory: backend
+        run: npm ci
+
+      - name: Auditoria de dependencias
+        working-directory: backend
+        run: npm audit --audit-level=high
+
+      - name: Linter
+        run: npx eslint backend frontend/src
+
+      - name: Pruebas
+        working-directory: backend
+        run: npm test
+
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependencias del frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Auditoria de dependencias
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+      - name: Compilar
+        working-directory: frontend
+        run: npm run build

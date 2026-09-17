@@ -20,7 +20,8 @@ const SUITES = [
   'pool.test.js',
   'lsbContainer.test.js',
   'webcrypto.interop.test.js',
-  'crypto.test.js'
+  'crypto.test.js',
+  'http.security.test.js'
 ];
 
 const results = [];

@@ -11,12 +11,16 @@
     "test:crypto": "node tests/crypto.test.js",
     "test:forensics": "node tests/forensics.integration.test.js",
     "benchmark": "node tests/benchmark-eventloop.js",
-    "test:pool": "node tests/pool.test.js"
+    "test:pool": "node tests/pool.test.js",
+    "test:http": "node tests/http.security.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1",
-    "pngjs": "^7.0.0"
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.4.0",
+    "pngjs": "^7.0.0",
+    "zod": "^4.6.5"
   }
 }

@@ -11,17 +11,14 @@
 
 import { Worker } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
+import { config } from '../../config.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const workerPath = join(dirname(fileURLToPath(import.meta.url)), 'analysis.worker.js');
 
-/** Milisegundos tras los que un trabajo se considera colgado. */
-const DEFAULT_JOB_TIMEOUT_MS = 60000;
-
 function defaultPoolSize() {
-  const fromEnv = Number.parseInt(process.env.FORENSICS_WORKERS ?? '', 10);
-  if (Number.isInteger(fromEnv) && fromEnv > 0) return fromEnv;
+  if (config.forensics.workers) return config.forensics.workers;
   return Math.max(1, Math.min(4, availableParallelism() - 1));
 }
 
@@ -33,7 +30,7 @@ export class ForensicsPool {
    */
   constructor(options = {}) {
     this.size = options.size ?? defaultPoolSize();
-    this.jobTimeoutMs = options.jobTimeoutMs ?? DEFAULT_JOB_TIMEOUT_MS;
+    this.jobTimeoutMs = options.jobTimeoutMs ?? config.forensics.jobTimeoutMs;
 
     /** @type {Array<{ worker: Worker, busy: boolean, job: object|null }>} */
     this.slots = [];

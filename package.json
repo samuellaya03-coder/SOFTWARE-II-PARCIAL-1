@@ -7,6 +7,14 @@
     "start:backend": "cd backend && npm start",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "build:frontend": "cd frontend && npm run build"
-  }
+    "build:frontend": "cd frontend && npm run build",
+    "lint": "eslint backend frontend/src",
+    "lint:fix": "eslint backend frontend/src --fix",
+    "test": "cd backend && npm test",
+    "benchmark": "cd backend && npm run benchmark"
+  },
+  "devDependencies": {
+    "eslint": "^10.10.0"
+  },
+  "type": "module"
 }

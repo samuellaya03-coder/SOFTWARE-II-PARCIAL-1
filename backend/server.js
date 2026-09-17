@@ -1,31 +1,34 @@
 import express from 'express';
-import cors from 'cors';
+import { config } from './config.js';
+import { securityHeaders, corsPolicy, generalRateLimit } from './middleware/security.js';
 import cryptoRoutes from './routes/crypto.routes.js';
 import analyzeRoutes from './routes/analyze.routes.js';
 import { getForensicsPool, closeForensicsPool } from './services/forensics/pool.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Sin esto, Express reporta la IP del proxy y el limitador de peticiones contaria
+// todo el trafico como si viniera de un solo cliente.
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+app.use(securityHeaders());
+app.use(corsPolicy());
+app.use(generalRateLimit());
 
 // El cuerpo JSON solo transporta texto y claves PEM; las imagenes llegan por
-// multipart con su propio limite de 25 MB.
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+// multipart con su propio limite.
+app.use(express.json({ limit: config.maxJsonBytes }));
+app.use(express.urlencoded({ extended: true, limit: config.maxJsonBytes }));
 
 // Registro de auditoria.
 app.use((req, res, next) => {
-  const start = Date.now();
+  const start = process.hrtime.bigint();
   res.on('finish', () => {
-    const duration = Date.now() - start;
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
     console.log(
       `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} `
-      + `- ${res.statusCode} (${duration}ms)`
+      + `- ${res.statusCode} (${durationMs.toFixed(1)}ms)`
     );
   });
   next();
@@ -39,11 +42,12 @@ app.get('/api/health', (req, res) => {
     status: 'ONLINE',
     system: 'Laboratorio Web de Criptografía y Esteganografía',
     mode: 'MODO DIFÍCIL - HIGH SECURITY',
+    environment: config.env,
     standards: {
       symmetric: 'AES-256-GCM (NIST SP 800-38D)',
       kdf: 'PBKDF2-HMAC-SHA512 (600,000 iter)',
       asymmetric: 'RSA-OAEP 4096-bit (MGF1-SHA256)',
-      stego: 'LSB Bitwise (Canvas API)',
+      stego: 'Contenedor LSB STG1 con CRC-32 (Canvas API)',
       forensics: 'Chi-cuadrado progresivo de PoVs + RS Analysis + Sample Pair Analysis'
     },
     concurrency: {
@@ -56,27 +60,54 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
+  res.status(404).json({
+    success: false,
+    error: `Ruta no encontrada: ${req.method} ${req.originalUrl}`
+  });
 });
 
 app.use((err, req, res, next) => {
-  console.error('[SERVER ERROR]', err);
-
-  // Errores de limite de tamano de multer.
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ success: false, error: 'La imagen excede el limite de 25 MB.' });
+  // Un origen rechazado por CORS es una peticion invalida, no un fallo interno.
+  if (err.message?.startsWith('Origen no permitido')) {
+    return res.status(403).json({ success: false, error: err.message });
   }
 
-  res.status(500).json({ success: false, error: err.message || 'Error interno del servidor.' });
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      success: false,
+      error: `La imagen excede el limite de ${config.maxUploadBytes / (1024 * 1024)} MB.`
+    });
+  }
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      error: `El cuerpo excede el limite de ${config.maxJsonBytes / (1024 * 1024)} MB.`
+    });
+  }
+
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ success: false, error: 'El cuerpo no es JSON valido.' });
+  }
+
+  console.error('[SERVER ERROR]', err);
+
+  // En produccion no se filtra el mensaje interno al cliente.
+  res.status(500).json({
+    success: false,
+    error: config.isProduction ? 'Error interno del servidor.' : (err.message || 'Error interno.')
+  });
 });
 
-const server = app.listen(PORT, () => {
+const server = app.listen(config.port, () => {
   const pool = getForensicsPool().stats();
   console.log('\n=============================================================');
   console.log('BACKEND CRIPTOGRAFICO & ESTEGOANALISIS OPERATIVO');
-  console.log(`URL: http://localhost:${PORT}`);
-  console.log('AES-256-GCM / PBKDF2-SHA512 (600.000 iteraciones)');
-  console.log(`Workers de analisis forense: ${pool.size}`);
+  console.log(`URL:      http://localhost:${config.port}`);
+  console.log(`Entorno:  ${config.env}`);
+  console.log(`CORS:     ${config.corsOrigins.join(', ')}`);
+  console.log(`Workers:  ${pool.size}`);
+  console.log(`Cupo:     ${config.rateLimit.max}/ventana general, ${config.rateLimit.heavyMax} en rutas costosas`);
   console.log('=============================================================\n');
 });
 
