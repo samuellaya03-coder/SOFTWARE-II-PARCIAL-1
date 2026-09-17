@@ -3,113 +3,165 @@ import { ApiService } from '../services/api.js';
 
 Chart.register(...registerables);
 
+/** Presentacion de cada veredicto: color, icono y titular. */
+const VERDICT_PRESENTATION = {
+  LIMPIA: {
+    accent: 'var(--accent-emerald)',
+    glow: 'card-glow-emerald',
+    badge: 'badge-emerald',
+    icon: '✅',
+    title: 'Imagen limpia',
+    subtitle: 'No hay evidencia estadistica de inyeccion LSB.'
+  },
+  SOSPECHA: {
+    accent: 'var(--accent-amber)',
+    glow: '',
+    badge: 'badge-amber',
+    icon: '⚠️',
+    title: 'Sospecha no concluyente',
+    subtitle: 'Hay senal por encima del ruido, pero no alcanza el umbral de deteccion.'
+  },
+  EVIDENCIA_INCONSISTENTE: {
+    accent: 'var(--accent-amber)',
+    glow: '',
+    badge: 'badge-amber',
+    icon: '🔀',
+    title: 'Evidencia inconsistente',
+    subtitle: 'Los estimadores se contradicen: firma tipica de una portadora muy ruidosa.'
+  },
+  INYECCION_DETECTADA: {
+    accent: 'var(--accent-rose)',
+    glow: '',
+    badge: 'badge-rose',
+    icon: '🔴',
+    title: 'Inyeccion detectada',
+    subtitle: 'La evidencia estadistica es incompatible con una imagen natural.'
+  },
+  INYECCION_CONFIRMADA: {
+    accent: 'var(--accent-rose)',
+    glow: '',
+    badge: 'badge-rose',
+    icon: '🎯',
+    title: 'Inyeccion confirmada',
+    subtitle: 'Dos familias de metodos independientes concuerdan.'
+  }
+};
+
+const numberFormat = new Intl.NumberFormat('es-ES');
+
+function formatPercent(value, digits = 2) {
+  return value === null || value === undefined ? 'n/d' : `${(value * 100).toFixed(digits)}%`;
+}
+
+function formatRate(value) {
+  return value === null || value === undefined ? 'n/d' : value.toFixed(4);
+}
+
+/** Fila de metrica con etiqueta a la izquierda y valor monoespaciado a la derecha. */
+function metricRow(label, value, color = 'var(--text-primary)', hint = null) {
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:baseline; gap:1rem;">
+      <span style="color: var(--text-muted);">${label}</span>
+      <span class="font-mono" style="color:${color}; text-align:right;">${value}</span>
+    </div>
+    ${hint ? `<div style="font-size:0.72rem; color:var(--text-muted); margin-top:-0.35rem;">${hint}</div>` : ''}
+  `;
+}
+
 export function renderAnalysisTab(container, initialImageBlob = null) {
   container.innerHTML = `
-    <div class="space-y-6">
-      <!-- Encabezado de la Pestaña -->
-      <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Estegoanálisis y Forense Digital de Imágenes</h2>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">
-            Detección de esteganografía mediante análisis de Entropía de Shannon en planos LSB y Ataque de Chi-cuadrado (χ²) sobre Pares de Valores (PoVs).
+    <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+      <div>
+        <h2 style="font-size:1.5rem; margin-bottom:0.25rem;">Estegoanalisis Forense</h2>
+        <p style="color:var(--text-secondary); font-size:0.875rem;">
+          Tres estimadores independientes y un veredicto por fusion de evidencia.
+        </p>
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <span class="badge badge-cyan">χ² progresivo</span>
+        <span class="badge badge-purple">RS Analysis</span>
+        <span class="badge badge-emerald">Sample Pair Analysis</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1rem;">
+      <h3 style="font-size:1.15rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+        Imagen bajo analisis
+      </h3>
+
+      <div id="dropzone-analysis" class="dropzone">
+        <input type="file" id="analysis-file-input" accept="image/png" style="display:none;" />
+        <div style="font-size:2.5rem; margin-bottom:0.5rem;">🔬</div>
+        <p style="font-weight:600; color:var(--text-primary);">Arrastra un PNG o haz clic para seleccionarlo</p>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">
+          Solo formatos sin perdida: la cuantizacion DCT de JPEG destruye los LSB
+        </p>
+      </div>
+
+      <div id="analysis-preview-box" class="image-preview-box" style="display:none;">
+        <img id="analysis-preview-img" alt="Imagen en analisis" />
+      </div>
+
+      <button id="btn-run-analysis" class="btn btn-primary" style="width:100%;" disabled>
+        🚀 Ejecutar analisis forense
+      </button>
+    </div>
+
+    <div id="analysis-results-section" style="display:none; flex-direction:column; gap:1.5rem; margin-top:1.5rem;">
+
+      <div id="verdict-card" class="card"></div>
+
+      <div class="grid-2" style="gap:1.5rem;">
+        <div class="card" style="display:flex; flex-direction:column; gap:0.6rem;">
+          <h3 style="font-size:1.05rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+            Estimadores de tasa de inyeccion
+          </h3>
+          <p style="font-size:0.76rem; color:var(--text-muted); margin:0;">
+            RS y SPA explotan correlacion espacial, no el histograma, asi que funcionan en
+            portadoras donde el χ² es ciego. No localizan el payload.
           </p>
+          <div id="rate-metrics" class="font-mono" style="display:flex; flex-direction:column; gap:0.55rem; font-size:0.83rem;"></div>
         </div>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <span class="badge badge-cyan">Entropía de Shannon</span>
-          <span class="badge badge-emerald">Ataque Chi-Cuadrado (PoVs)</span>
-          <span class="badge badge-purple">Histogramas RGB</span>
+
+        <div class="card" style="display:flex; flex-direction:column; gap:0.6rem;">
+          <h3 style="font-size:1.05rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+            Ataque χ² progresivo
+          </h3>
+          <p style="font-size:0.76rem; color:var(--text-muted); margin:0;">
+            Localiza el borde de una inyeccion secuencial. Se autocalibra contra la cola del
+            flujo y se declara inconcluyente si el histograma es demasiado liso.
+          </p>
+          <div id="chi-metrics" class="font-mono" style="display:flex; flex-direction:column; gap:0.55rem; font-size:0.83rem;"></div>
         </div>
       </div>
 
-      <!-- Zona de Carga de Imagen para Forense -->
-      <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
-        <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-          Seleccionar Imagen PNG para Análisis Estadístico
-        </h3>
-
-        <div id="dropzone-analysis" class="dropzone">
-          <input type="file" id="analysis-file-input" accept="image/png" style="display: none;" />
-          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔬</div>
-          <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen PNG o haz clic para subir</p>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-            El backend en Node.js analizará los bytes crudos y calculará las métricas de aleatoriedad
-          </p>
-        </div>
-
-        <div id="analysis-preview-box" class="image-preview-box" style="display: none;">
-          <img id="analysis-preview-img" alt="Imagen en análisis" />
-        </div>
-
-        <button id="btn-run-analysis" class="btn btn-primary" style="width: 100%;" disabled>
-          🚀 Iniciar Análisis Forense y Chi-Cuadrado
-        </button>
+      <div class="card">
+        <h3 style="font-size:1.05rem; margin-bottom:0.35rem;">Curva χ²/df sobre prefijos crecientes</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:1rem;">
+          Bajo inyeccion LSB cada par de valores aporta un χ²(1), asi que χ²/df ≈ 1. Donde la
+          curva se dispara empieza la region natural de la imagen: ese punto de ruptura es el
+          borde del payload. Escala logaritmica.
+        </p>
+        <div style="height:300px;"><canvas id="chi-curve-chart"></canvas></div>
       </div>
 
-      <!-- SECCIÓN DE RESULTADOS FORENSES -->
-      <div id="analysis-results-section" style="display: none; display: flex; flex-direction: column; gap: 1.5rem;">
-        
-        <!-- Veredicto General de Sospecha -->
-        <div id="verdict-card" class="card">
-          <!-- Dinámico -->
-        </div>
+      <div class="card">
+        <h3 style="font-size:1.05rem; margin-bottom:0.35rem;">Histogramas de frecuencia RGB</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:1rem;">
+          La estructura de peine del histograma (picos y huecos alternados) es lo que hace
+          explotable el ataque χ². Un histograma liso lo vuelve inaplicable.
+        </p>
+        <div style="height:300px;"><canvas id="rgb-histogram-chart"></canvas></div>
+      </div>
 
-        <!-- Métricas Matemáticas: Entropía y Chi-Cuadrado -->
-        <div class="grid-2">
-          <!-- Card de Entropía de Shannon -->
-          <div class="card card-glow-cyan" style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              <h4 style="font-size: 1.1rem;">Entropía de la Información (Shannon)</h4>
-              <span class="badge badge-cyan font-mono">H(X)</span>
-            </div>
-
-            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-              Mide la aleatoriedad en el plano de los Bits Menos Significativos (LSB). Un payload cifrado con AES-GCM genera ruido pseudo-aleatorio perfecto que eleva la entropía LSB a valores extremadamente cercanos a <strong>1.000000</strong>.
-            </p>
-
-            <div id="entropy-metrics-list" style="display: flex; flex-direction: column; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem;">
-              <!-- Se llena dinámicamente -->
-            </div>
-          </div>
-
-          <!-- Card de Ataque Chi-Cuadrado (PoVs) -->
-          <div class="card card-glow-emerald" style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              <h4 style="font-size: 1.1rem;">Ataque Chi-Cuadrado (PoVs)</h4>
-              <span class="badge badge-emerald font-mono">χ² Test</span>
-            </div>
-
-            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-              Algoritmo de Westfeld & Pfitzmann: Compara las frecuencias de los Pares de Valores (2k, 2k+1). La incrustación LSB iguala artificialmente estos pares alrededor de su media aritmética.
-            </p>
-
-            <div id="chi-metrics-list" style="display: flex; flex-direction: column; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem;">
-              <!-- Se llena dinámicamente -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Gráfico del Histograma de Frecuencias RGB -->
-        <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h4 style="font-size: 1.1rem;">Distribución Espectral de Frecuencias (Histograma RGB de 256 Bins)</h4>
-            <div style="display: flex; gap: 0.5rem;">
-              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Canal Rojo (R)</span>
-              <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);">Canal Verde (G)</span>
-              <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">Canal Azul (B)</span>
-            </div>
-          </div>
-
-          <div style="position: relative; height: 320px; width: 100%;">
-            <canvas id="rgb-histogram-chart"></canvas>
-          </div>
-        </div>
-
+      <div class="card">
+        <h3 style="font-size:1.05rem; margin-bottom:0.35rem;">Entropia de Shannon de los planos LSB</h3>
+        <div id="entropy-block" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
       </div>
     </div>
   `;
 
-  // Elementos DOM
-  const dropzoneAnalysis = container.querySelector('#dropzone-analysis');
+  const dropzone = container.querySelector('#dropzone-analysis');
   const fileInput = container.querySelector('#analysis-file-input');
   const previewBox = container.querySelector('#analysis-preview-box');
   const previewImg = container.querySelector('#analysis-preview-img');
@@ -117,220 +169,333 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
 
   const resultsSection = container.querySelector('#analysis-results-section');
   const verdictCard = container.querySelector('#verdict-card');
-  const entropyMetricsList = container.querySelector('#entropy-metrics-list');
-  const chiMetricsList = container.querySelector('#chi-metrics-list');
-  const chartCanvas = container.querySelector('#rgb-histogram-chart');
+  const rateMetrics = container.querySelector('#rate-metrics');
+  const chiMetrics = container.querySelector('#chi-metrics');
+  const entropyBlock = container.querySelector('#entropy-block');
 
   let currentAnalysisBlob = null;
-  let chartInstance = null;
+  let previewUrl = null;
+  let histogramChart = null;
+  let chiCurveChart = null;
 
-  // Interacción con Drag & Drop y Selector
-  dropzoneAnalysis.addEventListener('click', () => fileInput.click());
-  dropzoneAnalysis.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzoneAnalysis.classList.add('dragover');
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    dropzone.classList.add('dragover');
   });
-  dropzoneAnalysis.addEventListener('dragleave', () => dropzoneAnalysis.classList.remove('dragover'));
-  dropzoneAnalysis.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropzoneAnalysis.classList.remove('dragover');
-    if (e.dataTransfer.files.length > 0) handleSelectedFile(e.dataTransfer.files[0]);
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (event.dataTransfer.files.length > 0) selectFile(event.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) handleSelectedFile(e.target.files[0]);
+  fileInput.addEventListener('change', (event) => {
+    if (event.target.files.length > 0) selectFile(event.target.files[0]);
   });
 
-  function handleSelectedFile(fileOrBlob) {
+  function selectFile(fileOrBlob) {
     currentAnalysisBlob = fileOrBlob;
-    const url = URL.createObjectURL(fileOrBlob);
-    previewImg.src = url;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(fileOrBlob);
+
+    previewImg.src = previewUrl;
     previewBox.style.display = 'flex';
     btnRunAnalysis.disabled = false;
     resultsSection.style.display = 'none';
   }
 
-  // Si se envió un blob desde la Pestaña 1 (StegoTab)
-  if (initialImageBlob) {
-    handleSelectedFile(initialImageBlob);
-  }
+  if (initialImageBlob) selectFile(initialImageBlob);
 
-  // Ejecutar Análisis Forense
   btnRunAnalysis.addEventListener('click', async () => {
     try {
       btnRunAnalysis.disabled = true;
-      btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y calculando χ²...';
+      btnRunAnalysis.innerHTML = '⏳ Ejecutando χ² progresivo, RS y SPA...';
 
-      const data = await ApiService.analyzeImage(currentAnalysisBlob);
+      const report = await ApiService.analyzeImage(currentAnalysisBlob);
 
-      renderResults(data);
+      renderVerdict(report);
+      renderRateMetrics(report);
+      renderChiMetrics(report);
+      renderEntropy(report);
+      renderChiCurveChart(report.estimators.chiSquareProgressive);
+      renderHistogramChart(report.histograms);
+
       resultsSection.style.display = 'flex';
       resultsSection.scrollIntoView({ behavior: 'smooth' });
-    } catch (err) {
-      alert(`Error en análisis forense: ${err.message}`);
+    } catch (error) {
+      alert(`Error en el analisis forense: ${error.message}`);
     } finally {
       btnRunAnalysis.disabled = false;
-      btnRunAnalysis.innerHTML = '🚀 Iniciar Análisis Forense y Chi-Cuadrado';
+      btnRunAnalysis.innerHTML = '🚀 Ejecutar analisis forense';
     }
   });
 
-  function renderResults(report) {
-    const verdict = report.verdict;
-    const isHighRisk = verdict.status === 'ALTO_RIESGO_ESTEGANOGRAFIA';
-    const isModerate = verdict.status === 'SOSPECHA_MODERADA';
+  function renderVerdict(report) {
+    const { verdict, dimensions } = report;
+    const look = VERDICT_PRESENTATION[verdict.status] ?? VERDICT_PRESENTATION.SOSPECHA;
 
-    const borderColor = isHighRisk ? 'var(--accent-rose)' : (isModerate ? 'var(--accent-amber)' : 'var(--accent-emerald)');
-    const badgeClass = isHighRisk ? 'badge-rose' : (isModerate ? 'badge-amber' : 'badge-emerald');
+    verdictCard.className = `card ${look.glow}`;
+    verdictCard.style.borderColor = look.accent;
 
-    // 1. Veredicto
-    verdictCard.style.borderColor = borderColor;
+    const localizationRow = verdict.localization
+      ? `
+        <div style="display:flex; justify-content:space-between; gap:1rem;">
+          <span style="color:var(--text-muted);">Borde del payload</span>
+          <span class="font-mono">fraccion ${verdict.localization.embeddedFraction.toFixed(4)} del flujo</span>
+        </div>`
+      : '';
+
+    const payloadRow = verdict.estimatedPayloadBytes !== null
+      ? `
+        <div style="display:flex; justify-content:space-between; gap:1rem;">
+          <span style="color:var(--text-muted);">Payload estimado</span>
+          <span class="font-mono" style="color:${look.accent};">
+            ${numberFormat.format(verdict.estimatedPayloadBytes)} bytes
+            <span style="color:var(--text-muted); font-size:0.75rem;">(${verdict.payloadSource})</span>
+          </span>
+        </div>`
+      : '';
+
     verdictCard.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-        <h3 style="font-size: 1.25rem;">Veredicto Forense Digital</h3>
-        <span class="badge ${badgeClass}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
-          ${verdict.status.replace(/_/g, ' ')}
-        </span>
-      </div>
-
-      <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem;">
-        <div>
-          <div style="font-size: 2.25rem; font-weight: 800; font-family: var(--font-mono); color: ${borderColor};">
-            ${verdict.suspicionPercentage}%
+      <div style="display:flex; align-items:flex-start; gap:1rem; flex-wrap:wrap; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          <div style="font-size:2.5rem; line-height:1;">${look.icon}</div>
+          <div>
+            <h3 style="font-size:1.4rem; color:${look.accent}; margin-bottom:0.15rem;">${look.title}</h3>
+            <p style="color:var(--text-secondary); font-size:0.85rem;">${look.subtitle}</p>
           </div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Índice de Sospecha</div>
         </div>
+        <span class="badge ${look.badge}">${verdict.status}</span>
+      </div>
 
-        <div style="flex: 1; font-size: 0.9rem; color: var(--text-secondary); border-left: 2px solid ${borderColor}; padding-left: 1rem;">
-          ${verdict.summary}
+      <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1.25rem; font-size:0.86rem;">
+        <div style="display:flex; justify-content:space-between; gap:1rem;">
+          <span style="color:var(--text-muted);">Tasa de inyeccion estimada</span>
+          <span class="font-mono" style="color:${look.accent}; font-size:1rem;">
+            ${formatPercent(verdict.estimatedRate)}
+          </span>
+        </div>
+        ${payloadRow}
+        ${localizationRow}
+        <div style="display:flex; justify-content:space-between; gap:1rem;">
+          <span style="color:var(--text-muted);">Capacidad LSB de la portadora</span>
+          <span class="font-mono">${numberFormat.format(dimensions.maxPayloadCapacityBytes)} bytes
+            <span style="color:var(--text-muted); font-size:0.75rem;">(${dimensions.width}×${dimensions.height})</span>
+          </span>
         </div>
       </div>
 
-      <div class="progress-container" style="height: 12px;">
-        <div class="progress-bar ${isHighRisk ? 'progress-danger' : (isModerate ? 'progress-warning' : 'progress-normal')}" 
-             style="width: ${verdict.suspicionPercentage}%;"></div>
+      <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-color);">
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em;">
+          Razonamiento
+        </div>
+        <ul style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.83rem; color:var(--text-secondary); padding-left:1.1rem;">
+          ${verdict.findings.map((finding) => `<li>${finding}</li>`).join('')}
+        </ul>
       </div>
     `;
-
-    // 2. Entropía de Shannon
-    const ent = report.shannonEntropy;
-    entropyMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-        <span style="color: #f87171;">Entropía LSB (Canal R):</span>
-        <span style="color: #ffffff;">${ent.redLSB} bits/símbolo</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-        <span style="color: #4ade80;">Entropía LSB (Canal G):</span>
-        <span style="color: #ffffff;">${ent.greenLSB} bits/símbolo</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-        <span style="color: #60a5fa;">Entropía LSB (Canal B):</span>
-        <span style="color: #ffffff;">${ent.blueLSB} bits/símbolo</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; font-weight: bold;">
-        <span style="color: var(--accent-cyan);">Entropía Global LSB:</span>
-        <span style="color: var(--accent-cyan);">${ent.globalLSB} / 1.000000</span>
-      </div>
-      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-        ${ent.isAnomalouslyHigh ? '⚠️ Alerta: Entropía > 0.9985 indica sustitución deliberada de bits por una fuente pseudo-aleatoria (Cifrado GCM).' : '✓ Dispersión normal de bits de baja significancia.'}
-      </div>
-    `;
-
-    // 3. Chi-Cuadrado PoVs
-    const chi = report.chiSquarePoV;
-    chiMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-        <span style="color: #f87171;">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
-        <span style="color: #ffffff;">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-        <span style="color: #4ade80;">χ² Canal Verde (df=${chi.green.degreesOfFreedom}):</span>
-        <span style="color: #ffffff;">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-        <span style="color: #60a5fa;">χ² Canal Azul (df=${chi.blue.degreesOfFreedom}):</span>
-        <span style="color: #ffffff;">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
-      </div>
-      <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.4;">
-        Pares analizados por canal: <strong>${chi.red.pairsAnalyzed} PoVs</strong>. La uniformidad forzada entre valores contiguos (2k y 2k+1) delata inyección secuencial o aleatoria LSB.
-      </div>
-    `;
-
-    // 4. Renderizar Histograma con Chart.js
-    renderHistogramChart(report.histograms);
   }
 
-  function renderHistogramChart(histograms) {
-    if (chartInstance) {
-      chartInstance.destroy();
+  function renderRateMetrics(report) {
+    const { rsAnalysis, samplePairAnalysis } = report.estimators;
+    const { evidence, thresholds } = report.verdict;
+
+    const coherenceColor = evidence.coherent ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+
+    rateMetrics.innerHTML = [
+      metricRow('RS Analysis (RGB)', formatRate(rsAnalysis.estimatedRate), 'var(--accent-purple)'),
+      metricRow('Dispersion entre canales', formatRate(rsAnalysis.channelSpread)),
+      metricRow('Sample Pair Analysis (RGB)', formatRate(samplePairAnalysis.estimatedRate), 'var(--accent-emerald)'),
+      metricRow('Dispersion entre canales', formatRate(samplePairAnalysis.channelSpread)),
+      `<div style="border-top:1px solid var(--border-color); margin:0.25rem 0;"></div>`,
+      metricRow(
+        'Discordancia |RS − SPA|',
+        formatRate(evidence.disagreement),
+        coherenceColor,
+        `Coherente si ≤ ${thresholds.maxDisagreement}. Con inyeccion real ambos coinciden; el ruido extremo los descuadra.`
+      ),
+      metricRow('Suelo de ruido', thresholds.noiseFloor.toFixed(2)),
+      metricRow('Umbral de deteccion', thresholds.detectionRate.toFixed(2))
+    ].join('');
+  }
+
+  function renderChiMetrics(report) {
+    const chi = report.estimators.chiSquareProgressive;
+
+    const statusColor = chi.conclusive
+      ? (chi.sequentialEmbeddingDetected ? 'var(--accent-rose)' : 'var(--accent-emerald)')
+      : 'var(--accent-amber)';
+
+    const rows = [
+      metricRow('Estado', chi.status, statusColor),
+      metricRow(
+        'χ²/df de la cola (calibracion)',
+        chi.tailReducedChiSquare === null ? 'n/d' : chi.tailReducedChiSquare.toFixed(3),
+        'var(--accent-cyan)',
+        'Desequilibrio natural de la portadora. Por debajo de 10 el ataque es inaplicable.'
+      ),
+      metricRow(
+        'χ²/df global',
+        chi.globalReducedChiSquare === null ? 'n/d' : chi.globalReducedChiSquare.toFixed(3),
+        'var(--text-primary)',
+        'Calculado sobre la imagen completa: es el valor que un ataque no progresivo veria.'
+      ),
+      metricRow('p-value global', chi.globalPValue === null ? 'n/d' : chi.globalPValue.toExponential(3)),
+      metricRow(
+        'p-value clasico de Westfeld',
+        chi.westfeldGlobalPValue === null ? 'n/d' : chi.westfeldGlobalPValue.toFixed(6),
+        'var(--text-muted)',
+        'Formulacion literal del paper de 1999, que evalua medio estadistico contra df−1.'
+      )
+    ];
+
+    if (chi.conclusive && chi.sequentialEmbeddingDetected) {
+      rows.push(
+        `<div style="border-top:1px solid var(--border-color); margin:0.25rem 0;"></div>`,
+        metricRow('Fraccion inyectada', chi.embeddedFraction.toFixed(6), 'var(--accent-rose)'),
+        metricRow('Muestras inyectadas', numberFormat.format(chi.embeddedSamples)),
+        metricRow('Bytes estimados', numberFormat.format(chi.estimatedEmbeddedBytes), 'var(--accent-rose)')
+      );
     }
 
-    const labels = Array.from({ length: 256 }, (_, i) => i);
+    if (!chi.conclusive) {
+      rows.push(`
+        <div class="alert-box alert-warning" style="font-size:0.78rem; margin-top:0.5rem;">
+          ${chi.reason}
+        </div>
+      `);
+    }
 
-    const ctx = chartCanvas.getContext('2d');
-    chartInstance = new Chart(ctx, {
+    chiMetrics.innerHTML = rows.join('');
+  }
+
+  function renderEntropy(report) {
+    const { entropy } = report;
+
+    entropyBlock.innerHTML = `
+      <div class="alert-box alert-info" style="font-size:0.8rem;">
+        <div>
+          <strong>Metrica descriptiva, excluida del veredicto.</strong>
+          Los LSB de cualquier fotografia con ruido de sensor ya alcanzan H ≈ 1.0 sin payload
+          alguno, asi que un umbral sobre la entropia marca como sospechosa practicamente
+          cualquier foto real. Se muestra porque saber <em>por que</em> no sirve es parte del analisis.
+        </div>
+      </div>
+      <div class="font-mono" style="display:flex; flex-direction:column; gap:0.55rem; font-size:0.83rem;">
+        ${metricRow('H(LSB) canal R', entropy.redLsb.toFixed(6), '#fca5a5')}
+        ${metricRow('H(LSB) canal G', entropy.greenLsb.toFixed(6), '#86efac')}
+        ${metricRow('H(LSB) canal B', entropy.blueLsb.toFixed(6), '#93c5fd')}
+        ${metricRow('H(LSB) global', entropy.globalLsb.toFixed(6), 'var(--accent-cyan)')}
+        ${metricRow('Proporcion de unos', entropy.onesRatio.toFixed(6), 'var(--text-primary)', 'Bajo inyeccion tiende a 0.5 exacto.')}
+        ${metricRow('Maximo teorico', entropy.theoreticalMax.toFixed(6), 'var(--text-muted)')}
+      </div>
+    `;
+  }
+
+  function renderChiCurveChart(chi) {
+    const canvas = container.querySelector('#chi-curve-chart');
+    if (chiCurveChart) chiCurveChart.destroy();
+
+    const points = chi.curve.filter((point) => point.valid && point.reducedChiSquare !== null);
+
+    chiCurveChart = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
-        labels: labels,
+        labels: points.map((point) => (point.fraction * 100).toFixed(1)),
         datasets: [
           {
-            label: 'Canal Rojo',
-            data: histograms.red,
-            borderColor: 'rgba(248, 113, 113, 0.85)',
-            backgroundColor: 'rgba(248, 113, 113, 0.1)',
-            borderWidth: 1.5,
+            label: 'χ²/df del prefijo',
+            // El eje logaritmico no admite 0, asi que se acota por abajo.
+            data: points.map((point) => Math.max(point.reducedChiSquare, 1e-3)),
+            borderColor: '#00f0ff',
+            backgroundColor: 'rgba(0, 240, 255, 0.12)',
+            borderWidth: 2,
             pointRadius: 0,
-            fill: true
+            fill: true,
+            tension: 0.1
           },
           {
-            label: 'Canal Verde',
-            data: histograms.green,
-            borderColor: 'rgba(74, 222, 128, 0.85)',
-            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+            label: 'Umbral de equilibrio',
+            data: points.map(() => chi.balanceThreshold),
+            borderColor: '#fb7185',
             borderWidth: 1.5,
+            borderDash: [6, 4],
             pointRadius: 0,
-            fill: true
-          },
-          {
-            label: 'Canal Azul',
-            data: histograms.blue,
-            borderColor: 'rgba(96, 165, 250, 0.85)',
-            backgroundColor: 'rgba(96, 165, 250, 0.1)',
-            borderWidth: 1.5,
-            pointRadius: 0,
-            fill: true
+            fill: false
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false
-        },
+        interaction: { mode: 'index', intersect: false },
         scales: {
-          x: {
-            title: { display: true, text: 'Intensidad de Color (0 a 255)', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#64748b', maxTicksLimit: 16 }
-          },
           y: {
-            title: { display: true, text: 'Frecuencia de Píxeles', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#64748b' }
+            type: 'logarithmic',
+            title: { display: true, text: 'χ²/df (log)', color: '#94a3b8' },
+            ticks: { color: '#94a3b8' },
+            grid: { color: 'rgba(148, 163, 184, 0.12)' }
+          },
+          x: {
+            title: { display: true, text: '% del flujo de muestras analizado', color: '#94a3b8' },
+            ticks: { color: '#94a3b8', maxTicksLimit: 14 },
+            grid: { display: false }
           }
         },
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { labels: { color: '#e2e8f0', boxWidth: 12 } },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-            titleColor: '#00f0ff',
-            bodyColor: '#f1f5f9',
-            borderColor: 'rgba(0, 240, 255, 0.3)',
-            borderWidth: 1
+            callbacks: {
+              title: (items) => `Prefijo: ${items[0].label}% del flujo`,
+              label: (item) => {
+                if (item.datasetIndex === 1) return `Umbral: ${chi.balanceThreshold}`;
+                const point = points[item.dataIndex];
+                return [
+                  `χ²/df = ${point.reducedChiSquare.toFixed(4)}`,
+                  `χ² = ${point.chiSquare} con df = ${point.degreesOfFreedom}`,
+                  `pares utilizables = ${point.usablePairs}`
+                ];
+              }
+            }
           }
         }
+      }
+    });
+  }
+
+  function renderHistogramChart(histograms) {
+    const canvas = container.querySelector('#rgb-histogram-chart');
+    if (histogramChart) histogramChart.destroy();
+
+    const levels = Array.from({ length: 256 }, (_, index) => index);
+
+    histogramChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: levels,
+        datasets: [
+          { label: 'Rojo', data: histograms.red, borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)' },
+          { label: 'Verde', data: histograms.green, borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)' },
+          { label: 'Azul', data: histograms.blue, borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)' }
+        ].map((dataset) => ({ ...dataset, borderWidth: 1.2, pointRadius: 0, fill: true, tension: 0 }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          y: {
+            title: { display: true, text: 'Frecuencia', color: '#94a3b8' },
+            ticks: { color: '#94a3b8' },
+            grid: { color: 'rgba(148, 163, 184, 0.12)' }
+          },
+          x: {
+            title: { display: true, text: 'Nivel de intensidad (0-255)', color: '#94a3b8' },
+            ticks: { color: '#94a3b8', maxTicksLimit: 17 },
+            grid: { display: false }
+          }
+        },
+        plugins: { legend: { labels: { color: '#e2e8f0', boxWidth: 12 } } }
       }
     });
   }

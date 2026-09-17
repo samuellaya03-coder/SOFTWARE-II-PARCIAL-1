@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node tests/run-all.js",
+    "test:crypto": "node tests/crypto.test.js",
+    "test:forensics": "node tests/forensics.integration.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

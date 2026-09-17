@@ -40,7 +40,8 @@ app.get('/api/health', (req, res) => {
       symmetric: 'AES-256-GCM (NIST SP 800-38D)',
       kdf: 'PBKDF2-HMAC-SHA512 (600,000 iter)',
       asymmetric: 'RSA-OAEP 4096-bit (MGF1-SHA256)',
-      stego: 'LSB Bitwise (Canvas API) + Chi-Square PoVs + Shannon Entropy'
+      stego: 'LSB Bitwise (Canvas API)',
+      forensics: 'Chi-cuadrado progresivo de PoVs + RS Analysis + Sample Pair Analysis'
     },
     timestamp: new Date().toISOString()
   });
