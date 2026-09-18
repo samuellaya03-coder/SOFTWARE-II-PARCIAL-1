@@ -40,7 +40,7 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
       </div>
     </div>
 
-    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+    <div class="stack-row" style="margin-top:1.5rem;">
       <button id="mode-hide" class="btn btn-primary" style="flex:1;">Ocultar informacion</button>
       <button id="mode-reveal" class="btn btn-secondary" style="flex:1;">Revelar informacion</button>
     </div>
@@ -157,7 +157,7 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
 
           <div style="display:flex; flex-direction:column; gap:1rem;">
             <div id="hide-stats" class="font-mono" style="font-size:0.82rem; background:rgba(0,0,0,0.3); padding:1rem; border-radius:8px; line-height:1.9;"></div>
-            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <div class="stack-row">
               <button id="btn-download" class="btn btn-emerald" style="flex:1;">Descargar PNG</button>
               <button id="btn-to-analysis" class="btn btn-secondary" style="flex:1;">Enviar a estegoanalisis</button>
             </div>

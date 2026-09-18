@@ -2,54 +2,53 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
     <title>Laboratorio Web de Criptografía y Esteganografía | Modo Difícil</title>
-    <meta name="description" content="Laboratorio académico avanzado de Ciberseguridad: Criptografía simétrica autenticada AES-256-GCM, KDF PBKDF2-SHA512, Esteganografía LSB en Canvas y Estegoanálisis con Chi-cuadrado y Entropía de Shannon." />
+    <meta name="description" content="Laboratorio académico de Ciberseguridad: cifrado autenticado AES-256-GCM, KDF PBKDF2-SHA512, esteganografía LSB en Canvas y estegoanálisis por fusión de evidencia con χ² progresivo, RS Analysis y Sample Pair Analysis." />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300f0ff'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z'/></svg>" />
   </head>
   <body>
     <div class="app-container">
-      <!-- Top Navigation & Branding Header -->
-      <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: 0.85rem;">
-          <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #00f0ff, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);">
-            🛡️
-          </div>
-          <div>
-            <h1 style="font-size: 1.35rem; line-height: 1.2;">LABORATORIO DE CRIPTOGRAFÍA & ESTEGANOGRAFÍA</h1>
-            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem;">
-              <span>Proyecto de Ciberseguridad &amp; Forense Multimedia</span>
-              <span>•</span>
+      <header class="lab-header">
+        <div class="lab-brand">
+          <div class="lab-logo" aria-hidden="true">🛡️</div>
+          <div style="min-width: 0;">
+            <h1 class="lab-title">
+              <span class="title-full">LABORATORIO DE CRIPTOGRAFÍA &amp; ESTEGANOGRAFÍA</span>
+              <span class="title-short">LAB CRIPTO &amp; STEGO</span>
+            </h1>
+            <div class="lab-tagline">
+              <span class="tagline-long">Proyecto de Ciberseguridad &amp; Forense Multimedia</span>
+              <span class="tagline-long">•</span>
               <span class="badge badge-rose" style="font-size: 0.65rem; padding: 0.1rem 0.45rem;">MODO DIFÍCIL</span>
             </div>
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <div id="backend-status-badge" class="badge badge-cyan">
-            ● Verificando Backend...
-          </div>
+        <div id="backend-status-badge" class="badge badge-cyan">
+          ● Verificando Backend...
         </div>
       </header>
 
-      <!-- Main Navigation Tabs -->
-      <nav class="tabs-nav">
+      <nav class="tabs-nav" aria-label="Módulos del laboratorio">
         <button id="tab-stego-btn" class="tab-btn active">
-          <span>🖼️</span> 1. Esteganografía LSB (Canvas)
+          <span aria-hidden="true">🖼️</span>
+          <span>1. Esteganografía LSB<span class="tab-label-extra"> (Canvas)</span></span>
         </button>
         <button id="tab-crypto-btn" class="tab-btn">
-          <span>🔐</span> 2. Laboratorio Criptográfico (AES-256-GCM / RSA)
+          <span aria-hidden="true">🔐</span>
+          <span>2. Laboratorio Criptográfico<span class="tab-label-extra"> (AES-256-GCM / RSA)</span></span>
         </button>
         <button id="tab-analysis-btn" class="tab-btn">
-          <span>📊</span> 3. Estegoanálisis Forense (χ² &amp; Shannon)
+          <span aria-hidden="true">📊</span>
+          <span>3. Estegoanálisis Forense<span class="tab-label-extra"> (χ² · RS · SPA)</span></span>
         </button>
       </nav>
 
-      <!-- Main Content Render Container -->
       <main id="tab-content"></main>
 
-      <!-- Footer con Fundamentos Técnicos -->
-      <footer style="margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+      <footer class="lab-footer">
         <div>
           Criptografía: <strong>AES-256-GCM (NIST SP 800-38D)</strong> en navegador y servidor | KDF: <strong>PBKDF2-HMAC-SHA512, 600.000 iteraciones</strong>
         </div>

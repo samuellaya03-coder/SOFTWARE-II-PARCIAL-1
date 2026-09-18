@@ -394,3 +394,350 @@ textarea.font-mono {
   border: 1px solid rgba(244, 63, 94, 0.25);
   color: #ffe4e6;
 }
+
+/* ==========================================================================
+   Cabecera, navegacion y pie
+   ========================================================================== */
+
+.lab-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.85rem 0 1.1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(10, 13, 20, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.lab-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.lab-logo {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+}
+
+.lab-title {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.title-short { display: none; }
+
+.lab-tagline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.lab-footer {
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* El scroll horizontal de las pestanas no debe mostrar barra en tactil. */
+.tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+.tabs-nav {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.tab-btn {
+  scroll-snap-align: start;
+}
+
+/* ==========================================================================
+   Veredicto forense
+   ========================================================================== */
+
+.verdict-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.verdict-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.verdict-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+/* Punto latiente: solo cuando el veredicto es positivo. */
+.pulse-dot {
+  position: relative;
+  display: inline-flex;
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pulse-dot span {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.pulse-dot span:first-child {
+  animation: pulse-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.75;
+}
+
+@keyframes pulse-ping {
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+.verdict-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.verdict-rate {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Medidor con los dos umbrales reales del motor de fusion marcados encima. */
+.threat-meter {
+  position: relative;
+  height: 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.threat-meter__fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #10b981, #f59e0b, #f43f5e);
+  transition: width 0.45s ease;
+}
+
+.threat-meter__tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: rgba(240, 244, 252, 0.55);
+}
+
+.threat-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Rejilla de metadatos y tarjetas de estimador
+   ========================================================================== */
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  background: rgba(9, 13, 22, 0.75);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.meta-grid dt {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meta-grid dd {
+  margin-top: 0.15rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.estimator-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.6rem;
+}
+
+.estimator-title {
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.estimator-note {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.83rem;
+}
+
+.chart-box {
+  height: clamp(220px, 42vw, 320px);
+}
+
+/* Filas de botones o campos que deben apilarse en pantallas estrechas. */
+.stack-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stack-row > * {
+  flex: 1 1 200px;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .app-container { padding: 1.25rem 1rem; }
+  .grid-2, .grid-3 { gap: 1rem; }
+}
+
+@media (max-width: 768px) {
+  .app-container { padding: 0.75rem; }
+
+  .lab-header {
+    margin: 0 -0.75rem 1rem;
+    padding: 0.7rem 0.75rem 0.8rem;
+    gap: 0.6rem;
+    flex-wrap: nowrap;
+  }
+
+  .lab-logo { width: 36px; height: 36px; font-size: 1.2rem; border-radius: 9px; }
+  .lab-title { font-size: 0.86rem; letter-spacing: 0.02em; }
+  .title-full { display: none; }
+  .title-short { display: inline; }
+  .lab-tagline { font-size: 0.68rem; gap: 0.35rem; }
+  .lab-tagline .tagline-long { display: none; }
+
+  #backend-status-badge {
+    flex-shrink: 0;
+    max-width: 40%;
+    font-size: 0.58rem;
+    padding: 0.25rem 0.45rem;
+    line-height: 1.3;
+    text-align: right;
+    white-space: normal;
+  }
+
+  .tabs-nav {
+    gap: 0.5rem;
+    padding: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .tab-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .tab-label-extra { display: none; }
+
+  .card { padding: 1rem; border-radius: 10px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+
+  /* Un renglon de botones a 1fr deja pulsadores de 40 px: mejor apilados. */
+  .stack-row > * { flex-basis: 100%; }
+
+  .verdict-rate { font-size: 1.6rem; }
+  .verdict-icon { font-size: 2rem; }
+  .threat-scale { font-size: 0.6rem; }
+  .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); font-size: 0.72rem; }
+
+  .dropzone { padding: 1.75rem 1rem; }
+  .image-preview-box { min-height: 180px; }
+  .chart-box { height: clamp(200px, 55vw, 260px); }
+
+  /* Objetivo tactil minimo de 44 px. */
+  .btn { padding: 0.8rem 1rem; min-height: 44px; }
+
+  .lab-footer {
+    margin-top: 2rem;
+    font-size: 0.72rem;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .lab-tagline { display: none; }
+  .meta-grid { grid-template-columns: 1fr; }
+  .verdict-head { gap: 0.6rem; }
+  .estimator-title { font-size: 0.95rem; }
+  .metric-list { font-size: 0.76rem; }
+}
+
+/* Respeto por quien pide menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

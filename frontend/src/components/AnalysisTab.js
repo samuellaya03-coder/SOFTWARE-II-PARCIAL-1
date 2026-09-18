@@ -57,6 +57,20 @@ function formatRate(value) {
   return value === null || value === undefined ? 'n/d' : value.toFixed(4);
 }
 
+/**
+ * El motor estima bytes en cuanto la tasa supera el umbral, aunque el veredicto
+ * no sea de deteccion. Anunciarlos como "ocultos" en una portadora ruidosa seria
+ * afirmar lo que el propio veredicto niega.
+ */
+function payloadCaption(verdict) {
+  if (verdict.estimatedPayloadBytes === null) return 'sin estimacion de tamano';
+
+  const bytes = numberFormat.format(verdict.estimatedPayloadBytes);
+  return verdict.detected
+    ? `~${bytes} bytes ocultos`
+    : `~${bytes} bytes si la tasa fuera real`;
+}
+
 /** Fila de metrica con etiqueta a la izquierda y valor monoespaciado a la derecha. */
 function metricRow(label, value, color = 'var(--text-primary)', hint = null) {
   return `
@@ -111,27 +125,58 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
 
       <div id="verdict-card" class="card"></div>
 
-      <div class="grid-2" style="gap:1.5rem;">
-        <div class="card" style="display:flex; flex-direction:column; gap:0.6rem;">
-          <h3 style="font-size:1.05rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
-            Estimadores de tasa de inyeccion
-          </h3>
-          <p style="font-size:0.76rem; color:var(--text-muted); margin:0;">
-            RS y SPA explotan correlacion espacial, no el histograma, asi que funcionan en
-            portadoras donde el χ² es ciego. No localizan el payload.
+      <div class="card" style="display:flex; flex-direction:column; gap:0.85rem;">
+        <div class="estimator-head">
+          <h3 class="estimator-title">Archivo bajo inspeccion</h3>
+          <span class="badge badge-emerald">PNG sin perdida</span>
+        </div>
+        <dl id="file-meta" class="meta-grid"></dl>
+      </div>
+
+      <div class="grid-3" style="gap:1.25rem;">
+        <div class="card" style="display:flex; flex-direction:column; gap:0.7rem;">
+          <div class="estimator-head">
+            <div>
+              <h3 class="estimator-title">1. χ² progresivo</h3>
+              <span class="estimator-note">Pares de valores (Westfeld)</span>
+            </div>
+            <span id="chi-status-badge" class="badge badge-cyan"></span>
+          </div>
+          <p class="estimator-note">
+            Unico metodo que localiza el borde de una inyeccion secuencial. Se autocalibra
+            contra la cola del flujo y se declara inconcluyente si el histograma es liso.
           </p>
-          <div id="rate-metrics" class="font-mono" style="display:flex; flex-direction:column; gap:0.55rem; font-size:0.83rem;"></div>
+          <div id="chi-metrics" class="metric-list"></div>
         </div>
 
-        <div class="card" style="display:flex; flex-direction:column; gap:0.6rem;">
-          <h3 style="font-size:1.05rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
-            Ataque χ² progresivo
-          </h3>
-          <p style="font-size:0.76rem; color:var(--text-muted); margin:0;">
-            Localiza el borde de una inyeccion secuencial. Se autocalibra contra la cola del
-            flujo y se declara inconcluyente si el histograma es demasiado liso.
+        <div class="card" style="display:flex; flex-direction:column; gap:0.7rem;">
+          <div class="estimator-head">
+            <div>
+              <h3 class="estimator-title">2. RS Analysis</h3>
+              <span class="estimator-note">Grupos regulares y singulares (Fridrich)</span>
+            </div>
+            <span id="rs-rate-badge" class="badge badge-purple"></span>
+          </div>
+          <p class="estimator-note">
+            Extrapola la tasa desde dos mediciones: la imagen recibida y la misma con todos
+            los LSB volteados. No usa el histograma, asi que ve lo que el χ² no ve.
           </p>
-          <div id="chi-metrics" class="font-mono" style="display:flex; flex-direction:column; gap:0.55rem; font-size:0.83rem;"></div>
+          <div id="rs-metrics" class="metric-list"></div>
+        </div>
+
+        <div class="card" style="display:flex; flex-direction:column; gap:0.7rem;">
+          <div class="estimator-head">
+            <div>
+              <h3 class="estimator-title">3. Sample Pair Analysis</h3>
+              <span class="estimator-note">Pares de muestras adyacentes (Dumitrescu)</span>
+            </div>
+            <span id="spa-rate-badge" class="badge badge-emerald"></span>
+          </div>
+          <p class="estimator-note">
+            Mide directamente sobre la imagen recibida, sin extrapolar: por eso es mas
+            preciso que RS a tasas bajas. Su acuerdo con RS es la prueba cruzada.
+          </p>
+          <div id="spa-metrics" class="metric-list"></div>
         </div>
       </div>
 
@@ -142,7 +187,7 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
           curva se dispara empieza la region natural de la imagen: ese punto de ruptura es el
           borde del payload. Escala logaritmica.
         </p>
-        <div style="height:300px;"><canvas id="chi-curve-chart"></canvas></div>
+        <div class="chart-box"><canvas id="chi-curve-chart"></canvas></div>
       </div>
 
       <div class="card">
@@ -151,11 +196,11 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
           La estructura de peine del histograma (picos y huecos alternados) es lo que hace
           explotable el ataque χ². Un histograma liso lo vuelve inaplicable.
         </p>
-        <div style="height:300px;"><canvas id="rgb-histogram-chart"></canvas></div>
+        <div class="chart-box"><canvas id="rgb-histogram-chart"></canvas></div>
       </div>
 
       <div class="card">
-        <h3 style="font-size:1.05rem; margin-bottom:0.35rem;">Entropia de Shannon de los planos LSB</h3>
+        <h3 style="font-size:1.05rem; margin-bottom:0.35rem;">Entropia de Shannon de los planos LSB <span class="badge badge-amber" style="margin-left:0.4rem;">fuera del veredicto</span></h3>
         <div id="entropy-block" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
       </div>
     </div>
@@ -169,8 +214,13 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
 
   const resultsSection = container.querySelector('#analysis-results-section');
   const verdictCard = container.querySelector('#verdict-card');
-  const rateMetrics = container.querySelector('#rate-metrics');
+  const fileMeta = container.querySelector('#file-meta');
   const chiMetrics = container.querySelector('#chi-metrics');
+  const chiStatusBadge = container.querySelector('#chi-status-badge');
+  const rsMetrics = container.querySelector('#rs-metrics');
+  const rsRateBadge = container.querySelector('#rs-rate-badge');
+  const spaMetrics = container.querySelector('#spa-metrics');
+  const spaRateBadge = container.querySelector('#spa-rate-badge');
   const entropyBlock = container.querySelector('#entropy-block');
 
   let currentAnalysisBlob = null;
@@ -214,8 +264,10 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
       const report = await ApiService.analyzeImage(currentAnalysisBlob);
 
       renderVerdict(report);
-      renderRateMetrics(report);
+      renderFileMeta(report);
       renderChiMetrics(report);
+      renderRsMetrics(report);
+      renderSpaMetrics(report);
       renderEntropy(report);
       renderChiCurveChart(report.estimators.chiSquareProgressive);
       renderHistogramChart(report.histograms);
@@ -256,78 +308,189 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
         </div>`
       : '';
 
+    const { noiseFloor, detectionRate } = verdict.thresholds;
+    const rate = verdict.estimatedRate ?? 0;
+
     verdictCard.innerHTML = `
-      <div style="display:flex; align-items:flex-start; gap:1rem; flex-wrap:wrap; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:0.85rem;">
-          <div style="font-size:2.5rem; line-height:1;">${look.icon}</div>
-          <div>
-            <h3 style="font-size:1.4rem; color:${look.accent}; margin-bottom:0.15rem;">${look.title}</h3>
-            <p style="color:var(--text-secondary); font-size:0.85rem;">${look.subtitle}</p>
+      <div class="verdict-banner">
+        <div class="verdict-head">
+          <div style="display:flex; align-items:center; gap:0.85rem;">
+            <div class="verdict-icon">${look.icon}</div>
+            <div>
+              <h3 style="font-size:1.3rem; color:${look.accent}; margin-bottom:0.15rem;">${look.title}</h3>
+              <p style="color:var(--text-secondary); font-size:0.85rem;">${look.subtitle}</p>
+            </div>
+          </div>
+          <span class="badge ${look.badge}" style="display:inline-flex; gap:0.45rem;">
+            ${verdict.detected ? `<span class="pulse-dot" style="color:${look.accent};"><span></span><span></span></span>` : ''}
+            ${verdict.status}
+          </span>
+        </div>
+
+        <div>
+          <div class="verdict-score">
+            <div style="display:flex; align-items:baseline; gap:0.6rem;">
+              <span class="verdict-rate" style="color:${look.accent};">${formatPercent(verdict.estimatedRate)}</span>
+              <span style="font-size:0.82rem; color:var(--text-secondary);">de las muestras RGB</span>
+            </div>
+            <span class="font-mono" style="font-size:0.8rem; color:var(--text-muted);">
+              ${payloadCaption(verdict)}
+            </span>
+          </div>
+
+          <div class="threat-meter" style="margin-top:0.6rem;">
+            <div class="threat-meter__fill" style="width:${Math.min(100, rate * 100).toFixed(2)}%;"></div>
+            <div class="threat-meter__tick" style="left:${(noiseFloor * 100).toFixed(2)}%;"></div>
+            <div class="threat-meter__tick" style="left:${(detectionRate * 100).toFixed(2)}%;"></div>
+          </div>
+          <div class="threat-scale">
+            <span>0%</span>
+            <span>suelo de ruido ${formatPercent(noiseFloor, 0)}</span>
+            <span>deteccion ${formatPercent(detectionRate, 0)}</span>
+            <span>100%</span>
           </div>
         </div>
-        <span class="badge ${look.badge}">${verdict.status}</span>
-      </div>
 
-      <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1.25rem; font-size:0.86rem;">
-        <div style="display:flex; justify-content:space-between; gap:1rem;">
-          <span style="color:var(--text-muted);">Tasa de inyeccion estimada</span>
-          <span class="font-mono" style="color:${look.accent}; font-size:1rem;">
-            ${formatPercent(verdict.estimatedRate)}
-          </span>
+        <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.86rem;">
+          ${payloadRow}
+          ${localizationRow}
+          <div style="display:flex; justify-content:space-between; gap:1rem;">
+            <span style="color:var(--text-muted);">Capacidad LSB de la portadora</span>
+            <span class="font-mono">${numberFormat.format(dimensions.maxPayloadCapacityBytes)} bytes
+              <span style="color:var(--text-muted); font-size:0.75rem;">(${dimensions.width}×${dimensions.height})</span>
+            </span>
+          </div>
         </div>
-        ${payloadRow}
-        ${localizationRow}
-        <div style="display:flex; justify-content:space-between; gap:1rem;">
-          <span style="color:var(--text-muted);">Capacidad LSB de la portadora</span>
-          <span class="font-mono">${numberFormat.format(dimensions.maxPayloadCapacityBytes)} bytes
-            <span style="color:var(--text-muted); font-size:0.75rem;">(${dimensions.width}×${dimensions.height})</span>
-          </span>
-        </div>
-      </div>
 
-      <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-color);">
-        <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em;">
-          Razonamiento
+        <div style="padding-top:1rem; border-top:1px solid var(--border-color);">
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em;">
+            Razonamiento
+          </div>
+          <ul style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.83rem; color:var(--text-secondary); padding-left:1.1rem;">
+            ${verdict.findings.map((finding) => `<li>${finding}</li>`).join('')}
+          </ul>
         </div>
-        <ul style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.83rem; color:var(--text-secondary); padding-left:1.1rem;">
-          ${verdict.findings.map((finding) => `<li>${finding}</li>`).join('')}
-        </ul>
       </div>
     `;
   }
 
-  function renderRateMetrics(report) {
-    const { rsAnalysis, samplePairAnalysis } = report.estimators;
+  /** Metadatos del fichero y de la portadora, en la rejilla de dos columnas. */
+  function renderFileMeta(report) {
+    const { dimensions } = report;
+    const file = currentAnalysisBlob;
+    const sizeKb = file ? (file.size / 1024).toFixed(1) : null;
+
+    const entries = [
+      ['Archivo', file?.name ?? 'imagen recibida de la pestana 1'],
+      ['Dimensiones', `${dimensions.width} × ${dimensions.height} px`],
+      ['Tamano en disco', sizeKb === null ? 'n/d' : `${numberFormat.format(sizeKb)} KB`],
+      ['Muestras RGB', numberFormat.format(dimensions.totalSamples)],
+      ['Capacidad LSB', `${numberFormat.format(dimensions.maxPayloadCapacityBytes)} bytes`],
+      ['Tiempo de analisis', `${report.elapsedMs} ms en worker`]
+    ];
+
+    fileMeta.innerHTML = entries
+      .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
+      .join('');
+  }
+
+  function renderRsMetrics(report) {
+    const rs = report.estimators.rsAnalysis;
+    const red = rs.perChannel.red;
+
+    rsRateBadge.textContent = formatPercent(rs.estimatedRate);
+
+    const rows = [
+      metricRow('Tasa estimada (RGB)', formatRate(rs.estimatedRate), 'var(--accent-purple)'),
+      metricRow('Canales utilizables', `${rs.channelsUsed} de 3`),
+      metricRow(
+        'Dispersion entre canales',
+        formatRate(rs.channelSpread),
+        'var(--text-primary)',
+        'El motor LSB reparte el payload entre R, G y B: tres mediciones casi independientes de la misma tasa.'
+      )
+    ];
+
+    // El diagrama RS es la evidencia cruda del metodo: sin inyeccion R_m > R_-m.
+    if (red.applicable && red.diagram) {
+      rows.push(
+        `<div style="border-top:1px solid var(--border-color); margin:0.25rem 0;"></div>`,
+        `<div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;">Diagrama RS del canal rojo</div>`,
+        metricRow('R_m / R_−m', `${red.diagram.regularMask.toFixed(4)} / ${red.diagram.regularNegatedMask.toFixed(4)}`, '#fca5a5'),
+        metricRow('S_m / S_−m', `${red.diagram.singularMask.toFixed(4)} / ${red.diagram.singularNegatedMask.toFixed(4)}`, 'var(--accent-amber)'),
+        metricRow('Grupos analizados', numberFormat.format(red.groupsAnalyzed))
+      );
+    }
+
+    if (red.applicable && red.unstable) {
+      rows.push(`
+        <div class="alert-box alert-warning" style="font-size:0.78rem; margin-top:0.5rem;">
+          La cuadratica pierde condicionamiento cerca de la saturacion: la extrapolacion
+          de este canal se ha descartado del promedio.
+        </div>
+      `);
+    }
+
+    if (!red.applicable) {
+      rows.push(`<div class="alert-box alert-warning" style="font-size:0.78rem;">${red.reason}</div>`);
+    }
+
+    rsMetrics.innerHTML = rows.join('');
+  }
+
+  function renderSpaMetrics(report) {
+    const spa = report.estimators.samplePairAnalysis;
+    const red = spa.perChannel.red;
     const { evidence, thresholds } = report.verdict;
+
+    spaRateBadge.textContent = formatPercent(spa.estimatedRate);
 
     const coherenceColor = evidence.coherent ? 'var(--accent-emerald)' : 'var(--accent-amber)';
 
-    rateMetrics.innerHTML = [
-      metricRow('RS Analysis (RGB)', formatRate(rsAnalysis.estimatedRate), 'var(--accent-purple)'),
-      metricRow('Dispersion entre canales', formatRate(rsAnalysis.channelSpread)),
-      metricRow('Sample Pair Analysis (RGB)', formatRate(samplePairAnalysis.estimatedRate), 'var(--accent-emerald)'),
-      metricRow('Dispersion entre canales', formatRate(samplePairAnalysis.channelSpread)),
+    const rows = [
+      metricRow('Tasa estimada (RGB)', formatRate(spa.estimatedRate), 'var(--accent-emerald)'),
+      metricRow('Canales utilizables', `${spa.channelsUsed} de 3`),
+      metricRow('Dispersion entre canales', formatRate(spa.channelSpread))
+    ];
+
+    if (red.applicable) {
+      rows.push(
+        metricRow('Pares analizados (rojo)', numberFormat.format(red.pairsAnalyzed)),
+        metricRow(
+          'Cuadratica a·x² + b·x + c',
+          `${red.quadratic.a.toFixed(1)} / ${red.quadratic.b.toFixed(1)} / ${red.quadratic.c.toFixed(1)}`,
+          'var(--text-muted)',
+          'La raiz menor de esta cuadratica es la tasa estimada, medida sin extrapolar.'
+        )
+      );
+    } else {
+      rows.push(`<div class="alert-box alert-warning" style="font-size:0.78rem;">${red.reason}</div>`);
+    }
+
+    // La concordancia entre dos metodos sin supuestos compartidos es lo que
+    // convierte la sospecha en evidencia: va aqui, no en una tarjeta aparte.
+    rows.push(
       `<div style="border-top:1px solid var(--border-color); margin:0.25rem 0;"></div>`,
       metricRow(
         'Discordancia |RS − SPA|',
         formatRate(evidence.disagreement),
         coherenceColor,
         `Coherente si ≤ ${thresholds.maxDisagreement}. Con inyeccion real ambos coinciden; el ruido extremo los descuadra.`
-      ),
-      metricRow('Suelo de ruido', thresholds.noiseFloor.toFixed(2)),
-      metricRow('Umbral de deteccion', thresholds.detectionRate.toFixed(2))
-    ].join('');
+      )
+    );
+
+    spaMetrics.innerHTML = rows.join('');
   }
 
   function renderChiMetrics(report) {
     const chi = report.estimators.chiSquareProgressive;
 
-    const statusColor = chi.conclusive
-      ? (chi.sequentialEmbeddingDetected ? 'var(--accent-rose)' : 'var(--accent-emerald)')
-      : 'var(--accent-amber)';
+    chiStatusBadge.className = `badge ${chi.conclusive
+      ? (chi.sequentialEmbeddingDetected ? 'badge-rose' : 'badge-emerald')
+      : 'badge-amber'}`;
+    chiStatusBadge.textContent = chi.status;
 
     const rows = [
-      metricRow('Estado', chi.status, statusColor),
       metricRow(
         'χ²/df de la cola (calibracion)',
         chi.tailReducedChiSquare === null ? 'n/d' : chi.tailReducedChiSquare.toFixed(3),

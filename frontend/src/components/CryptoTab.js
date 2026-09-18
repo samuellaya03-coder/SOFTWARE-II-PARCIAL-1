@@ -99,8 +99,8 @@ export function renderCryptoTab(container) {
             <input type="password" id="decrypt-pass-input" placeholder="Contraseña..." />
           </div>
 
-          <div style="display: flex; gap: 0.75rem;">
-            <button id="btn-run-decrypt" class="btn btn-emerald" style="flex: 2;">
+          <div class="stack-row">
+            <button id="btn-run-decrypt" class="btn btn-emerald" style="flex: 2 1 200px;">
               🔓 Descifrar y Validar
             </button>
             <button id="btn-tamper-test" class="btn btn-danger" style="flex: 1;" title="Altera 1 bit del texto cifrado para comprobar cómo el Authentication Tag rechaza el ataque">
@@ -152,8 +152,8 @@ export function renderCryptoTab(container) {
         <!-- Demostración Cifrado Híbrido -->
         <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
           <h4 style="font-size: 1rem; color: var(--accent-purple);">Demostración de Cifrado Híbrido de Sesión</h4>
-          <div style="display: flex; gap: 1rem;">
-            <input type="text" id="hybrid-message-input" value="Transacción bancaria confidencial aprobada #893712" style="flex: 3;" />
+          <div class="stack-row">
+            <input type="text" id="hybrid-message-input" value="Transacción bancaria confidencial aprobada #893712" style="flex: 3 1 240px;" />
             <button id="btn-run-hybrid" class="btn btn-primary" style="flex: 1;" disabled>
               🔒 Ejecutar Cifrado Híbrido
             </button>
