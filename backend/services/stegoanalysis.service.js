@@ -208,21 +208,98 @@ export function analyzeImagePixels(data, width, height) {
   const chiG = computeChiSquarePoVs(histG);
   const chiB = computeChiSquarePoVs(histB);
 
+  // 4. Análisis por Franjas Horizontales (Sliding Strip / Row-by-Row Analysis)
+  // Permite localizar la región exacta de inyección LSB y detectar mensajes pequeños.
+  const targetStripsCount = Math.min(64, Math.max(16, Math.floor(height / 16)));
+  const stripHeight = Math.max(4, Math.ceil(height / targetStripsCount));
+  const stripResults = [];
+  let minInjectedRow = null;
+  let maxInjectedRow = null;
+  let suspiciousStripsCount = 0;
+
+  for (let s = 0; s < Math.ceil(height / stripHeight); s++) {
+    const rowStart = s * stripHeight;
+    const rowEnd = Math.min((s + 1) * stripHeight, height);
+
+    const sHistR = new Array(256).fill(0);
+    const sHistG = new Array(256).fill(0);
+    const sHistB = new Array(256).fill(0);
+    let sLsb0R = 0, sLsb1R = 0;
+    let sLsb0G = 0, sLsb1G = 0;
+    let sLsb0B = 0, sLsb1B = 0;
+
+    for (let y = rowStart; y < rowEnd; y++) {
+      const rowOffset = y * width * 4;
+      for (let x = 0; x < width; x++) {
+        const i = rowOffset + x * 4;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        sHistR[r]++;
+        sHistG[g]++;
+        sHistB[b]++;
+
+        if ((r & 1) === 0) sLsb0R++; else sLsb1R++;
+        if ((g & 1) === 0) sLsb0G++; else sLsb1G++;
+        if ((b & 1) === 0) sLsb0B++; else sLsb1B++;
+      }
+    }
+
+    const sEntropyR = computeShannonEntropy(sLsb0R, sLsb1R);
+    const sEntropyGlobal = computeShannonEntropy(sLsb0R + sLsb0G + sLsb0B, sLsb1R + sLsb1G + sLsb1B);
+    const sChiR = computeChiSquarePoVs(sHistR);
+
+    // Calcular la suma de diferencias absolutas de Pares de Valores (PoVs: 2k y 2k+1)
+    // En fotos naturales, sPovDiffSum es alto (ratio >= 0.050).
+    // En inyección LSB, la sustitución iguala 2k y 2k+1 provocando que sPovRatio caiga a < 0.045.
+    let sPovDiffSumR = 0;
+    for (let k = 0; k < 128; k++) {
+      sPovDiffSumR += Math.abs(sHistR[2 * k] - sHistR[2 * k + 1]);
+    }
+    const stripPixelCount = (rowEnd - rowStart) * width;
+    const sPovRatioR = stripPixelCount > 0 ? (sPovDiffSumR / stripPixelCount) : 1.0;
+
+    // Criterio de sospecha forense local por franja:
+    const isSuspicious = sPovRatioR < 0.045 && sEntropyGlobal >= 0.990;
+
+    if (isSuspicious) {
+      suspiciousStripsCount++;
+      if (minInjectedRow === null || rowStart < minInjectedRow) minInjectedRow = rowStart;
+      if (maxInjectedRow === null || (rowEnd - 1) > maxInjectedRow) maxInjectedRow = rowEnd - 1;
+    }
+
+    const suspicionScore = isSuspicious ? Math.min(99.9, Math.max(85, Number((100 - (sPovRatioR * 400)).toFixed(1)))) : 0;
+
+    stripResults.push({
+      stripIndex: s,
+      rowStart,
+      rowEnd: rowEnd - 1,
+      height: rowEnd - rowStart,
+      entropyGlobal: Number(sEntropyGlobal.toFixed(6)),
+      entropyRed: Number(sEntropyR.toFixed(6)),
+      chiSquare: sChiR.chiSquare,
+      pValue: sChiR.pValue,
+      povRatio: Number(sPovRatioR.toFixed(4)),
+      suspicionScore,
+      isSuspicious
+    });
+  }
+
   // Evaluación combinada de sospecha esteganográfica (0% a 100%)
-  // Un payload cifrado con AES-GCM tiene entropía muy cercana a 1.0000 (> 0.999)
-  // y altera la correlación de frecuencias PoVs.
+  // Si no se detectan franjas sospechosas con el PoV Ratio, la imagen es LIMPIA.
   const entropyBias = Math.abs(1.0 - entropyGlobal);
   let stegoConfidence = 0;
-  if (entropyBias < 0.001) {
-    stegoConfidence = 95 - (entropyBias * 10000);
-  } else if (entropyBias < 0.01) {
-    stegoConfidence = 75 - (entropyBias * 3000);
-  } else if (entropyBias < 0.05) {
-    stegoConfidence = 40 - (entropyBias * 400);
+  if (suspiciousStripsCount > 0) {
+    const stripRatio = suspiciousStripsCount / stripResults.length;
+    stegoConfidence = Math.min(99.9, Math.max(75, Number((70 + stripRatio * 30).toFixed(2))));
   } else {
-    stegoConfidence = Math.max(0, 15 - (entropyBias * 50));
+    // Sin franjas inyectadas -> Limpia (Sospecha < 5%)
+    stegoConfidence = Math.max(0.1, Math.min(4.9, Number((entropyBias * 50).toFixed(2))));
   }
-  stegoConfidence = Math.min(99.9, Math.max(0.1, Number(stegoConfidence.toFixed(2))));
+
+  const isHighRisk = stegoConfidence > 70;
+  const isModerate = stegoConfidence > 35;
 
   return {
     dimensions: {
@@ -243,19 +320,34 @@ export function analyzeImagePixels(data, width, height) {
       blueLSB: Number(entropyB.toFixed(6)),
       globalLSB: Number(entropyGlobal.toFixed(6)),
       theoreticalMax: 1.000000,
-      isAnomalouslyHigh: entropyGlobal > 0.9985
+      isAnomalouslyHigh: entropyGlobal > 0.9985 || suspiciousStripsCount > 0
     },
     chiSquarePoV: {
       red: chiR,
       green: chiG,
       blue: chiB
     },
+    stripAnalysis: {
+      stripHeight,
+      totalStrips: stripResults.length,
+      suspiciousStripsCount,
+      strips: stripResults
+    },
+    injectedRegion: {
+      hasInjectedRegion: suspiciousStripsCount > 0,
+      startRow: minInjectedRow,
+      endRow: maxInjectedRow,
+      totalRows: (maxInjectedRow !== null && minInjectedRow !== null) ? (maxInjectedRow - minInjectedRow + 1) : 0,
+      percentageOfImage: (maxInjectedRow !== null && minInjectedRow !== null) 
+        ? Number((((maxInjectedRow - minInjectedRow + 1) / height) * 100).toFixed(2)) 
+        : 0
+    },
     verdict: {
       suspicionPercentage: stegoConfidence,
-      status: stegoConfidence > 70 ? 'ALTO_RIESGO_ESTEGANOGRAFIA' : (stegoConfidence > 35 ? 'SOSPECHA_MODERADA' : 'IMAGEN_LIMPIA'),
-      summary: stegoConfidence > 70 
-        ? 'Se detecta entropía LSB cuasi-perfecta (~1.0000) consistente con un payload de ruido blanco o cifrado simétrico (AES-256).'
-        : 'Las fluctuaciones estadísticas en los planos LSB son consistentes con la dispersión natural fotográfica.'
+      status: isHighRisk ? 'ALTO_RIESGO_ESTEGANOGRAFIA' : (isModerate ? 'SOSPECHA_MODERADA' : 'IMAGEN_LIMPIA'),
+      summary: isHighRisk 
+        ? `Se detectó patrón esteganográfico (entropía LSB ~1.0000) en ${suspiciousStripsCount} franjas (${minInjectedRow !== null ? `filas ${minInjectedRow} a ${maxInjectedRow}` : 'global'}).`
+        : 'Las fluctuaciones estadísticas en los planos LSB por franjas son consistentes con la dispersión natural fotográfica.'
     }
   };
 }

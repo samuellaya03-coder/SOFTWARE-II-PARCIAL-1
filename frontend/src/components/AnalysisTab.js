@@ -88,6 +88,41 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
           </div>
         </div>
 
+        <!-- Resaltado Forense Visual por Franjas -->
+        <div class="card card-glow-cyan" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            <h4 style="font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+              🎨 Mapa Visual de Resaltado Forense por Franjas
+            </h4>
+            <span id="strip-region-badge" class="badge badge-cyan font-mono">Detección por Filas</span>
+          </div>
+
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            Esta vista resalta en <strong>rojo neón traslúcido</strong> las franjas de píxeles exactas donde el análisis estadístico detectó alteración esteganográfica de bits LSB (Entropía $\approx 1.0000$).
+          </p>
+
+            <div style="max-width: 100%; overflow: auto; text-align: center; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; background: rgba(0,0,0,0.3); width: 100%; display: flex; justify-content: center; align-items: center; min-height: 200px;">
+              <canvas id="highlight-canvas" style="max-width: 100%; max-height: 280px; width: auto; height: auto; display: block; margin: 0 auto; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); object-fit: contain;"></canvas>
+            </div>
+
+            <div id="strip-summary-info" style="width: 100%; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-primary);">
+              <!-- Llenado dinámicamente -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Perfil de Entropía LSB por Franja (Chart) -->
+        <div class="card card-glow-purple">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="font-size: 1.1rem;">Perfil de Entropía LSB por Franja (Análisis Secuencial de Filas)</h4>
+            <span class="badge badge-purple font-mono">Umbral = 0.9950</span>
+          </div>
+
+          <div style="position: relative; height: 260px; width: 100%;">
+            <canvas id="strip-entropy-chart"></canvas>
+          </div>
+        </div>
+
         <!-- Gráfico del Histograma de Frecuencias RGB -->
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -119,10 +154,15 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
   const verdictCard = container.querySelector('#verdict-card');
   const entropyMetricsList = container.querySelector('#entropy-metrics-list');
   const chiMetricsList = container.querySelector('#chi-metrics-list');
+  const highlightCanvas = container.querySelector('#highlight-canvas');
+  const stripSummaryInfo = container.querySelector('#strip-summary-info');
+  const stripRegionBadge = container.querySelector('#strip-region-badge');
   const chartCanvas = container.querySelector('#rgb-histogram-chart');
+  const stripChartCanvas = container.querySelector('#strip-entropy-chart');
 
   let currentAnalysisBlob = null;
   let chartInstance = null;
+  let stripChartInstance = null;
 
   // Interacción con Drag & Drop y Selector
   dropzoneAnalysis.addEventListener('click', () => fileInput.click());
@@ -158,11 +198,11 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
   btnRunAnalysis.addEventListener('click', async () => {
     try {
       btnRunAnalysis.disabled = true;
-      btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y calculando χ²...';
+      btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y analizando franjas...';
 
       const data = await ApiService.analyzeImage(currentAnalysisBlob);
 
-      renderResults(data);
+      await renderResults(data);
       resultsSection.style.display = 'flex';
       resultsSection.scrollIntoView({ behavior: 'smooth' });
     } catch (err) {
@@ -173,7 +213,7 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
     }
   });
 
-  function renderResults(report) {
+  async function renderResults(report) {
     const verdict = report.verdict;
     const isHighRisk = verdict.status === 'ALTO_RIESGO_ESTEGANOGRAFIA';
     const isModerate = verdict.status === 'SOSPECHA_MODERADA';
@@ -254,8 +294,184 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
       </div>
     `;
 
-    // 4. Renderizar Histograma con Chart.js
+    // 4. Renderizar Canvas de Resaltado Forense por Franjas
+    await renderHighlightCanvas(currentAnalysisBlob, report.stripAnalysis, report.injectedRegion);
+
+    // 5. Renderizar Gráfico de Entropía por Franja
+    renderStripEntropyChart(report.stripAnalysis);
+
+    // 6. Renderizar Histograma con Chart.js
     renderHistogramChart(report.histograms);
+  }
+
+  async function renderHighlightCanvas(blob, stripData, injectedRegion) {
+    if (!blob || !stripData) return;
+
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+
+    highlightCanvas.width = w;
+    highlightCanvas.height = h;
+
+    const ctx = highlightCanvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    // Renderizar resaltado a nivel de PÍXEL en las franjas sospechosas
+    if (stripData && stripData.strips && injectedRegion && injectedRegion.hasInjectedRegion) {
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      // Crear mapa de filas sospechosas
+      const suspiciousRows = new Set();
+      stripData.strips.forEach((strip) => {
+        if (strip.isSuspicious) {
+          for (let y = strip.rowStart; y <= strip.rowEnd; y++) {
+            suspiciousRows.add(y);
+          }
+        }
+      });
+
+      // Modificar píxeles individualmente en las filas inyectadas
+      for (let y = 0; y < h; y++) {
+        if (suspiciousRows.has(y)) {
+          const rowOffset = y * w * 4;
+          for (let x = 0; x < w; x++) {
+            const idx = rowOffset + x * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+
+            // Si el LSB del canal Rojo es 1, resaltar el píxel individual en Rojo Neón
+            if ((r & 1) === 1) {
+              data[idx] = Math.min(255, r + 160);
+              data[idx + 1] = Math.floor(g * 0.25);
+              data[idx + 2] = Math.floor(b * 0.25);
+            }
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+
+      // Dibujar recuadro discontinuo sutil para delimitar la región inyectada
+      if (injectedRegion.startRow !== null && injectedRegion.endRow !== null) {
+        const regionHeight = injectedRegion.endRow - injectedRegion.startRow + 1;
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = Math.max(1.5, Math.floor(h / 400));
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(1, injectedRegion.startRow, w - 2, regionHeight);
+        ctx.setLineDash([]);
+      }
+    }
+
+    // Resumen debajo del canvas
+    if (injectedRegion && injectedRegion.hasInjectedRegion) {
+      stripRegionBadge.className = 'badge badge-rose font-mono';
+      stripRegionBadge.textContent = `Inyección: Filas ${injectedRegion.startRow} - ${injectedRegion.endRow}`;
+
+      stripSummaryInfo.innerHTML = `
+        <div style="padding: 0.75rem; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 6px; display: flex; flex-direction: column; gap: 0.3rem;">
+          <div style="font-weight: bold; color: #f43f5e; display: flex; align-items: center; gap: 0.4rem;">
+            ⚠️ INYECCIÓN LSB DETECTADA EN FRANJAS DE FILAS
+          </div>
+          <div>• Rango afectado: <strong>Filas ${injectedRegion.startRow} a ${injectedRegion.endRow}</strong> (${injectedRegion.totalRows} filas continuas).</div>
+          <div>• Cobertura espacial: <strong>${injectedRegion.percentageOfImage}%</strong> del área total de la imagen.</div>
+          <div>• Franjas analizadas: <strong>${stripData.suspiciousStripsCount} de ${stripData.totalStrips} franjas</strong> superaron el umbral de entropía LSB (H ≥ 0.995).</div>
+        </div>
+      `;
+    } else {
+      stripRegionBadge.className = 'badge badge-emerald font-mono';
+      stripRegionBadge.textContent = 'Sin inyección detectada';
+
+      stripSummaryInfo.innerHTML = `
+        <div style="padding: 0.75rem; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px; color: #4ade80;">
+          ✓ <strong>IMAGEN LIMPIA:</strong> No se detectaron franjas anormales en el análisis de entropía LSB fila por fila.
+        </div>
+      `;
+    }
+
+    URL.revokeObjectURL(url);
+  }
+
+  function renderStripEntropyChart(stripData) {
+    if (stripChartInstance) {
+      stripChartInstance.destroy();
+    }
+
+    if (!stripData || !stripData.strips) return;
+
+    const labels = stripData.strips.map(s => `F. ${s.stripIndex} (${s.rowStart}-${s.rowEnd})`);
+    const suspicionValues = stripData.strips.map(s => s.suspicionScore || (s.isSuspicious ? 95 : 0));
+    const backgroundColors = stripData.strips.map(s => s.isSuspicious ? 'rgba(244, 63, 94, 0.85)' : 'rgba(148, 163, 184, 0.08)');
+    const borderColors = stripData.strips.map(s => s.isSuspicious ? '#f43f5e' : 'rgba(148, 163, 184, 0.2)');
+
+    const ctx = stripChartCanvas.getContext('2d');
+    stripChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Nivel de Inyección / Sospecha de la Franja (%)',
+            data: suspicionValues,
+            backgroundColor: backgroundColors,
+            borderColor: borderColors,
+            borderWidth: 1,
+            borderRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: { display: true, text: 'Franja de Filas (Rango de Píxeles Y)', color: '#94a3b8' },
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#64748b', maxTicksLimit: 12 }
+          },
+          y: {
+            title: { display: true, text: 'Índice de Inyección LSB (0% a 100%)', color: '#94a3b8' },
+            min: 0,
+            max: 100,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { 
+              color: '#64748b',
+              callback: (value) => `${value}%`
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#00f0ff',
+            bodyColor: '#f1f5f9',
+            borderColor: 'rgba(0, 240, 255, 0.3)',
+            borderWidth: 1,
+            callbacks: {
+              label: (context) => {
+                const strip = stripData.strips[context.dataIndex];
+                return [
+                  `Sospecha de Inyección: ${context.parsed.y}%`,
+                  `Entropía LSB: ${strip.entropyGlobal}`,
+                  `Estado: ${strip.isSuspicious ? '⚠️ FRANJA INYECTADA' : '✓ Limpia'}`
+                ];
+              }
+            }
+          }
+        }
+      }
+    });
   }
 
   function renderHistogramChart(histograms) {
@@ -335,3 +551,4 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
     });
   }
 }
+
