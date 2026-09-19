@@ -167,10 +167,12 @@ export function analyzeImagePixels(data, width, height) {
   const totalLSB1 = lsb1R + lsb1G + lsb1B;
   const entropyGlobal = computeShannonEntropy(totalLSB0, totalLSB1);
 
-  // 3. Ataque de Chi-cuadrado sobre Pares de Valores (PoVs: 2k y 2k+1)
+  // 3. Ataque de Chi-cuadrado sobre Pares de Valores (PoVs: 2k y 2k+1 - Westfeld & Pfitzmann)
   function computeChiSquarePoVs(hist) {
     let chiSq = 0;
     let pairsCount = 0;
+    let sumDiff = 0;
+    let sumTotal = 0;
     const povDifferences = [];
 
     for (let k = 0; k < 128; k++) {
@@ -179,21 +181,29 @@ export function analyzeImagePixels(data, width, height) {
       const expected = (v2k + v2k1) / 2;
 
       if (expected > 0) {
-        const diff = (v2k - expected);
+        const diff = v2k - expected;
         chiSq += (diff * diff) / expected;
         pairsCount++;
-        povDifferences.push({ pair: [2 * k, 2 * k + 1], v2k, v2k1, expected, diff: Math.abs(v2k - v2k1) });
+        const absDiff = Math.abs(v2k - v2k1);
+        sumDiff += absDiff;
+        sumTotal += (v2k + v2k1);
+        povDifferences.push({ pair: [2 * k, 2 * k + 1], v2k, v2k1, expected, diff: absDiff });
       }
     }
 
     const df = Math.max(1, pairsCount - 1);
+    // En el test de pares de Westfeld:
+    // Si los pares están artificialmente igualados (esteganografía LSB), chiSq es muy bajo y pValue -> 1.0.
+    // Si la imagen es natural (limpia), chiSq es alto debido a la varianza natural y pValue -> 0.0.
     const pValue = chiSquarePValue(chiSq, df);
+    const asymmetry = sumTotal > 0 ? (sumDiff / sumTotal) : 0;
 
     return {
       chiSquare: Number(chiSq.toFixed(4)),
       degreesOfFreedom: df,
       pValue: Number(pValue.toFixed(6)),
-      pairsAnalyzed: pairsCount
+      pairsAnalyzed: pairsCount,
+      asymmetryPct: Number((asymmetry * 100).toFixed(2))
     };
   }
 
@@ -202,7 +212,8 @@ export function analyzeImagePixels(data, width, height) {
   const chiB = computeChiSquarePoVs(histB);
 
   // 4. Curva Dinámica Acumulativa de Chi-cuadrado (Ataque Westfeld & Pfitzmann)
-  // Analiza la probabilidad de esteganografía p(k) conforme se recorre la imagen en 60 intervalos.
+  // En Westfeld & Pfitzmann: pVal mide la probabilidad de que los pares estén igualados.
+  // En la región con esteganografía pVal se mantiene cercano a 1.0; al terminar el mensaje cae hacia 0.0.
   const numIntervals = 60;
   const totalChannels = totalPixels * 3;
   const stepBytes = Math.max(64, Math.floor(totalChannels / numIntervals));
@@ -233,8 +244,8 @@ export function analyzeImagePixels(data, width, height) {
         }
         const curDf = Math.max(1, curPairs - 1);
         const pVal = chiSquarePValue(curChiSq, curDf);
-        // En Westfeld: p(k) = 1 - pVal representa la probabilidad de que los PoVs estén artificialmente igualados
-        const stegoProb = Math.max(0, Math.min(1, 1 - pVal));
+        // Correcto según Westfeld: stegoProb = pVal (cercano a 1 en zona inyectada, 0 en zona limpia)
+        const stegoProb = Math.max(0, Math.min(1, pVal));
         const progressPct = Number(((channelCounter / totalChannels) * 100).toFixed(1));
 
         westfeldCurve.push({
@@ -253,56 +264,134 @@ export function analyzeImagePixels(data, width, height) {
   // 5. Estimación de longitud de Payload según la caída de la curva de Westfeld
   let estimatedPayloadBytes = 0;
   let estimatedOccupancyPct = 0;
-  let detectionConfidence = 0;
-
-  // Buscar punto de caída drástica de stegoProbability de >0.7 a <0.3
   let kneeIndex = -1;
+
   for (let i = 0; i < westfeldCurve.length; i++) {
     if (westfeldCurve[i].stegoProbability > 0.65) {
       kneeIndex = i;
     } else if (kneeIndex !== -1 && westfeldCurve[i].stegoProbability < 0.35) {
-      // Punto de caída localizado
       break;
     }
   }
 
-  if (kneeIndex >= 0 && westfeldCurve[0].stegoProbability > 0.5) {
+  if (kneeIndex >= 0 && westfeldCurve[0].stegoProbability > 0.60) {
     const endSample = westfeldCurve[kneeIndex].channelSample;
     estimatedPayloadBytes = Math.max(0, Math.floor(endSample / 8) - 4);
     estimatedOccupancyPct = Number(((endSample / totalChannels) * 100).toFixed(2));
   }
 
-  // 6. Evaluación combinada y calibración del Veredicto Forense Multicriterio
-  const entropyBias = Math.abs(1.0 - entropyGlobal);
-  let entropyScore = 0;
-  if (entropyBias < 0.001) entropyScore = 95;
-  else if (entropyBias < 0.008) entropyScore = 75;
-  else if (entropyBias < 0.03) entropyScore = 45;
-  else entropyScore = Math.max(0, 20 - (entropyBias * 100));
+  // 6. Detección Determinística de Cabecera LSB
+  let detectedHeaderType = null;
+  let detectedPayloadLength = 0;
+  const sampleBytes = new Uint8Array(16);
+  let bitIdx = 0;
+  for (let b = 0; b < 16; b++) {
+    let byteVal = 0;
+    for (let bit = 7; bit >= 0; bit--) {
+      const channelIdx = bitIdx + Math.floor(bitIdx / 3);
+      if (channelIdx < data.length) {
+        byteVal |= ((data[channelIdx] & 1) << bit);
+      }
+      bitIdx++;
+    }
+    sampleBytes[b] = byteVal;
+  }
 
-  // Puntuación de Chi-cuadrado
-  const avgPValue = (chiR.pValue + chiG.pValue + chiB.pValue) / 3;
-  let chiScore = (1 - avgPValue) * 100;
+  // A) Cabecera mágica STG1 (Cifrado AES-256-GCM + PBKDF2)
+  if (sampleBytes[0] === 0x53 && sampleBytes[1] === 0x54 && sampleBytes[2] === 0x47 && sampleBytes[3] === 0x31) {
+    detectedHeaderType = 'STG1_CONTAINER';
+  } else {
+    // B) Longitud de texto plano LSB (32 bits enteros)
+    const len32 = (sampleBytes[0] << 24) | (sampleBytes[1] << 16) | (sampleBytes[2] << 8) | sampleBytes[3];
+    const maxCapacity = Math.floor((totalPixels * 3) / 8) - 4;
+    if (len32 > 0 && len32 <= maxCapacity) {
+      let printableCount = 0;
+      for (let i = 4; i < 12; i++) {
+        if ((sampleBytes[i] >= 32 && sampleBytes[i] <= 126) || sampleBytes[i] === 10 || sampleBytes[i] === 13) {
+          printableCount++;
+        }
+      }
+      if (printableCount >= 6) {
+        detectedHeaderType = 'PLAINTEXT_LSB';
+        detectedPayloadLength = len32;
+      }
+    }
+  }
 
-  // Si la curva de Westfeld muestra alta sospecha en el inicio
-  const initialWestfeldProb = westfeldCurve.length > 0 ? westfeldCurve[0].stegoProbability : 0;
-  let westfeldScore = initialWestfeldProb * 100;
+  // 7. Análisis de Dispersión Espacial de LSBs en Zonas Homogéneas (Flat-Area Flips)
+  // En fotos limpias (incluso WhatsApp o capturas de juegos), las zonas planas tienen LSBs correlacionados (<32% mismatch).
+  // La inyección LSB pseudoaleatoria (AES) rompe la correlación espacial forzando un ~50% de mismatch.
+  let flatPairs = 0;
+  let mismatchedLsb = 0;
+  for (let i = 0; i < data.length - 8; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      const v1 = data[i + c];
+      const v2 = data[i + 4 + c];
+      if ((v1 >> 1) === (v2 >> 1)) {
+        flatPairs++;
+        if ((v1 & 1) !== (v2 & 1)) mismatchedLsb++;
+      }
+    }
+  }
+  const flatMismatchRate = flatPairs > 100 ? (mismatchedLsb / flatPairs) : 0.25;
 
-  // Ponderación: 40% Entropía + 35% Westfeld + 25% Chi-cuadrado
-  let finalConfidence = (entropyScore * 0.40) + (westfeldScore * 0.35) + (chiScore * 0.25);
-  finalConfidence = Math.min(99.9, Math.max(0.1, Number(finalConfidence.toFixed(1))));
-
+  // 8. Calibración del Veredicto Forense Multicriterio (Sin Falsos Positivos)
+  let finalConfidence = 0;
   let verdictStatus = 'IMAGEN_LIMPIA';
-  let verdictSummary = 'Las fluctuaciones estadísticas en los planos LSB y pares PoV son consistentes con la dispersión natural fotográfica.';
+  let verdictSummary = '';
 
-  if (finalConfidence >= 70 || (initialWestfeldProb > 0.8 && entropyGlobal > 0.998)) {
+  if (detectedHeaderType === 'STG1_CONTAINER') {
+    finalConfidence = 99.8;
     verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
-    verdictSummary = estimatedPayloadBytes > 0 
-      ? `Alta sospecha de esteganografía LSB. Se detecta ruido pseudo-aleatorio con firma Westfeld activa en el primer ${estimatedOccupancyPct}% de la imagen (aprox. ${estimatedPayloadBytes.toLocaleString()} bytes inyectados).`
-      : 'Se detecta entropía LSB cuasi-perfecta (~1.0000) consistente con un payload cifrado o aleatorizado (AES-256).';
-  } else if (finalConfidence >= 35) {
-    verdictStatus = 'SOSPECHA_MODERADA';
-    verdictSummary = 'Anomalías leves en la distribución de pares PoV o entropía LSB. Requiere inspección visual de planos de bits.';
+    verdictSummary = 'Firma criptográfica confirmada: Se detectó el contenedor esteganográfico STG1 (AES-256-GCM + PBKDF2) en los planos LSB.';
+  } else if (detectedHeaderType === 'PLAINTEXT_LSB') {
+    finalConfidence = 99.5;
+    verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
+    verdictSummary = `Se detectó cabecera LSB de texto estructurado en los primeros bytes (longitud del payload: ${detectedPayloadLength.toLocaleString()} bytes).`;
+  } else {
+    const avgAsymmetry = (chiR.asymmetryPct + chiG.asymmetryPct + chiB.asymmetryPct) / 3;
+
+    // Asimetría de pares PoV (Limpia: >15%, Stego: <4%)
+    let povScore = 0;
+    if (avgAsymmetry < 2.0) povScore = 95;
+    else if (avgAsymmetry < 5.0) povScore = 80;
+    else if (avgAsymmetry < 10.0) povScore = 45;
+    else if (avgAsymmetry < 16.0) povScore = 20;
+    else povScore = Math.max(2, 12 - (avgAsymmetry * 0.15));
+
+    // Descorrelación LSB en zonas planas (Limpia: <32%, Stego: ~50%)
+    let flatScore = 0;
+    if (flatMismatchRate > 0.47) flatScore = 90;
+    else if (flatMismatchRate > 0.44) flatScore = 65;
+    else if (flatMismatchRate > 0.38) flatScore = 35;
+    else if (flatMismatchRate > 0.30) flatScore = 15;
+    else flatScore = 4;
+
+    // Puntuación Westfeld inicial
+    const initialWestfeldProb = westfeldCurve.length > 0 ? westfeldCurve[0].stegoProbability : 0;
+    let westfeldScore = initialWestfeldProb * 100;
+
+    // Calibración para imágenes limpias (fotos de WhatsApp, capturas de pantalla, texturas fotográficas)
+    if (avgAsymmetry >= 14.0 && flatMismatchRate < 0.38) {
+      finalConfidence = Math.max(3.0, (flatScore * 0.5) + (povScore * 0.5));
+    } else {
+      finalConfidence = (povScore * 0.40) + (flatScore * 0.35) + (westfeldScore * 0.25);
+    }
+
+    finalConfidence = Math.min(99.0, Math.max(2.0, Number(finalConfidence.toFixed(1))));
+
+    if (finalConfidence >= 65 || (initialWestfeldProb > 0.75 && flatMismatchRate > 0.46)) {
+      verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
+      verdictSummary = estimatedPayloadBytes > 0
+        ? `Alta sospecha de esteganografía LSB. Pares PoV igualados en el primer ${estimatedOccupancyPct}% de la imagen (aprox. ${estimatedPayloadBytes.toLocaleString()} bytes inyectados).`
+        : 'Se detecta igualación artificial en pares de valores (PoVs) y aleatoriedad LSB consistente con un payload inyectado.';
+    } else if (finalConfidence >= 30) {
+      verdictStatus = 'SOSPECHA_MODERADA';
+      verdictSummary = 'Anomalías estadísticas leves en zonas planas o histograma LSB. Se recomienda inspección visual microscópica.';
+    } else {
+      verdictStatus = 'IMAGEN_LIMPIA';
+      verdictSummary = 'La distribución de frecuencias en pares PoV, la dispersión LSB y la continuidad espacial son plenamente consistentes con una imagen fotográfica limpia y no alterada.';
+    }
   }
 
   return {
@@ -324,7 +413,7 @@ export function analyzeImagePixels(data, width, height) {
       blueLSB: Number(entropyB.toFixed(6)),
       globalLSB: Number(entropyGlobal.toFixed(6)),
       theoreticalMax: 1.000000,
-      isAnomalouslyHigh: entropyGlobal > 0.9985
+      isAnomalouslyHigh: entropyGlobal > 0.9995
     },
     chiSquarePoV: {
       red: chiR,
@@ -335,7 +424,7 @@ export function analyzeImagePixels(data, width, height) {
       curve: westfeldCurve,
       estimatedPayloadBytes,
       estimatedOccupancyPct,
-      hasPayloadSignature: estimatedPayloadBytes > 0 || initialWestfeldProb > 0.75
+      hasPayloadSignature: estimatedPayloadBytes > 0 || (westfeldCurve.length > 0 && westfeldCurve[0].stegoProbability > 0.70)
     },
     verdict: {
       suspicionPercentage: finalConfidence,
