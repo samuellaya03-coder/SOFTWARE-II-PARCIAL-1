@@ -15,13 +15,28 @@ export class ApiService {
   }
 
   /**
-   * Cifra un mensaje con AES-256-GCM y PBKDF2-SHA512.
+   * Cifra un mensaje de texto o buffer binario con AES-256-GCM y PBKDF2-SHA512.
+   * @param {string|Uint8Array|ArrayBuffer} plaintextOrBinary
+   * @param {string} password
    */
-  static async encryptAESGCM(plaintext, password) {
+  static async encryptAESGCM(plaintextOrBinary, password) {
+    let body = { password };
+    if (plaintextOrBinary instanceof Uint8Array || plaintextOrBinary instanceof ArrayBuffer) {
+      const bytes = plaintextOrBinary instanceof Uint8Array ? plaintextOrBinary : new Uint8Array(plaintextOrBinary);
+      let binary = '';
+      const len = bytes.length;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      body.plaintextBase64 = btoa(binary);
+    } else {
+      body.plaintext = String(plaintextOrBinary);
+    }
+
     const res = await fetch(`${API_BASE_URL}/crypto/encrypt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plaintext, password })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (!res.ok || !data.success) {

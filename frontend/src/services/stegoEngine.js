@@ -252,22 +252,146 @@ export class StegoEngine {
       if (payloadByteIndex >= payloadLength) break;
     }
 
-    // 3. Determinar si es texto UTF-8 o datos binarios
-    let text = null;
-    let isBinary = false;
-    try {
-      const decoder = new TextDecoder('utf-8', { fatal: true });
-      text = decoder.decode(payloadBuffer);
-    } catch {
-      isBinary = true;
-    }
+    // 3. Determinar si es texto UTF-8 o datos binarios y desempaquetar si contiene formato STG1
+    const unpacked = this.unpackPayload(payloadBuffer);
 
     return {
       rawBytes: payloadBuffer,
-      text,
-      isBinary,
+      text: unpacked.type === 'text' ? unpacked.text : null,
+      isBinary: unpacked.type === 'file',
+      unpacked,
       length: payloadLength
     };
+  }
+
+  /**
+   * Empaqueta texto o un archivo binario en el contenedor estructurado STG1.
+   * @param {{ type: 'text'|'file', text?: string, fileBytes?: Uint8Array, filename?: string, mimeType?: string }} options
+   * @returns {Uint8Array}
+   */
+  static packPayload(options) {
+    const MAGIC = [0x53, 0x54, 0x47, 0x31]; // 'STG1'
+    const encoder = new TextEncoder();
+
+    if (options.type === 'file' && options.fileBytes) {
+      const filename = options.filename || 'archivo_secreto.bin';
+      const mimeType = options.mimeType || 'application/octet-stream';
+      const nameBytes = encoder.encode(filename);
+      const mimeBytes = encoder.encode(mimeType);
+      const fileBytes = options.fileBytes instanceof Uint8Array ? options.fileBytes : new Uint8Array(options.fileBytes);
+
+      // Header: Magic(4) + Type(1) + nameLen(2) + nameBytes + mimeLen(2) + mimeBytes + fileBytes
+      const totalLen = 4 + 1 + 2 + nameBytes.length + 2 + mimeBytes.length + fileBytes.length;
+      const buffer = new Uint8Array(totalLen);
+      let offset = 0;
+
+      buffer.set(MAGIC, offset); offset += 4;
+      buffer[offset++] = 0x02; // Type 0x02 = FILE
+      buffer[offset++] = (nameBytes.length >> 8) & 0xFF;
+      buffer[offset++] = nameBytes.length & 0xFF;
+      buffer.set(nameBytes, offset); offset += nameBytes.length;
+      buffer[offset++] = (mimeBytes.length >> 8) & 0xFF;
+      buffer[offset++] = mimeBytes.length & 0xFF;
+      buffer.set(mimeBytes, offset); offset += mimeBytes.length;
+      buffer.set(fileBytes, offset);
+
+      return buffer;
+    } else {
+      // TEXT
+      const text = options.text || '';
+      const textBytes = encoder.encode(text);
+      const buffer = new Uint8Array(4 + 1 + textBytes.length);
+      buffer.set(MAGIC, 0);
+      buffer[4] = 0x01; // Type 0x01 = TEXT
+      buffer.set(textBytes, 5);
+      return buffer;
+    }
+  }
+
+  /**
+   * Desempaqueta un buffer identificando si tiene cabecera STG1 o es texto/binario clásico.
+   * @param {Uint8Array} buffer
+   * @returns {{ isContainer: boolean, type: 'text'|'file', text?: string, filename?: string, mimeType?: string, fileBytes?: Uint8Array, blob?: Blob, size: number }}
+   */
+  static unpackPayload(buffer) {
+    if (!buffer || buffer.length === 0) {
+      return { isContainer: false, type: 'text', text: '', size: 0 };
+    }
+
+    const isStg1 = buffer.length >= 5 &&
+      buffer[0] === 0x53 &&
+      buffer[1] === 0x54 &&
+      buffer[2] === 0x47 &&
+      buffer[3] === 0x31;
+
+    if (isStg1) {
+      const type = buffer[4];
+      if (type === 0x01) {
+        // Texto
+        const textBytes = buffer.subarray(5);
+        const text = new TextDecoder('utf-8').decode(textBytes);
+        return {
+          isContainer: true,
+          type: 'text',
+          text,
+          size: textBytes.length
+        };
+      } else if (type === 0x02 && buffer.length >= 9) {
+        // Archivo
+        let offset = 5;
+        const nameLen = (buffer[offset] << 8) | buffer[offset + 1];
+        offset += 2;
+        if (offset + nameLen <= buffer.length) {
+          const nameBytes = buffer.subarray(offset, offset + nameLen);
+          const filename = new TextDecoder('utf-8').decode(nameBytes);
+          offset += nameLen;
+
+          if (offset + 2 <= buffer.length) {
+            const mimeLen = (buffer[offset] << 8) | buffer[offset + 1];
+            offset += 2;
+            if (offset + mimeLen <= buffer.length) {
+              const mimeBytes = buffer.subarray(offset, offset + mimeLen);
+              const mimeType = new TextDecoder('utf-8').decode(mimeBytes);
+              offset += mimeLen;
+
+              const fileBytes = buffer.subarray(offset);
+              const blob = new Blob([fileBytes], { type: mimeType });
+              return {
+                isContainer: true,
+                type: 'file',
+                filename,
+                mimeType,
+                fileBytes,
+                blob,
+                size: fileBytes.length
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback para payloads que no usan el contenedor STG1
+    try {
+      const decoder = new TextDecoder('utf-8', { fatal: true });
+      const text = decoder.decode(buffer);
+      return {
+        isContainer: false,
+        type: 'text',
+        text,
+        size: buffer.length
+      };
+    } catch {
+      return {
+        isContainer: false,
+        type: 'file',
+        filename: 'datos_extraidos.bin',
+        mimeType: 'application/octet-stream',
+        fileBytes: buffer,
+        blob: new Blob([buffer], { type: 'application/octet-stream' }),
+        size: buffer.length
+      };
+    }
   }
 
   /**

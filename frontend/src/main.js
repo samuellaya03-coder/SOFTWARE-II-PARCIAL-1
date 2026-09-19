@@ -38,16 +38,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabContent.innerHTML = '';
 
     if (tabName === 'stego') {
-      renderStegoTab(tabContent, (blob) => {
-        pendingAnalysisBlob = blob;
-        switchTab('analysis', blob);
+      renderStegoTab(tabContent, (data) => {
+        pendingAnalysisBlob = data;
+        switchTab('analysis', data);
       });
     } else if (tabName === 'crypto') {
       renderCryptoTab(tabContent);
     } else if (tabName === 'analysis') {
-      const blobToAnalyze = extraData || pendingAnalysisBlob;
+      const dataToAnalyze = extraData || pendingAnalysisBlob;
       pendingAnalysisBlob = null;
-      renderAnalysisTab(tabContent, blobToAnalyze);
+      renderAnalysisTab(tabContent, dataToAnalyze);
     }
   }
 

@@ -15,16 +15,21 @@ const router = Router();
  */
 router.post('/encrypt', (req, res) => {
   try {
-    const { plaintext, password } = req.body;
+    const { plaintext, plaintextBase64, password } = req.body;
 
-    if (!plaintext) {
-      return res.status(400).json({ error: 'El campo "plaintext" es requerido.' });
+    let dataToEncrypt;
+    if (plaintextBase64) {
+      dataToEncrypt = Buffer.from(plaintextBase64, 'base64');
+    } else if (plaintext !== undefined && plaintext !== null) {
+      dataToEncrypt = Buffer.from(plaintext, 'utf-8');
+    } else {
+      return res.status(400).json({ error: 'El campo "plaintext" o "plaintextBase64" es requerido.' });
     }
     if (!password) {
       return res.status(400).json({ error: 'El campo "password" es requerido.' });
     }
 
-    const result = encryptAESGCM(plaintext, password);
+    const result = encryptAESGCM(dataToEncrypt, password);
 
     res.status(200).json({
       success: true,

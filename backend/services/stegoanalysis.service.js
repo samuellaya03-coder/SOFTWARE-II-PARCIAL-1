@@ -179,7 +179,6 @@ export function analyzeImagePixels(data, width, height) {
       const expected = (v2k + v2k1) / 2;
 
       if (expected > 0) {
-        // Cuadrado de la desviación dividido por el valor esperado
         const diff = (v2k - expected);
         chiSq += (diff * diff) / expected;
         pairsCount++;
@@ -190,12 +189,6 @@ export function analyzeImagePixels(data, width, height) {
     const df = Math.max(1, pairsCount - 1);
     const pValue = chiSquarePValue(chiSq, df);
 
-    // En estegoanálisis de Westfeld & Pfitzmann:
-    // Al incrustar LSB aleatorio, n_2k y n_2k+1 se igualan artificialmente.
-    // La prueba de hipótesis nula H0: la distribución es natural.
-    // Un P-value calculado sobre la hipótesis de que las frecuencias se emparejan
-    // nos da la probabilidad de incrustación LSB.
-    // Cuanto menor es la discrepancia entre 2k y 2k+1 respecto a una imagen limpia, mayor sospecha.
     return {
       chiSquare: Number(chiSq.toFixed(4)),
       degreesOfFreedom: df,
@@ -208,21 +201,109 @@ export function analyzeImagePixels(data, width, height) {
   const chiG = computeChiSquarePoVs(histG);
   const chiB = computeChiSquarePoVs(histB);
 
-  // Evaluación combinada de sospecha esteganográfica (0% a 100%)
-  // Un payload cifrado con AES-GCM tiene entropía muy cercana a 1.0000 (> 0.999)
-  // y altera la correlación de frecuencias PoVs.
-  const entropyBias = Math.abs(1.0 - entropyGlobal);
-  let stegoConfidence = 0;
-  if (entropyBias < 0.001) {
-    stegoConfidence = 95 - (entropyBias * 10000);
-  } else if (entropyBias < 0.01) {
-    stegoConfidence = 75 - (entropyBias * 3000);
-  } else if (entropyBias < 0.05) {
-    stegoConfidence = 40 - (entropyBias * 400);
-  } else {
-    stegoConfidence = Math.max(0, 15 - (entropyBias * 50));
+  // 4. Curva Dinámica Acumulativa de Chi-cuadrado (Ataque Westfeld & Pfitzmann)
+  // Analiza la probabilidad de esteganografía p(k) conforme se recorre la imagen en 60 intervalos.
+  const numIntervals = 60;
+  const totalChannels = totalPixels * 3;
+  const stepBytes = Math.max(64, Math.floor(totalChannels / numIntervals));
+  const westfeldCurve = [];
+
+  const cumulativeHist = new Array(256).fill(0);
+  let channelCounter = 0;
+  let nextCheckpoint = stepBytes;
+
+  for (let i = 0; i < data.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      const val = data[i + c];
+      cumulativeHist[val]++;
+      channelCounter++;
+
+      if (channelCounter >= nextCheckpoint || channelCounter === totalChannels) {
+        let curChiSq = 0;
+        let curPairs = 0;
+        for (let k = 0; k < 128; k++) {
+          const v2k = cumulativeHist[2 * k];
+          const v2k1 = cumulativeHist[2 * k + 1];
+          const expected = (v2k + v2k1) / 2;
+          if (expected > 0) {
+            const diff = v2k - expected;
+            curChiSq += (diff * diff) / expected;
+            curPairs++;
+          }
+        }
+        const curDf = Math.max(1, curPairs - 1);
+        const pVal = chiSquarePValue(curChiSq, curDf);
+        // En Westfeld: p(k) = 1 - pVal representa la probabilidad de que los PoVs estén artificialmente igualados
+        const stegoProb = Math.max(0, Math.min(1, 1 - pVal));
+        const progressPct = Number(((channelCounter / totalChannels) * 100).toFixed(1));
+
+        westfeldCurve.push({
+          percent: progressPct,
+          channelSample: channelCounter,
+          stegoProbability: Number(stegoProb.toFixed(4)),
+          pValue: Number(pVal.toFixed(6)),
+          chiSquare: Number(curChiSq.toFixed(2))
+        });
+
+        nextCheckpoint += stepBytes;
+      }
+    }
   }
-  stegoConfidence = Math.min(99.9, Math.max(0.1, Number(stegoConfidence.toFixed(2))));
+
+  // 5. Estimación de longitud de Payload según la caída de la curva de Westfeld
+  let estimatedPayloadBytes = 0;
+  let estimatedOccupancyPct = 0;
+  let detectionConfidence = 0;
+
+  // Buscar punto de caída drástica de stegoProbability de >0.7 a <0.3
+  let kneeIndex = -1;
+  for (let i = 0; i < westfeldCurve.length; i++) {
+    if (westfeldCurve[i].stegoProbability > 0.65) {
+      kneeIndex = i;
+    } else if (kneeIndex !== -1 && westfeldCurve[i].stegoProbability < 0.35) {
+      // Punto de caída localizado
+      break;
+    }
+  }
+
+  if (kneeIndex >= 0 && westfeldCurve[0].stegoProbability > 0.5) {
+    const endSample = westfeldCurve[kneeIndex].channelSample;
+    estimatedPayloadBytes = Math.max(0, Math.floor(endSample / 8) - 4);
+    estimatedOccupancyPct = Number(((endSample / totalChannels) * 100).toFixed(2));
+  }
+
+  // 6. Evaluación combinada y calibración del Veredicto Forense Multicriterio
+  const entropyBias = Math.abs(1.0 - entropyGlobal);
+  let entropyScore = 0;
+  if (entropyBias < 0.001) entropyScore = 95;
+  else if (entropyBias < 0.008) entropyScore = 75;
+  else if (entropyBias < 0.03) entropyScore = 45;
+  else entropyScore = Math.max(0, 20 - (entropyBias * 100));
+
+  // Puntuación de Chi-cuadrado
+  const avgPValue = (chiR.pValue + chiG.pValue + chiB.pValue) / 3;
+  let chiScore = (1 - avgPValue) * 100;
+
+  // Si la curva de Westfeld muestra alta sospecha en el inicio
+  const initialWestfeldProb = westfeldCurve.length > 0 ? westfeldCurve[0].stegoProbability : 0;
+  let westfeldScore = initialWestfeldProb * 100;
+
+  // Ponderación: 40% Entropía + 35% Westfeld + 25% Chi-cuadrado
+  let finalConfidence = (entropyScore * 0.40) + (westfeldScore * 0.35) + (chiScore * 0.25);
+  finalConfidence = Math.min(99.9, Math.max(0.1, Number(finalConfidence.toFixed(1))));
+
+  let verdictStatus = 'IMAGEN_LIMPIA';
+  let verdictSummary = 'Las fluctuaciones estadísticas en los planos LSB y pares PoV son consistentes con la dispersión natural fotográfica.';
+
+  if (finalConfidence >= 70 || (initialWestfeldProb > 0.8 && entropyGlobal > 0.998)) {
+    verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
+    verdictSummary = estimatedPayloadBytes > 0 
+      ? `Alta sospecha de esteganografía LSB. Se detecta ruido pseudo-aleatorio con firma Westfeld activa en el primer ${estimatedOccupancyPct}% de la imagen (aprox. ${estimatedPayloadBytes.toLocaleString()} bytes inyectados).`
+      : 'Se detecta entropía LSB cuasi-perfecta (~1.0000) consistente con un payload cifrado o aleatorizado (AES-256).';
+  } else if (finalConfidence >= 35) {
+    verdictStatus = 'SOSPECHA_MODERADA';
+    verdictSummary = 'Anomalías leves en la distribución de pares PoV o entropía LSB. Requiere inspección visual de planos de bits.';
+  }
 
   return {
     dimensions: {
@@ -230,7 +311,7 @@ export function analyzeImagePixels(data, width, height) {
       height,
       totalPixels,
       totalChannels: totalPixels * 3,
-      maxPayloadCapacityBytes: Math.floor((totalPixels * 3) / 8) - 4 // Menos 4 bytes de header
+      maxPayloadCapacityBytes: Math.floor((totalPixels * 3) / 8) - 4
     },
     histograms: {
       red: histR,
@@ -250,12 +331,16 @@ export function analyzeImagePixels(data, width, height) {
       green: chiG,
       blue: chiB
     },
+    westfeldAnalysis: {
+      curve: westfeldCurve,
+      estimatedPayloadBytes,
+      estimatedOccupancyPct,
+      hasPayloadSignature: estimatedPayloadBytes > 0 || initialWestfeldProb > 0.75
+    },
     verdict: {
-      suspicionPercentage: stegoConfidence,
-      status: stegoConfidence > 70 ? 'ALTO_RIESGO_ESTEGANOGRAFIA' : (stegoConfidence > 35 ? 'SOSPECHA_MODERADA' : 'IMAGEN_LIMPIA'),
-      summary: stegoConfidence > 70 
-        ? 'Se detecta entropía LSB cuasi-perfecta (~1.0000) consistente con un payload de ruido blanco o cifrado simétrico (AES-256).'
-        : 'Las fluctuaciones estadísticas en los planos LSB son consistentes con la dispersión natural fotográfica.'
+      suspicionPercentage: finalConfidence,
+      status: verdictStatus,
+      summary: verdictSummary
     }
   };
 }

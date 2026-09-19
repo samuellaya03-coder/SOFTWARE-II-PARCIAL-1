@@ -360,6 +360,16 @@ textarea.font-mono {
   border-radius: 4px;
 }
 
+#bitplane-preview-container canvas {
+  max-width: 100%;
+  max-height: none !important;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  display: block;
+}
+
 /* Alert Boxes */
 .alert-box {
   padding: 1rem;

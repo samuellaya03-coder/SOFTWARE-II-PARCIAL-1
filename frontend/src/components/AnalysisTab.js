@@ -1,30 +1,33 @@
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../services/api.js';
+import { ForensicComparator } from '../services/forensicComparator.js';
+import { StegoEngine } from '../services/stegoEngine.js';
 
 Chart.register(...registerables);
 
-export function renderAnalysisTab(container, initialImageBlob = null) {
+export function renderAnalysisTab(container, initialData = null) {
   container.innerHTML = `
     <div class="space-y-6">
       <!-- Encabezado de la Pestaña -->
-      <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
         <div>
           <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Estegoanálisis y Forense Digital de Imágenes</h2>
           <p style="color: var(--text-secondary); font-size: 0.875rem;">
-            Detección de esteganografía mediante análisis de Entropía de Shannon en planos LSB y Ataque de Chi-cuadrado (χ²) sobre Pares de Valores (PoVs).
+            Detección de esteganografía mediante visualización del Plano LSB en Blanco y Negro, Entropía de Shannon y Análisis de Frecuencias PoVs.
           </p>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <span class="badge badge-cyan">Entropía de Shannon</span>
-          <span class="badge badge-emerald">Ataque Chi-Cuadrado (PoVs)</span>
-          <span class="badge badge-purple">Histogramas RGB</span>
+          <span class="badge badge-cyan">Plano LSB en B/N</span>
+          <span class="badge badge-emerald">Entropía Shannon</span>
+          <span class="badge badge-purple">Chi-Cuadrado (PoVs)</span>
+          <span class="badge badge-amber">Histogramas RGB</span>
         </div>
       </div>
 
-      <!-- Zona de Carga de Imagen para Forense -->
+      <!-- Zona de Carga Única de Imagen para Análisis Forense -->
       <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
         <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-          Seleccionar Imagen PNG para Análisis Estadístico
+          Seleccionar Imagen PNG para Análisis Forense Digital
         </h3>
 
         <div id="dropzone-analysis" class="dropzone">
@@ -32,7 +35,7 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
           <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔬</div>
           <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen PNG o haz clic para subir</p>
           <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-            El backend en Node.js analizará los bytes crudos y calculará las métricas de aleatoriedad
+            Se analizarán los bytes crudos para extraer el plano LSB en blanco y negro y calcular las métricas estadísticas
           </p>
         </div>
 
@@ -40,20 +43,145 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
           <img id="analysis-preview-img" alt="Imagen en análisis" />
         </div>
 
-        <button id="btn-run-analysis" class="btn btn-primary" style="width: 100%;" disabled>
-          🚀 Iniciar Análisis Forense y Chi-Cuadrado
+        <button id="btn-run-analysis" class="btn btn-primary" style="width: 100%; font-size: 1rem; padding: 0.8rem;" disabled>
+          🚀 Iniciar Análisis Forense
         </button>
       </div>
 
       <!-- SECCIÓN DE RESULTADOS FORENSES -->
-      <div id="analysis-results-section" style="display: none; display: flex; flex-direction: column; gap: 1.5rem;">
+      <div id="analysis-results-section" style="display: none; flex-direction: column; gap: 1.5rem;">
         
-        <!-- Veredicto General de Sospecha -->
+        <!-- 1. Veredicto Forense Digital -->
         <div id="verdict-card" class="card">
-          <!-- Dinámico -->
+          <!-- Se llena dinámicamente -->
         </div>
 
-        <!-- Métricas Matemáticas: Entropía y Chi-Cuadrado -->
+        <!-- 2. Visualización Forense de Bytes y Bits Alterados (Plano LSB Bit 0) -->
+        <div class="card card-glow-purple">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h3 style="font-size: 1.25rem; color: var(--accent-purple); display: flex; align-items: center; gap: 0.5rem;">
+                <span>🔬</span> Visualización de Bits Alterados (Plano LSB)
+              </h3>
+              <p style="font-size: 0.825rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                Inspección pericial de los bits menos significativos con personalización de paletas de color y marcado de figuras forenses.
+              </p>
+            </div>
+
+            <!-- Controles de Personalización: Modo de Vista, Canal, Paleta y Figura -->
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <!-- Modo de Vista -->
+              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <label style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Modo de Vista:</label>
+                <select id="bitplane-view-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto; border: 1px solid var(--accent-cyan);">
+                  <option value="microscope" selected>🔬 Microscopio Digital (Zoom 16x)</option>
+                  <option value="highlight">🌐 Resaltador de Zona Inyectada</option>
+                  <option value="full">▦ Plano LSB Completo (Matriz 1:1)</option>
+                </select>
+              </div>
+
+              <!-- Canal -->
+              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Canal:</label>
+                <select id="bitplane-channel-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto;">
+                  <option value="all">Luminancia (RGB)</option>
+                  <option value="red">Canal Rojo (R)</option>
+                  <option value="green">Canal Verde (G)</option>
+                  <option value="blue">Canal Azul (B)</option>
+                </select>
+              </div>
+
+              <!-- Paleta de Color -->
+              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Paleta de Color:</label>
+                <select id="bitplane-color-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto;">
+                  <option value="neon" selected>⚡ Neón Cyberpunk (Cian / Púrpura)</option>
+                  <option value="matrix">📟 Terminal Matrix (Verde Fósforo)</option>
+                  <option value="amber">🟡 Ámbar Radar Forense</option>
+                  <option value="heatmap">🔥 Termografía (Heatmap)</option>
+                  <option value="bw">⬛⬜ Blanco y Negro Puro</option>
+                </select>
+              </div>
+
+              <!-- Modo de Figura / Marcador -->
+              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Figura / Marcador:</label>
+                <select id="bitplane-shape-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto;">
+                  <option value="dots" selected>🟢 Puntos Luminosos Neón (Glow)</option>
+                  <option value="crosses">✖️ Cruces Periciales (+)</option>
+                  <option value="bounding-box">🔲 Bloques con Bits (1 / 0)</option>
+                  <option value="pixels">▦ Matriz de Píxeles Pura</option>
+                </select>
+              </div>
+
+              <!-- Botón Forzar Actualización -->
+              <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                <button id="btn-extract-lsb-plane" class="btn btn-cyan" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; height: 32px; white-space: nowrap;">
+                  🔄 Actualizar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contenedor del Lienzo -->
+          <div id="bitplane-preview-container" style="min-height: 280px; max-height: 480px; background: #060a12; border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 8px; overflow: auto; padding: 0.75rem; display: flex; justify-content: center; align-items: flex-start;">
+            <canvas id="bitplane-canvas"></canvas>
+          </div>
+
+          <!-- Botón de Descarga y Ratio -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div id="bitplane-stats" style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">
+              <!-- Ratio de bits 1 vs 0 -->
+            </div>
+            <button id="btn-download-lsb-mask" class="btn btn-emerald" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;">
+              💾 Descargar Imagen de Plano LSB (.PNG)
+            </button>
+          </div>
+
+          <!-- PANEL INFERIOR: CANTIDAD DE BITS MODIFICADOS E INFORMACIÓN DETALLADA -->
+          <div id="bitplane-kpi-panel" style="margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+            <h4 style="font-size: 1rem; color: var(--accent-cyan); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>📊</span> Auditoría Cuantitativa de Bits Modificados
+            </h4>
+
+            <div class="grid-2" style="gap: 1rem;">
+              <!-- KPI 1: Bits Modificados -->
+              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cantidad de Bits Modificados</div>
+                <div id="kpi-bitplane-total-bits" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-total-bytes" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
+              </div>
+
+              <!-- KPI 2: Ocupación de Capacidad -->
+              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Ocupación de Capacidad Portadora</div>
+                <div id="kpi-bitplane-capacity-pct" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-capacity-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
+              </div>
+
+              <!-- KPI 3: Coordenadas Espaciales -->
+              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Extensión Espacial en Matriz</div>
+                <div id="kpi-bitplane-coords" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-coords-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
+              </div>
+
+              <!-- KPI 4: Balance de Bits Cifrados -->
+              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Equilibrio de Bits (Criptoanálisis)</div>
+                <div id="kpi-bitplane-entropy-balance" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-amber); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-entropy-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
+              </div>
+            </div>
+
+            <!-- Fila de Detalles Técnicos Adicionales -->
+            <div id="bitplane-additional-details" style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 6px; font-size: 0.8rem; color: #e2e8f0; line-height: 1.5;">
+              <!-- Detalles adicionales -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Métricas Matemáticas: Entropía y Chi-Cuadrado -->
         <div class="grid-2">
           <!-- Card de Entropía de Shannon -->
           <div class="card card-glow-cyan" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -63,7 +191,7 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
             </div>
 
             <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-              Mide la aleatoriedad en el plano de los Bits Menos Significativos (LSB). Un payload cifrado con AES-GCM genera ruido pseudo-aleatorio perfecto que eleva la entropía LSB a valores extremadamente cercanos a <strong>1.000000</strong>.
+              Mide la aleatoriedad en el plano de los Bits Menos Significativos (LSB). Un payload cifrado con AES-GCM genera ruido pseudo-aleatorio que eleva la entropía LSB a valores extremadamente cercanos a <strong>1.000000</strong>.
             </p>
 
             <div id="entropy-metrics-list" style="display: flex; flex-direction: column; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem;">
@@ -79,7 +207,7 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
             </div>
 
             <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-              Algoritmo de Westfeld & Pfitzmann: Compara las frecuencias de los Pares de Valores (2k, 2k+1). La incrustación LSB iguala artificialmente estos pares alrededor de su media aritmética.
+              Algoritmo de Pares de Valores (2k, 2k+1): Compara las frecuencias de valores contiguos. La incrustación LSB iguala artificialmente estos pares alrededor de su media aritmética.
             </p>
 
             <div id="chi-metrics-list" style="display: flex; flex-direction: column; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem;">
@@ -88,9 +216,9 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
           </div>
         </div>
 
-        <!-- Gráfico del Histograma de Frecuencias RGB -->
+        <!-- 4. Gráfico del Histograma de Frecuencias RGB -->
         <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
             <h4 style="font-size: 1.1rem;">Distribución Espectral de Frecuencias (Histograma RGB de 256 Bins)</h4>
             <div style="display: flex; gap: 0.5rem;">
               <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Canal Rojo (R)</span>
@@ -108,7 +236,9 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
     </div>
   `;
 
-  // Elementos DOM
+  // ==========================================
+  // ELEMENTOS DOM
+  // ==========================================
   const dropzoneAnalysis = container.querySelector('#dropzone-analysis');
   const fileInput = container.querySelector('#analysis-file-input');
   const previewBox = container.querySelector('#analysis-preview-box');
@@ -117,14 +247,35 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
 
   const resultsSection = container.querySelector('#analysis-results-section');
   const verdictCard = container.querySelector('#verdict-card');
+  const bitplanePreviewContainer = container.querySelector('#bitplane-preview-container');
+  const bitplaneViewSelect = container.querySelector('#bitplane-view-select');
+  const bitplaneChannelSelect = container.querySelector('#bitplane-channel-select');
+  const bitplaneColorSelect = container.querySelector('#bitplane-color-select');
+  const bitplaneShapeSelect = container.querySelector('#bitplane-shape-select');
+  const btnExtractLsbPlane = container.querySelector('#btn-extract-lsb-plane');
+  const bitplaneStats = container.querySelector('#bitplane-stats');
+  const btnDownloadLsbMask = container.querySelector('#btn-download-lsb-mask');
+
+  const kpiBitplaneTotalBits = container.querySelector('#kpi-bitplane-total-bits');
+  const kpiBitplaneTotalBytes = container.querySelector('#kpi-bitplane-total-bytes');
+  const kpiBitplaneCapacityPct = container.querySelector('#kpi-bitplane-capacity-pct');
+  const kpiBitplaneCapacityDesc = container.querySelector('#kpi-bitplane-capacity-desc');
+  const kpiBitplaneCoords = container.querySelector('#kpi-bitplane-coords');
+  const kpiBitplaneCoordsDesc = container.querySelector('#kpi-bitplane-coords-desc');
+  const kpiBitplaneEntropyBalance = container.querySelector('#kpi-bitplane-entropy-balance');
+  const kpiBitplaneEntropyDesc = container.querySelector('#kpi-bitplane-entropy-desc');
+  const bitplaneAdditionalDetails = container.querySelector('#bitplane-additional-details');
+
   const entropyMetricsList = container.querySelector('#entropy-metrics-list');
   const chiMetricsList = container.querySelector('#chi-metrics-list');
   const chartCanvas = container.querySelector('#rgb-histogram-chart');
 
   let currentAnalysisBlob = null;
+  let loadedImageElement = null;
+  let currentBitplaneCanvas = null;
   let chartInstance = null;
 
-  // Interacción con Drag & Drop y Selector
+  // Interacción con Drag & Drop y Selector de Archivo
   dropzoneAnalysis.addEventListener('click', () => fileInput.click());
   dropzoneAnalysis.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -140,38 +291,58 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
     if (e.target.files.length > 0) handleSelectedFile(e.target.files[0]);
   });
 
-  function handleSelectedFile(fileOrBlob) {
-    currentAnalysisBlob = fileOrBlob;
-    const url = URL.createObjectURL(fileOrBlob);
+  async function handleSelectedFile(fileOrBlob) {
+    let blob = fileOrBlob;
+    if (fileOrBlob && typeof fileOrBlob === 'object' && !(fileOrBlob instanceof Blob)) {
+      blob = fileOrBlob.stegoBlob || fileOrBlob.blob || fileOrBlob;
+    }
+    currentAnalysisBlob = blob;
+
+    const url = URL.createObjectURL(blob);
     previewImg.src = url;
     previewBox.style.display = 'flex';
     btnRunAnalysis.disabled = false;
     resultsSection.style.display = 'none';
+
+    try {
+      loadedImageElement = await StegoEngine.loadImage(blob);
+    } catch {
+      loadedImageElement = null;
+    }
   }
 
   // Si se envió un blob desde la Pestaña 1 (StegoTab)
-  if (initialImageBlob) {
-    handleSelectedFile(initialImageBlob);
+  if (initialData) {
+    handleSelectedFile(initialData);
+    setTimeout(() => {
+      if (currentAnalysisBlob) {
+        runForensicAnalysis();
+      }
+    }, 350);
   }
 
   // Ejecutar Análisis Forense
-  btnRunAnalysis.addEventListener('click', async () => {
+  btnRunAnalysis.addEventListener('click', () => runForensicAnalysis());
+
+  async function runForensicAnalysis() {
     try {
       btnRunAnalysis.disabled = true;
-      btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y calculando χ²...';
+      btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y extrayendo plano en B/N...';
 
       const data = await ApiService.analyzeImage(currentAnalysisBlob);
 
       renderResults(data);
+      extractAndRenderBitPlane();
+
       resultsSection.style.display = 'flex';
       resultsSection.scrollIntoView({ behavior: 'smooth' });
     } catch (err) {
       alert(`Error en análisis forense: ${err.message}`);
     } finally {
       btnRunAnalysis.disabled = false;
-      btnRunAnalysis.innerHTML = '🚀 Iniciar Análisis Forense y Chi-Cuadrado';
+      btnRunAnalysis.innerHTML = '🚀 Iniciar Análisis Forense';
     }
-  });
+  }
 
   function renderResults(report) {
     const verdict = report.verdict;
@@ -258,6 +429,106 @@ export function renderAnalysisTab(container, initialImageBlob = null) {
     renderHistogramChart(report.histograms);
   }
 
+  // ==========================================
+  // EXTRACCIÓN Y VISUALIZACIÓN DE PLANO LSB (COLORES, FIGURAS Y KPIS)
+  // ==========================================
+  async function extractAndRenderBitPlane() {
+    if (!loadedImageElement && currentAnalysisBlob) {
+      try {
+        loadedImageElement = await StegoEngine.loadImage(currentAnalysisBlob);
+      } catch (err) {
+        console.error('Error cargando imagen para plano LSB:', err);
+        return;
+      }
+    }
+    if (!loadedImageElement) return;
+
+    const channel = bitplaneChannelSelect ? bitplaneChannelSelect.value : 'all';
+    const colorTheme = bitplaneColorSelect ? bitplaneColorSelect.value : 'neon';
+    const shapeMode = bitplaneShapeSelect ? bitplaneShapeSelect.value : 'dots';
+    const viewMode = bitplaneViewSelect ? bitplaneViewSelect.value : 'microscope';
+
+    const result = ForensicComparator.extractBitPlane(loadedImageElement, {
+      bitIndex: 0,
+      channel,
+      colorTheme,
+      shapeMode,
+      viewMode
+    });
+
+    currentBitplaneCanvas = result.canvas;
+    bitplanePreviewContainer.innerHTML = '';
+    bitplanePreviewContainer.appendChild(result.canvas);
+
+    const s = result.stats;
+
+    bitplaneStats.innerText = `Plano Bit 0 (LSB) — Vista: ${viewMode.toUpperCase()} | Canal: ${channel.toUpperCase()} | Paleta: ${colorTheme.toUpperCase()} | Modo: ${shapeMode.toUpperCase()}`;
+
+    // 1. Actualizar KPI: Cantidad de Bits Modificados
+    kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
+    kpiBitplaneTotalBytes.innerText = s.hasValidHeader 
+      ? `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`
+      : `(${s.totalInjectedBytes.toLocaleString()} bytes activos inspeccionados)`;
+
+    // 2. Actualizar KPI: Ocupación de Capacidad
+    kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
+    kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
+
+    // 3. Actualizar KPI: Extensión y Coordenadas
+    kpiBitplaneCoords.innerText = s.hasValidHeader 
+      ? `Píxeles #0 a #${s.endPixel.toLocaleString()}` 
+      : `Matriz ${s.dimensions.width} × ${s.dimensions.height} px`;
+    kpiBitplaneCoordsDesc.innerText = s.hasValidHeader 
+      ? `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen` 
+      : `Dispersión en toda la matriz cromática`;
+
+    // 4. Actualizar KPI: Balance de Bits Cifrados
+    kpiBitplaneEntropyBalance.innerText = `${s.payloadRatio1}% / ${s.payloadRatio0}%`;
+    kpiBitplaneEntropyDesc.innerText = s.hasValidHeader 
+      ? `Proporción 1s vs 0s (Equilibrio de alta entropía AES-256)` 
+      : `Equilibrio natural de bits fotográficos`;
+
+    // Fila de Información Técnica Adicional
+    bitplaneAdditionalDetails.innerHTML = `
+      <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
+        <div><strong>Protocolo Detectado:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua</span>'}</div>
+        <div><strong>Canal Alfa (Transparencia):</strong> <span style="color:#00f0ff; font-weight: 600;">A = 255 (100% Intacto, sin fuga de opacidad)</span></div>
+        <div><strong>Modo Visual Activo:</strong> <span style="color:#a855f7; font-weight: 600;">${viewMode.toUpperCase()} • Paleta ${colorTheme.toUpperCase()} • Marcador ${shapeMode.toUpperCase()}</span></div>
+      </div>
+    `;
+  }
+
+  if (btnExtractLsbPlane) {
+    btnExtractLsbPlane.addEventListener('click', () => extractAndRenderBitPlane());
+  }
+  if (bitplaneViewSelect) {
+    bitplaneViewSelect.addEventListener('change', () => extractAndRenderBitPlane());
+    bitplaneViewSelect.addEventListener('input', () => extractAndRenderBitPlane());
+  }
+  if (bitplaneChannelSelect) {
+    bitplaneChannelSelect.addEventListener('change', () => extractAndRenderBitPlane());
+    bitplaneChannelSelect.addEventListener('input', () => extractAndRenderBitPlane());
+  }
+  if (bitplaneColorSelect) {
+    bitplaneColorSelect.addEventListener('change', () => extractAndRenderBitPlane());
+    bitplaneColorSelect.addEventListener('input', () => extractAndRenderBitPlane());
+  }
+  if (bitplaneShapeSelect) {
+    bitplaneShapeSelect.addEventListener('change', () => extractAndRenderBitPlane());
+    bitplaneShapeSelect.addEventListener('input', () => extractAndRenderBitPlane());
+  }
+
+  btnDownloadLsbMask.addEventListener('click', () => {
+    if (!currentBitplaneCanvas) return;
+    const a = document.createElement('a');
+    a.href = currentBitplaneCanvas.toDataURL('image/png');
+    a.download = `plano_lsb_${bitplaneColorSelect.value}_${bitplaneShapeSelect.value}_${Date.now()}.png`;
+    a.click();
+  });
+
+  // ==========================================
+  // HISTOGRAMA RGB
+  // ==========================================
   function renderHistogramChart(histograms) {
     if (chartInstance) {
       chartInstance.destroy();

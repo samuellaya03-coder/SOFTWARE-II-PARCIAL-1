@@ -85,12 +85,66 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
               <input type="password" id="stego-password" placeholder="Ingresa una clave segura..." />
             </div>
 
+            <!-- Selector de Tipo de Secreto: Texto vs Archivo -->
             <div>
+              <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                Tipo de Información a Ocultar:
+              </label>
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <button type="button" id="btn-secret-type-text" class="btn btn-primary" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+                  📝 Mensaje de Texto
+                </button>
+                <button type="button" id="btn-secret-type-file" class="btn btn-secondary" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+                  📁 Archivo Confidencial (Cualquiera)
+                </button>
+              </div>
+            </div>
+
+            <!-- Grupo de Mensaje de Texto -->
+            <div id="secret-text-group">
               <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
                 <label style="font-size: 0.85rem; color: var(--text-secondary);">Mensaje o Secreto:</label>
                 <span id="payload-size-counter" class="font-mono" style="font-size: 0.75rem; color: var(--text-muted);">0 bytes</span>
               </div>
               <textarea id="stego-message" rows="4" placeholder="Escribe aquí el texto confidencial o mensaje secreto que deseas camuflar..."></textarea>
+            </div>
+
+            <!-- Grupo de Carga de Archivo Confidencial -->
+            <div id="secret-file-group" style="display: none; flex-direction: column; gap: 0.75rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-secondary);">Archivo Confidencial a Camuflar:</label>
+                <span id="secret-file-size-counter" class="font-mono" style="font-size: 0.75rem; color: var(--text-muted);">Ningún archivo seleccionado</span>
+              </div>
+
+              <div id="dropzone-secret-file" class="dropzone" style="padding: 1.25rem 1rem; border-style: dashed; cursor: pointer;">
+                <input type="file" id="secret-file-input" style="display: none;" />
+                <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">📁</div>
+                <p style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">Arrastra un archivo o haz clic para seleccionarlo</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Soporta PDF, DOCX, ZIP, PNG, JPG, TXT, KEY o cualquier binario</p>
+              </div>
+
+              <!-- Tarjeta de Archivo Seleccionado -->
+              <div id="selected-secret-file-card" style="display: none; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 0.75rem 1rem; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden;">
+                  <div id="selected-secret-file-icon" style="font-size: 1.8rem;">📎</div>
+                  <div style="overflow: hidden;">
+                    <div id="selected-secret-file-name" class="font-mono" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.5rem;">
+                      <span id="selected-secret-file-size">-</span>
+                      <span>•</span>
+                      <span id="selected-secret-file-type" style="color: var(--accent-cyan);">-</span>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" id="btn-remove-secret-file" class="btn btn-rose" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; white-space: nowrap;">
+                  ✕ Quitar
+                </button>
+              </div>
+
+              <!-- Miniatura si el archivo secreto es una imagen -->
+              <div id="selected-secret-img-preview" style="display: none; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 0.5rem; max-height: 140px; overflow: hidden;">
+                <img id="selected-secret-img" style="max-height: 120px; border-radius: 4px; object-fit: contain;" alt="Vista previa de imagen secreta" />
+              </div>
             </div>
 
             <!-- Barra de Capacidad en Tiempo Real -->
@@ -101,6 +155,9 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
               </div>
               <div class="progress-container">
                 <div id="capacity-bar" class="progress-bar progress-normal" style="width: 0%;"></div>
+              </div>
+              <div id="capacity-warning-msg" style="display: none; margin-top: 0.35rem; font-size: 0.75rem; color: #f87171;">
+                <!-- Mensaje de sobrecupo si el archivo excede -->
               </div>
             </div>
 
@@ -126,7 +183,7 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
             <div style="display: flex; flex-direction: column; gap: 1rem;">
               <div class="alert-box alert-success">
                 <div>
-                  <strong>Protocolo de 32 bits aplicado:</strong> Los primeros 4 bytes registran la longitud exacta del payload en formato Big-Endian, seguido por la secuencia de bits inyectada en los LSBs RGB.
+                  <strong>Protocolo STG1 de 32 bits aplicado:</strong> El payload incluye cabecera de longitud Big-Endian con contenedor estructurado, inyectado bit a bit en los LSBs de los canales R, G y B.
                 </div>
               </div>
 
@@ -158,7 +215,7 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
             <input type="file" id="stego-input-file" accept="image/png" style="display: none;" />
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🕵️‍♂️</div>
             <p style="font-weight: 600; color: var(--text-primary);">Sube la imagen PNG sospechosa de contener datos</p>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">El motor LSB leerá la cabecera de 32 bits y reconstruirá el payload</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">El motor LSB leerá la cabecera de 32 bits y reconstruirá el mensaje o archivo original</p>
           </div>
 
           <div id="reveal-image-preview-box" class="image-preview-box" style="display: none;">
@@ -170,13 +227,13 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
           </button>
 
           <!-- Resultado de la Extracción -->
-          <div id="reveal-result-container" style="display: none; display: flex; flex-direction: column; gap: 1rem;">
+          <div id="reveal-result-container" style="display: none; flex-direction: column; gap: 1rem;">
             <div id="reveal-status-alert" class="alert-box alert-info">
               <!-- Mensaje de estado -->
             </div>
 
             <!-- Si el payload extraído es un paquete cifrado AES-GCM -->
-            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: rgba(0,0,0,0.35); border-color: rgba(168, 85, 247, 0.4); display: flex; flex-direction: column; gap: 0.75rem;">
+            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: rgba(0,0,0,0.35); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.75rem;">
               <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <span class="badge badge-purple">AES-256-GCM Detectado</span>
                 <span style="font-size: 0.85rem; color: var(--text-secondary);">El payload extraído corresponde a un paquete criptográfico [Salt|IV|Tag|Ciphertext].</span>
@@ -187,7 +244,37 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
               </button>
             </div>
 
-            <div>
+            <!-- Tarjeta si el contenido revelado es un archivo binario -->
+            <div id="revealed-file-card" class="card card-glow-emerald" style="display: none; flex-direction: column; gap: 1rem; background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.4);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div id="revealed-file-icon" style="font-size: 2.2rem;">📄</div>
+                  <div>
+                    <div id="revealed-file-name" class="font-mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-emerald);">-</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 0.75rem; margin-top: 0.2rem;">
+                      <span id="revealed-file-size">-</span>
+                      <span>•</span>
+                      <span id="revealed-file-type" style="color: var(--accent-cyan);">-</span>
+                    </div>
+                  </div>
+                </div>
+                <span class="badge badge-emerald">Archivo Reconstruido ✓</span>
+              </div>
+
+              <!-- Vista previa si el archivo secreto es imagen -->
+              <div id="revealed-image-preview-box" style="display: none; justify-content: center; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 0.75rem; max-height: 240px; overflow: hidden;">
+                <img id="revealed-secret-image" style="max-height: 220px; border-radius: 4px; object-fit: contain;" alt="Imagen secreta revelada" />
+              </div>
+
+              <div style="display: flex; gap: 0.75rem;">
+                <button id="btn-download-revealed-file" class="btn btn-emerald" style="flex: 1; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 600;">
+                  💾 Descargar Archivo Extraído
+                </button>
+              </div>
+            </div>
+
+            <!-- Caja si el contenido revelado es texto -->
+            <div id="revealed-text-box">
               <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">
                 Contenido Revelado:
               </label>
@@ -216,10 +303,32 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
   const cryptoModeSelect = container.querySelector('#stego-crypto-mode');
   const passwordGroup = container.querySelector('#password-group');
   const stegoPassword = container.querySelector('#stego-password');
+
+  // Selector de tipo de secreto
+  const btnSecretTypeText = container.querySelector('#btn-secret-type-text');
+  const btnSecretTypeFile = container.querySelector('#btn-secret-type-file');
+  const secretTextGroup = container.querySelector('#secret-text-group');
+  const secretFileGroup = container.querySelector('#secret-file-group');
+
   const stegoMessage = container.querySelector('#stego-message');
   const payloadSizeCounter = container.querySelector('#payload-size-counter');
+
+  // File Secret Elements
+  const dropzoneSecretFile = container.querySelector('#dropzone-secret-file');
+  const secretFileInput = container.querySelector('#secret-file-input');
+  const secretFileSizeCounter = container.querySelector('#secret-file-size-counter');
+  const selectedSecretFileCard = container.querySelector('#selected-secret-file-card');
+  const selectedSecretFileIcon = container.querySelector('#selected-secret-file-icon');
+  const selectedSecretFileName = container.querySelector('#selected-secret-file-name');
+  const selectedSecretFileSize = container.querySelector('#selected-secret-file-size');
+  const selectedSecretFileType = container.querySelector('#selected-secret-file-type');
+  const btnRemoveSecretFile = container.querySelector('#btn-remove-secret-file');
+  const selectedSecretImgPreview = container.querySelector('#selected-secret-img-preview');
+  const selectedSecretImg = container.querySelector('#selected-secret-img');
+
   const capacityBar = container.querySelector('#capacity-bar');
   const capacityPercentage = container.querySelector('#capacity-percentage');
+  const capacityWarningMsg = container.querySelector('#capacity-warning-msg');
   const btnInjectData = container.querySelector('#btn-inject-data');
 
   const resultContainer = container.querySelector('#stego-result-container');
@@ -239,6 +348,17 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
   const revealCryptoDecryptBox = container.querySelector('#reveal-crypto-decrypt-box');
   const revealDecryptPassword = container.querySelector('#reveal-decrypt-password');
   const btnDecryptRevealed = container.querySelector('#btn-decrypt-revealed');
+
+  const revealedFileCard = container.querySelector('#revealed-file-card');
+  const revealedFileIcon = container.querySelector('#revealed-file-icon');
+  const revealedFileName = container.querySelector('#revealed-file-name');
+  const revealedFileSize = container.querySelector('#revealed-file-size');
+  const revealedFileType = container.querySelector('#revealed-file-type');
+  const revealedImagePreviewBox = container.querySelector('#revealed-image-preview-box');
+  const revealedSecretImage = container.querySelector('#revealed-secret-image');
+  const btnDownloadRevealedFile = container.querySelector('#btn-download-revealed-file');
+
+  const revealedTextBox = container.querySelector('#revealed-text-box');
   const revealedContentText = container.querySelector('#revealed-content-text');
 
   // --- Estado local ---
@@ -247,6 +367,32 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
   let lastInjectedCanvas = null;
   let loadedRevealImage = null;
   let extractedRawBytes = null;
+  let activeSecretType = 'text'; // 'text' | 'file'
+  let selectedSecretFile = null;
+  let selectedSecretFileBytes = null;
+  let lastExtractedUnpacked = null;
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function getFileIcon(filename, mimeType) {
+    const ext = (filename || '').split('.').pop().toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp'].includes(ext) || (mimeType && mimeType.startsWith('image/'))) return '🖼️';
+    if (['pdf'].includes(ext) || mimeType === 'application/pdf') return '📕';
+    if (['doc', 'docx'].includes(ext)) return '📘';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return '📊';
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜️';
+    if (['txt', 'md', 'json', 'xml', 'log'].includes(ext)) return '📄';
+    if (['key', 'pem', 'crt', 'cer', 'pub'].includes(ext)) return '🔑';
+    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return '🎵';
+    if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return '🎬';
+    return '📁';
+  }
 
   // --- Alternancia de modos (Ocultar / Revelar) ---
   hideBtn.addEventListener('click', () => {
@@ -263,10 +409,32 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
     hideSection.style.display = 'none';
   });
 
-  // Alternar campo de contraseña según modo
+  // Alternancia de tipo de secreto (Texto vs Archivo)
+  btnSecretTypeText.addEventListener('click', () => {
+    activeSecretType = 'text';
+    btnSecretTypeText.className = 'btn btn-primary';
+    btnSecretTypeFile.className = 'btn btn-secondary';
+    secretTextGroup.style.display = 'block';
+    secretFileGroup.style.display = 'none';
+    updateCapacityMetrics();
+    checkInjectReadiness();
+  });
+
+  btnSecretTypeFile.addEventListener('click', () => {
+    activeSecretType = 'file';
+    btnSecretTypeFile.className = 'btn btn-primary';
+    btnSecretTypeText.className = 'btn btn-secondary';
+    secretFileGroup.style.display = 'flex';
+    secretTextGroup.style.display = 'none';
+    updateCapacityMetrics();
+    checkInjectReadiness();
+  });
+
+  // Alternar campo de contraseña según modo criptográfico
   cryptoModeSelect.addEventListener('change', () => {
     passwordGroup.style.display = cryptoModeSelect.value === 'aes' ? 'block' : 'none';
     updateCapacityMetrics();
+    checkInjectReadiness();
   });
 
   // --- Carga de Imagen Portadora ---
@@ -308,29 +476,107 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
     }
   }
 
+  // --- Carga de Archivo Confidencial a Ocultar ---
+  dropzoneSecretFile.addEventListener('click', () => secretFileInput.click());
+  dropzoneSecretFile.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzoneSecretFile.classList.add('dragover');
+  });
+  dropzoneSecretFile.addEventListener('dragleave', () => dropzoneSecretFile.classList.remove('dragover'));
+  dropzoneSecretFile.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzoneSecretFile.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) handleSecretFile(e.dataTransfer.files[0]);
+  });
+  secretFileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleSecretFile(e.target.files[0]);
+  });
+
+  function handleSecretFile(file) {
+    selectedSecretFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      selectedSecretFileBytes = new Uint8Array(e.target.result);
+
+      selectedSecretFileName.textContent = file.name;
+      selectedSecretFileSize.textContent = formatBytes(file.size);
+      selectedSecretFileType.textContent = file.type || 'Binario genérico';
+      selectedSecretFileIcon.textContent = getFileIcon(file.name, file.type);
+      secretFileSizeCounter.textContent = `${formatBytes(file.size)} (${file.size.toLocaleString()} bytes)`;
+
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        selectedSecretImg.src = url;
+        selectedSecretImgPreview.style.display = 'flex';
+      } else {
+        selectedSecretImgPreview.style.display = 'none';
+      }
+
+      selectedSecretFileCard.style.display = 'flex';
+      dropzoneSecretFile.style.display = 'none';
+
+      updateCapacityMetrics();
+      checkInjectReadiness();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  btnRemoveSecretFile.addEventListener('click', () => {
+    selectedSecretFile = null;
+    selectedSecretFileBytes = null;
+    secretFileInput.value = '';
+    selectedSecretFileCard.style.display = 'none';
+    selectedSecretImgPreview.style.display = 'none';
+    dropzoneSecretFile.style.display = 'block';
+    secretFileSizeCounter.textContent = 'Ningún archivo seleccionado';
+    updateCapacityMetrics();
+    checkInjectReadiness();
+  });
+
   // --- Métricas de Capacidad en Vivo ---
   stegoMessage.addEventListener('input', updateCapacityMetrics);
+  stegoPassword.addEventListener('input', checkInjectReadiness);
+
+  function calculateRawPayloadSize() {
+    if (activeSecretType === 'text') {
+      const text = stegoMessage.value;
+      const textLen = new TextEncoder().encode(text).length;
+      return textLen > 0 ? (5 + textLen) : 0; // 4B magic + 1B type + textLen
+    } else {
+      if (!selectedSecretFile || !selectedSecretFileBytes) return 0;
+      const nameLen = new TextEncoder().encode(selectedSecretFile.name).length;
+      const mimeLen = new TextEncoder().encode(selectedSecretFile.type || 'application/octet-stream').length;
+      return 4 + 1 + 2 + nameLen + 2 + mimeLen + selectedSecretFileBytes.length;
+    }
+  }
 
   function updateCapacityMetrics() {
-    const text = stegoMessage.value;
-    const textBytes = new TextEncoder().encode(text).length;
-    // Si es AES, el paquete añade 44 bytes de cabecera [Salt(16)+IV(12)+Tag(16)]
+    const rawPayloadBytes = calculateRawPayloadSize();
     const isAes = cryptoModeSelect.value === 'aes';
-    const estimatedPayloadBytes = isAes ? (textBytes + 44) : textBytes;
+    const estimatedTotalBytes = rawPayloadBytes > 0 ? (isAes ? (rawPayloadBytes + 44) : rawPayloadBytes) : 0;
 
-    payloadSizeCounter.textContent = `${estimatedPayloadBytes} bytes ${isAes ? '(incluye cabecera criptográfica 44B)' : ''}`;
+    const descText = `${estimatedTotalBytes.toLocaleString()} bytes ${isAes ? '(incluye cabecera AES-GCM 44B)' : ''}`;
+    payloadSizeCounter.textContent = descText;
+    if (activeSecretType === 'file' && selectedSecretFile) {
+      secretFileSizeCounter.textContent = `${selectedSecretFile.name} — ${formatBytes(selectedSecretFile.size)} [Total empaquetado: ${descText}]`;
+    }
 
     if (currentMaxCapacityBytes > 0) {
-      const pct = Math.min(100, (estimatedPayloadBytes / currentMaxCapacityBytes) * 100);
+      const pct = (estimatedTotalBytes / currentMaxCapacityBytes) * 100;
+      const displayPct = Math.min(100, pct);
       capacityPercentage.textContent = `${pct.toFixed(2)}%`;
-      capacityBar.style.width = `${pct}%`;
+      capacityBar.style.width = `${displayPct}%`;
 
-      if (pct < 70) {
-        capacityBar.className = 'progress-bar progress-normal';
-      } else if (pct <= 100) {
-        capacityBar.className = 'progress-bar progress-warning';
-      } else {
+      if (pct > 100) {
         capacityBar.className = 'progress-bar progress-danger';
+        capacityWarningMsg.style.display = 'block';
+        capacityWarningMsg.innerHTML = `⚠️ Sobrecupo: El payload (${formatBytes(estimatedTotalBytes)}) supera la capacidad máxima de la portadora (${formatBytes(currentMaxCapacityBytes)}). Sube una imagen de mayor resolución.`;
+      } else if (pct > 75) {
+        capacityBar.className = 'progress-bar progress-warning';
+        capacityWarningMsg.style.display = 'none';
+      } else {
+        capacityBar.className = 'progress-bar progress-normal';
+        capacityWarningMsg.style.display = 'none';
       }
     }
     checkInjectReadiness();
@@ -338,14 +584,18 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
 
   function checkInjectReadiness() {
     const hasImage = !!loadedCarrierImage;
-    const hasText = stegoMessage.value.trim().length > 0;
+    const hasPayload = activeSecretType === 'text' 
+      ? stegoMessage.value.trim().length > 0 
+      : (!!selectedSecretFile && !!selectedSecretFileBytes);
     const isAes = cryptoModeSelect.value === 'aes';
     const hasPass = isAes ? stegoPassword.value.length > 0 : true;
 
-    btnInjectData.disabled = !(hasImage && hasText && hasPass);
-  }
+    const rawPayloadBytes = calculateRawPayloadSize();
+    const estimatedTotalBytes = rawPayloadBytes > 0 ? (isAes ? (rawPayloadBytes + 44) : rawPayloadBytes) : 0;
+    const fitsCapacity = currentMaxCapacityBytes > 0 && estimatedTotalBytes <= currentMaxCapacityBytes;
 
-  stegoPassword.addEventListener('input', checkInjectReadiness);
+    btnInjectData.disabled = !(hasImage && hasPayload && hasPass && fitsCapacity);
+  }
 
   // --- Inyección LSB ---
   btnInjectData.addEventListener('click', async () => {
@@ -353,25 +603,36 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
       btnInjectData.disabled = true;
       btnInjectData.innerHTML = '⏳ Procesando inyección en Canvas...';
 
-      let payloadBytes;
-      const text = stegoMessage.value;
+      let unencryptedPayloadBytes;
+      if (activeSecretType === 'text') {
+        const text = stegoMessage.value;
+        unencryptedPayloadBytes = StegoEngine.packPayload({ type: 'text', text });
+      } else {
+        unencryptedPayloadBytes = StegoEngine.packPayload({
+          type: 'file',
+          fileBytes: selectedSecretFileBytes,
+          filename: selectedSecretFile.name,
+          mimeType: selectedSecretFile.type || 'application/octet-stream'
+        });
+      }
+
+      let payloadBytesToInject;
       const isAes = cryptoModeSelect.value === 'aes';
 
       if (isAes) {
         const password = stegoPassword.value;
-        const cryptoResult = await ApiService.encryptAESGCM(text, password);
-        // cryptoResult.packedBuffer viene en Base64 desde el backend
+        const cryptoResult = await ApiService.encryptAESGCM(unencryptedPayloadBytes, password);
         const binaryString = atob(cryptoResult.packedBase64);
-        payloadBytes = new Uint8Array(binaryString.length);
+        payloadBytesToInject = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
-          payloadBytes[i] = binaryString.charCodeAt(i);
+          payloadBytesToInject[i] = binaryString.charCodeAt(i);
         }
       } else {
-        payloadBytes = new TextEncoder().encode(text);
+        payloadBytesToInject = unencryptedPayloadBytes;
       }
 
       // Ejecutar inyección LSB
-      const { canvas, stats } = StegoEngine.hideData(loadedCarrierImage, payloadBytes);
+      const { canvas, stats } = StegoEngine.hideData(loadedCarrierImage, payloadBytesToInject);
       lastInjectedCanvas = canvas;
 
       // Mostrar en el canvas del resultado
@@ -380,12 +641,17 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
       const ctx = outputCanvas.getContext('2d');
       ctx.drawImage(canvas, 0, 0);
 
+      const typeDesc = activeSecretType === 'text' 
+        ? 'Mensaje de Texto' 
+        : `Archivo: "${selectedSecretFile.name}" (${formatBytes(selectedSecretFile.size)})`;
+
       stegoStatsDetails.innerHTML = `
+        <div>• <strong>Tipo de Secreto:</strong> ${typeDesc}</div>
         <div>• <strong>Dimensiones de Imagen:</strong> ${stats.width} × ${stats.height} px</div>
-        <div>• <strong>Tamaño del Payload Inyectado:</strong> ${stats.payloadBytes} bytes</div>
+        <div>• <strong>Tamaño del Payload Inyectado:</strong> ${stats.payloadBytes.toLocaleString()} bytes</div>
         <div>• <strong>Canales RGB Alterados:</strong> ${stats.modifiedChannels.toLocaleString()} bits</div>
         <div>• <strong>Capacidad Utilizada:</strong> ${stats.capacityUsedPercentage}% de ${stats.capacityMaxBytes.toLocaleString()} bytes</div>
-        <div>• <strong>Seguridad:</strong> ${isAes ? 'AES-256-GCM + PBKDF2-SHA512' : 'Texto Plano LSB'}</div>
+        <div>• <strong>Seguridad:</strong> ${isAes ? 'AES-256-GCM + PBKDF2-SHA512' : 'Esteganografía Pura LSB'}</div>
       `;
 
       resultContainer.style.display = 'block';
@@ -437,6 +703,42 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
     }
   });
 
+  function renderRevealedContent(unpacked) {
+    lastExtractedUnpacked = unpacked;
+
+    if (unpacked.type === 'file') {
+      revealedFileCard.style.display = 'flex';
+      revealedTextBox.style.display = 'none';
+
+      revealedFileName.textContent = unpacked.filename || 'archivo_extraido.bin';
+      revealedFileSize.textContent = formatBytes(unpacked.size);
+      revealedFileType.textContent = unpacked.mimeType || 'application/octet-stream';
+      revealedFileIcon.textContent = getFileIcon(unpacked.filename, unpacked.mimeType);
+
+      if (unpacked.mimeType && unpacked.mimeType.startsWith('image/') && unpacked.blob) {
+        const url = URL.createObjectURL(unpacked.blob);
+        revealedSecretImage.src = url;
+        revealedImagePreviewBox.style.display = 'flex';
+      } else {
+        revealedImagePreviewBox.style.display = 'none';
+      }
+    } else {
+      revealedFileCard.style.display = 'none';
+      revealedTextBox.style.display = 'block';
+      revealedContentText.value = unpacked.text || '(Mensaje de texto vacío)';
+    }
+  }
+
+  btnDownloadRevealedFile.addEventListener('click', () => {
+    if (!lastExtractedUnpacked || !lastExtractedUnpacked.blob) return;
+    const url = URL.createObjectURL(lastExtractedUnpacked.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = lastExtractedUnpacked.filename || 'archivo_extraido.bin';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
   btnExtractData.addEventListener('click', () => {
     try {
       if (!loadedRevealImage) return;
@@ -445,27 +747,38 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
 
       revealResultContainer.style.display = 'flex';
 
-      // Verificar si es un paquete binario AES-GCM (>= 44 bytes de cabecera)
-      if (extracted.length >= 44 && extracted.isBinary) {
+      // Verificar si es un paquete binario AES-GCM (>= 44 bytes de cabecera [Salt(16)+IV(12)+Tag(16)])
+      // Un paquete AES GCM tiene salt/iv/tag aleatorio por lo que no comienza por STG1
+      const isStg1 = extracted.rawBytes.length >= 5 &&
+        extracted.rawBytes[0] === 0x53 &&
+        extracted.rawBytes[1] === 0x54 &&
+        extracted.rawBytes[2] === 0x47 &&
+        extracted.rawBytes[3] === 0x31;
+
+      if (!isStg1 && extracted.length >= 44 && extracted.isBinary) {
         revealStatusAlert.className = 'alert-box alert-warning';
         revealStatusAlert.innerHTML = `
-          <strong>Payload Cifrado Detectado:</strong> Se han extraído con éxito ${extracted.length} bytes binarios. El flujo contiene una cabecera con Salt, IV y Authentication Tag.
+          <strong>Payload Cifrado Detectado:</strong> Se han extraído con éxito ${extracted.length.toLocaleString()} bytes binarios. El flujo contiene una cabecera con Salt, IV y Authentication Tag.
         `;
         revealCryptoDecryptBox.style.display = 'flex';
-        // Mostrar Base64 del paquete
+        revealedFileCard.style.display = 'none';
+        revealedTextBox.style.display = 'block';
         const binaryStr = Array.from(extracted.rawBytes).map(b => String.fromCharCode(b)).join('');
         revealedContentText.value = `[PAQUETE CIFRADO AES-256-GCM - ${extracted.length} BYTES]\nBase64: ${btoa(binaryStr)}`;
       } else {
         revealCryptoDecryptBox.style.display = 'none';
+        const unpacked = StegoEngine.unpackPayload(extracted.rawBytes);
         revealStatusAlert.className = 'alert-box alert-success';
         revealStatusAlert.innerHTML = `
-          <strong>Extracción Exitosa:</strong> Se han recuperado ${extracted.length} bytes en texto plano UTF-8.
+          <strong>Extracción Exitosa:</strong> Se ha reconstruido el secreto (${unpacked.type === 'file' ? `Archivo "${unpacked.filename}"` : 'Texto plano UTF-8'}) con un total de ${extracted.length.toLocaleString()} bytes.
         `;
-        revealedContentText.value = extracted.text || '(Datos no legibles como UTF-8)';
+        renderRevealedContent(unpacked);
       }
     } catch (err) {
       revealResultContainer.style.display = 'flex';
       revealCryptoDecryptBox.style.display = 'none';
+      revealedFileCard.style.display = 'none';
+      revealedTextBox.style.display = 'block';
       revealStatusAlert.className = 'alert-box alert-danger';
       revealStatusAlert.innerHTML = `<strong>Error de Extracción:</strong> ${err.message}`;
       revealedContentText.value = '';
@@ -479,19 +792,35 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
         alert('Por favor ingresa la contraseña maestra para descifrar.');
         return;
       }
+      btnDecryptRevealed.disabled = true;
+      btnDecryptRevealed.innerHTML = '⏳ Descifrando y derivando PBKDF2...';
+
       const binaryStr = Array.from(extractedRawBytes).map(b => String.fromCharCode(b)).join('');
       const base64Data = btoa(binaryStr);
 
       const decrypted = await ApiService.decryptAESGCM(base64Data, password);
 
+      // Convertir plaintextBase64 a Uint8Array
+      const decryptedBinaryStr = atob(decrypted.plaintextBase64);
+      const decryptedBytes = new Uint8Array(decryptedBinaryStr.length);
+      for (let i = 0; i < decryptedBinaryStr.length; i++) {
+        decryptedBytes[i] = decryptedBinaryStr.charCodeAt(i);
+      }
+
+      // Desempaquetar contenedor STG1
+      const unpacked = StegoEngine.unpackPayload(decryptedBytes);
+
       revealStatusAlert.className = 'alert-box alert-success';
       revealStatusAlert.innerHTML = `
-        <strong>¡Autenticación y Descifrado Exitosos!</strong> El Authentication Tag de 16 bytes coincidió matemáticamente. La integridad y confidencialidad fueron verificadas.
+        <strong>¡Autenticación y Descifrado Exitosos!</strong> El Authentication Tag de 16 bytes coincidió matemáticamente. Se reconstruyó ${unpacked.type === 'file' ? `el archivo confidencial "${unpacked.filename}"` : 'el mensaje confidencial'}.
       `;
-      revealedContentText.value = decrypted.plaintextUtf8;
+      renderRevealedContent(unpacked);
     } catch (err) {
       revealStatusAlert.className = 'alert-box alert-danger';
       revealStatusAlert.innerHTML = `<strong>Fallo de Integridad / Clave Incorrecta:</strong> ${err.message}`;
+    } finally {
+      btnDecryptRevealed.disabled = false;
+      btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
     }
   });
 }

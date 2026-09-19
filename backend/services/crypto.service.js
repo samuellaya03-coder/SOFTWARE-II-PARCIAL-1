@@ -149,6 +149,7 @@ export function decryptAESGCM(packedData, password) {
     return {
       plaintextBuffer: decrypted,
       plaintextUtf8: decrypted.toString('utf-8'),
+      plaintextBase64: decrypted.toString('base64'),
       saltHex: salt.toString('hex'),
       ivHex: iv.toString('hex'),
       tagHex: authTag.toString('hex')
