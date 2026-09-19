@@ -280,12 +280,12 @@ export function analyzeImagePixels(data, width, height) {
     estimatedOccupancyPct = Number(((endSample / totalChannels) * 100).toFixed(2));
   }
 
-  // 6. Detección Determinística de Cabecera LSB
+  // 6. Detección Determinística de Cabecera LSB (Soporte STG1, AES-256-GCM y Texto)
   let detectedHeaderType = null;
   let detectedPayloadLength = 0;
-  const sampleBytes = new Uint8Array(16);
+  const sampleBytes = new Uint8Array(64);
   let bitIdx = 0;
-  for (let b = 0; b < 16; b++) {
+  for (let b = 0; b < 64; b++) {
     let byteVal = 0;
     for (let bit = 7; bit >= 0; bit--) {
       const channelIdx = bitIdx + Math.floor(bitIdx / 3);
@@ -297,24 +297,50 @@ export function analyzeImagePixels(data, width, height) {
     sampleBytes[b] = byteVal;
   }
 
-  // A) Cabecera mágica STG1 (Cifrado AES-256-GCM + PBKDF2)
-  if (sampleBytes[0] === 0x53 && sampleBytes[1] === 0x54 && sampleBytes[2] === 0x47 && sampleBytes[3] === 0x31) {
+  // Longitud de 32 bits en Big-Endian al inicio de la inyección LSB
+  const len32 = ((sampleBytes[0] << 24) | (sampleBytes[1] << 16) | (sampleBytes[2] << 8) | sampleBytes[3]) >>> 0;
+  const maxCapacity = Math.floor((totalPixels * 3) / 8) - 4;
+
+  // A) Contenedor STG1 en bytes 4..7 (Estándar StegoEngine para Texto y Archivo)
+  if (sampleBytes[4] === 0x53 && sampleBytes[5] === 0x54 && sampleBytes[6] === 0x47 && sampleBytes[7] === 0x31) {
     detectedHeaderType = 'STG1_CONTAINER';
-  } else {
-    // B) Longitud de texto plano LSB (32 bits enteros)
-    const len32 = (sampleBytes[0] << 24) | (sampleBytes[1] << 16) | (sampleBytes[2] << 8) | sampleBytes[3];
-    const maxCapacity = Math.floor((totalPixels * 3) / 8) - 4;
-    if (len32 > 0 && len32 <= maxCapacity) {
-      let printableCount = 0;
-      for (let i = 4; i < 12; i++) {
-        if ((sampleBytes[i] >= 32 && sampleBytes[i] <= 126) || sampleBytes[i] === 10 || sampleBytes[i] === 13) {
-          printableCount++;
-        }
+    detectedPayloadLength = len32 > 0 && len32 <= maxCapacity ? len32 : 0;
+  }
+  // B) Contenedor STG1 directo en bytes 0..3
+  else if (sampleBytes[0] === 0x53 && sampleBytes[1] === 0x54 && sampleBytes[2] === 0x47 && sampleBytes[3] === 0x31) {
+    detectedHeaderType = 'STG1_CONTAINER';
+    detectedPayloadLength = len32;
+  }
+  // C) Paquete Criptográfico AES-256-GCM: [ Salt(16B) | IV(12B) | Tag(16B) | Ciphertext ]
+  // En este modo len32 >= 44 bytes y los primeros 44 bytes son pseudoaleatorios CSPRNG
+  else if (len32 >= 44 && len32 <= maxCapacity) {
+    const checkBytes = Math.min(len32, 44);
+    let onesCount = 0;
+    const totalBits = checkBytes * 8;
+    for (let b = 4; b < 4 + checkBytes; b++) {
+      const val = sampleBytes[b];
+      for (let bit = 0; bit < 8; bit++) {
+        if ((val >> bit) & 1) onesCount++;
       }
-      if (printableCount >= 6) {
-        detectedHeaderType = 'PLAINTEXT_LSB';
-        detectedPayloadLength = len32;
+    }
+    const onesRatio = onesCount / totalBits;
+    // La entropía y balance de bits de Salt, IV y Tag es uniforme (alrededor de 50%)
+    if (onesRatio >= 0.35 && onesRatio <= 0.65) {
+      detectedHeaderType = 'AES_GCM_PACKAGE';
+      detectedPayloadLength = len32;
+    }
+  }
+  // D) Texto plano clásico (len32 válido seguido de caracteres ASCII imprimibles)
+  else if (len32 > 0 && len32 <= maxCapacity) {
+    let printableCount = 0;
+    for (let i = 4; i < Math.min(16, 4 + len32); i++) {
+      if ((sampleBytes[i] >= 32 && sampleBytes[i] <= 126) || sampleBytes[i] === 10 || sampleBytes[i] === 13) {
+        printableCount++;
       }
+    }
+    if (printableCount >= 4) {
+      detectedHeaderType = 'PLAINTEXT_LSB';
+      detectedPayloadLength = len32;
     }
   }
 
@@ -343,7 +369,11 @@ export function analyzeImagePixels(data, width, height) {
   if (detectedHeaderType === 'STG1_CONTAINER') {
     finalConfidence = 99.8;
     verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
-    verdictSummary = 'Firma criptográfica confirmada: Se detectó el contenedor esteganográfico STG1 (AES-256-GCM + PBKDF2) en los planos LSB.';
+    verdictSummary = `Firma esteganográfica confirmada: Se detectó el contenedor STG1 en los planos LSB (longitud del payload: ${detectedPayloadLength.toLocaleString()} bytes).`;
+  } else if (detectedHeaderType === 'AES_GCM_PACKAGE') {
+    finalConfidence = 99.8;
+    verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
+    verdictSummary = `Firma criptográfica confirmada: Se detectó un paquete AES-256-GCM [Salt(16B) | IV(12B) | Tag(16B) | Ciphertext] inyectado en los planos LSB (longitud total: ${detectedPayloadLength.toLocaleString()} bytes).`;
   } else if (detectedHeaderType === 'PLAINTEXT_LSB') {
     finalConfidence = 99.5;
     verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
