@@ -262,20 +262,23 @@ export function analyzeImagePixels(data, width, height) {
   }
 
   // 5. Estimación de longitud de Payload según la caída de la curva de Westfeld
+  // Un plateau real de Westfeld debe sostenerse por al menos 2 intervalos consecutivos,
+  // evitando falsos positivos por muestras pequeñas en el intervalo inicial (ruido de contorno).
   let estimatedPayloadBytes = 0;
   let estimatedOccupancyPct = 0;
-  let kneeIndex = -1;
+  let plateauLength = 0;
 
   for (let i = 0; i < westfeldCurve.length; i++) {
     if (westfeldCurve[i].stegoProbability > 0.65) {
-      kneeIndex = i;
-    } else if (kneeIndex !== -1 && westfeldCurve[i].stegoProbability < 0.35) {
+      plateauLength++;
+    } else {
       break;
     }
   }
 
-  if (kneeIndex >= 0 && westfeldCurve[0].stegoProbability > 0.60) {
-    const endSample = westfeldCurve[kneeIndex].channelSample;
+  const hasSustainedPlateau = plateauLength >= 2;
+  if (hasSustainedPlateau) {
+    const endSample = westfeldCurve[plateauLength - 1].channelSample;
     estimatedPayloadBytes = Math.max(0, Math.floor(endSample / 8) - 4);
     estimatedOccupancyPct = Number(((endSample / totalChannels) * 100).toFixed(2));
   }
@@ -378,50 +381,28 @@ export function analyzeImagePixels(data, width, height) {
     finalConfidence = 99.5;
     verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
     verdictSummary = `Se detectó cabecera LSB de texto estructurado en los primeros bytes (longitud del payload: ${detectedPayloadLength.toLocaleString()} bytes).`;
+  } else if (hasSustainedPlateau && flatMismatchRate > 0.46) {
+    // Esteganografía de terceros sin cabecera reconocida: meseta Westfeld sostenida por >= 2 intervalos
+    finalConfidence = Math.min(96.0, 70 + (plateauLength * 2));
+    verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
+    verdictSummary = `Alta sospecha de esteganografía LSB. Pares PoV igualados continuamente en el primer ${estimatedOccupancyPct}% de la imagen (aprox. ${estimatedPayloadBytes.toLocaleString()} bytes inyectados).`;
   } else {
+    // Sin cabecera ni meseta sostenida: imagen natural o fotografía limpia (incluso WhatsApp o capturas)
     const avgAsymmetry = (chiR.asymmetryPct + chiG.asymmetryPct + chiB.asymmetryPct) / 3;
+    const maxChi = Math.max(chiR.chiSquare, chiG.chiSquare, chiB.chiSquare);
 
-    // Asimetría de pares PoV (Limpia: >15%, Stego: <4%)
-    let povScore = 0;
-    if (avgAsymmetry < 2.0) povScore = 95;
-    else if (avgAsymmetry < 5.0) povScore = 80;
-    else if (avgAsymmetry < 10.0) povScore = 45;
-    else if (avgAsymmetry < 16.0) povScore = 20;
-    else povScore = Math.max(2, 12 - (avgAsymmetry * 0.15));
-
-    // Descorrelación LSB en zonas planas (Limpia: <32%, Stego: ~50%)
-    let flatScore = 0;
-    if (flatMismatchRate > 0.47) flatScore = 90;
-    else if (flatMismatchRate > 0.44) flatScore = 65;
-    else if (flatMismatchRate > 0.38) flatScore = 35;
-    else if (flatMismatchRate > 0.30) flatScore = 15;
-    else flatScore = 4;
-
-    // Puntuación Westfeld inicial
-    const initialWestfeldProb = westfeldCurve.length > 0 ? westfeldCurve[0].stegoProbability : 0;
-    let westfeldScore = initialWestfeldProb * 100;
-
-    // Calibración para imágenes limpias (fotos de WhatsApp, capturas de pantalla, texturas fotográficas)
-    if (avgAsymmetry >= 14.0 && flatMismatchRate < 0.38) {
-      finalConfidence = Math.max(3.0, (flatScore * 0.5) + (povScore * 0.5));
+    if (maxChi > 500) {
+      // Varianza natural fotográfica muy fuerte (frecuencias distantes en pares)
+      finalConfidence = Math.max(3.0, flatMismatchRate * 25);
     } else {
-      finalConfidence = (povScore * 0.40) + (flatScore * 0.35) + (westfeldScore * 0.25);
+      let povScore = avgAsymmetry < 5 ? 25 : 8;
+      let flatScore = flatMismatchRate > 0.42 ? 25 : 8;
+      finalConfidence = (povScore * 0.5) + (flatScore * 0.5);
     }
 
-    finalConfidence = Math.min(99.0, Math.max(2.0, Number(finalConfidence.toFixed(1))));
-
-    if (finalConfidence >= 65 || (initialWestfeldProb > 0.75 && flatMismatchRate > 0.46)) {
-      verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
-      verdictSummary = estimatedPayloadBytes > 0
-        ? `Alta sospecha de esteganografía LSB. Pares PoV igualados en el primer ${estimatedOccupancyPct}% de la imagen (aprox. ${estimatedPayloadBytes.toLocaleString()} bytes inyectados).`
-        : 'Se detecta igualación artificial en pares de valores (PoVs) y aleatoriedad LSB consistente con un payload inyectado.';
-    } else if (finalConfidence >= 30) {
-      verdictStatus = 'SOSPECHA_MODERADA';
-      verdictSummary = 'Anomalías estadísticas leves en zonas planas o histograma LSB. Se recomienda inspección visual microscópica.';
-    } else {
-      verdictStatus = 'IMAGEN_LIMPIA';
-      verdictSummary = 'La distribución de frecuencias en pares PoV, la dispersión LSB y la continuidad espacial son plenamente consistentes con una imagen fotográfica limpia y no alterada.';
-    }
+    finalConfidence = Math.min(22.0, Math.max(2.0, Number(finalConfidence.toFixed(1))));
+    verdictStatus = 'IMAGEN_LIMPIA';
+    verdictSummary = 'La distribución de frecuencias en pares PoV, la dispersión LSB y la continuidad espacial son plenamente consistentes con una imagen fotográfica limpia y no alterada.';
   }
 
   return {
