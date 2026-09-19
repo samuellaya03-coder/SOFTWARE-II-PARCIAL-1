@@ -39,10 +39,10 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
             </h3>
 
             <div id="dropzone-hide" class="dropzone">
-              <input type="file" id="carrier-input" accept="image/png, image/jpeg, image/webp" style="display: none;" />
+              <input type="file" id="carrier-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
               <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
               <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen o haz clic para seleccionarla</p>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, WebP (Se convertirá a PNG sin pérdida)</p>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, JPG, WebP, BMP (Se convertirá a PNG automáticamente sin pérdida)</p>
             </div>
 
             <div id="carrier-info" style="display: none; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
@@ -54,6 +54,7 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
                 <span style="color: var(--text-muted);">Capacidad Máxima LSB:</span>
                 <span id="carrier-cap" class="font-mono text-white" style="color: var(--accent-cyan);">-</span>
               </div>
+              <div id="carrier-conversion-badge" class="badge badge-amber" style="display: none; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.35rem 0.65rem;"></div>
             </div>
 
             <!-- Preview Imagen Portadora -->
@@ -212,10 +213,11 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
           </h3>
 
           <div id="dropzone-reveal" class="dropzone">
-            <input type="file" id="stego-input-file" accept="image/png" style="display: none;" />
+            <input type="file" id="stego-input-file" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🕵️‍♂️</div>
-            <p style="font-weight: 600; color: var(--text-primary);">Sube la imagen PNG sospechosa de contener datos</p>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">El motor LSB leerá la cabecera de 32 bits y reconstruirá el mensaje o archivo original</p>
+            <p style="font-weight: 600; color: var(--text-primary);">Sube la imagen sospechosa de contener datos (PNG, JPEG, WebP, etc.)</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Se convertirá y analizará automáticamente sin pérdida para extraer el payload LSB</p>
+            <div id="reveal-conversion-badge" class="badge badge-amber" style="display: none; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.35rem 0.65rem;"></div>
           </div>
 
           <div id="reveal-image-preview-box" class="image-preview-box" style="display: none;">
@@ -455,19 +457,31 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
 
   async function handleCarrierFile(file) {
     try {
-      const img = await StegoEngine.loadImage(file);
+      const carrierBadge = container.querySelector('#carrier-conversion-badge');
+      const conversion = await StegoEngine.convertToPng(file);
+      const img = conversion.imageElement;
       loadedCarrierImage = img;
       carrierImg.src = img.src;
       carrierPreviewBox.style.display = 'flex';
       carrierInfo.style.display = 'block';
 
-      const width = img.naturalWidth || img.width;
-      const height = img.naturalHeight || img.height;
+      const width = conversion.width;
+      const height = conversion.height;
       const cap = StegoEngine.calculateCapacity(width, height);
       currentMaxCapacityBytes = cap.maxBytes;
 
       carrierRes.textContent = `${width} × ${height} px (${(cap.totalPixels / 1e6).toFixed(2)} MP)`;
       carrierCap.textContent = `${cap.maxBytes.toLocaleString()} bytes (~${(cap.maxBytes / 1024).toFixed(1)} KB)`;
+
+      if (carrierBadge) {
+        if (conversion.wasConverted) {
+          const origFormat = (conversion.originalType || 'JPEG').replace('image/', '').toUpperCase();
+          carrierBadge.style.display = 'inline-flex';
+          carrierBadge.innerHTML = `⚡ Convertido de <code>${origFormat}</code> a <code>PNG</code> sin pérdida`;
+        } else {
+          carrierBadge.style.display = 'none';
+        }
+      }
 
       updateCapacityMetrics();
       checkInjectReadiness();
@@ -687,21 +701,46 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
 
   // --- SECCIÓN REVELAR / EXTRAER ---
   dropzoneReveal.addEventListener('click', () => stegoInputFile.click());
+  dropzoneReveal.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzoneReveal.classList.add('dragover');
+  });
+  dropzoneReveal.addEventListener('dragleave', () => dropzoneReveal.classList.remove('dragover'));
+  dropzoneReveal.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzoneReveal.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) handleRevealFile(e.dataTransfer.files[0]);
+  });
   stegoInputFile.addEventListener('change', async (e) => {
     if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      try {
-        const img = await StegoEngine.loadImage(file);
-        loadedRevealImage = img;
-        revealImg.src = img.src;
-        revealPreviewBox.style.display = 'flex';
-        btnExtractData.disabled = false;
-        revealResultContainer.style.display = 'none';
-      } catch (err) {
-        alert(err.message);
-      }
+      handleRevealFile(e.target.files[0]);
     }
   });
+
+  async function handleRevealFile(file) {
+    try {
+      const revealBadge = container.querySelector('#reveal-conversion-badge');
+      const conversion = await StegoEngine.convertToPng(file);
+      const img = conversion.imageElement;
+      loadedRevealImage = img;
+      revealImg.src = img.src;
+      revealPreviewBox.style.display = 'flex';
+      btnExtractData.disabled = false;
+      revealResultContainer.style.display = 'none';
+
+      if (revealBadge) {
+        if (conversion.wasConverted) {
+          const origFormat = (conversion.originalType || 'JPEG').replace('image/', '').toUpperCase();
+          revealBadge.style.display = 'inline-flex';
+          revealBadge.innerHTML = `⚡ Convertido de <code>${origFormat}</code> a <code>PNG</code> sin pérdida`;
+        } else {
+          revealBadge.style.display = 'none';
+        }
+      }
+    } catch (err) {
+      alert(`Error cargando imagen: ${err.message}`);
+    }
+  }
 
   function renderRevealedContent(unpacked) {
     lastExtractedUnpacked = unpacked;

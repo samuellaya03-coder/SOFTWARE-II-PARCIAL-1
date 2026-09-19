@@ -40,12 +40,55 @@ export class StegoEngine {
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => resolve(img);
-        img.onerror = (err) => reject(new Error('No se pudo cargar la imagen: formato no soportado.'));
+        img.onerror = () => reject(new Error('No se pudo cargar la imagen: formato no soportado.'));
         img.src = e.target.result;
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  /**
+   * Convierte cualquier imagen (JPEG, JPG, WebP, BMP, GIF, etc.) automáticamente a PNG sin pérdida.
+   * Si ya es PNG, la devuelve tal cual.
+   * @param {File|Blob} fileOrBlob 
+   * @returns {Promise<{ pngBlob: Blob, wasConverted: boolean, originalType: string, width: number, height: number, imageElement: HTMLImageElement }>}
+   */
+  static async convertToPng(fileOrBlob) {
+    const originalType = fileOrBlob.type || 'image/unknown';
+    const isAlreadyPng = originalType === 'image/png';
+
+    const img = await this.loadImage(fileOrBlob);
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+
+    if (isAlreadyPng) {
+      return {
+        pngBlob: fileOrBlob,
+        wasConverted: false,
+        originalType,
+        width,
+        height,
+        imageElement: img
+      };
+    }
+
+    // Convertir de forma transparente mediante Canvas HTML5 a PNG sin pérdida
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const pngBlob = await this.exportToPngBlob(canvas);
+    return {
+      pngBlob,
+      wasConverted: true,
+      originalType,
+      width,
+      height,
+      imageElement: img
+    };
   }
 
   /**

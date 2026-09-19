@@ -27,16 +27,17 @@ export function renderAnalysisTab(container, initialData = null) {
       <!-- Zona de Carga Única de Imagen para Análisis Forense -->
       <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
         <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-          Seleccionar Imagen PNG para Análisis Forense Digital
+          Seleccionar Imagen para Análisis Forense Digital
         </h3>
 
         <div id="dropzone-analysis" class="dropzone">
-          <input type="file" id="analysis-file-input" accept="image/png" style="display: none;" />
+          <input type="file" id="analysis-file-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
           <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔬</div>
-          <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen PNG o haz clic para subir</p>
+          <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen (PNG, JPG, JPEG, WebP, etc.) o haz clic para subir</p>
           <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-            Se analizarán los bytes crudos para extraer el plano LSB en blanco y negro y calcular las métricas estadísticas
+            Cualquier formato no-PNG se convertirá automáticamente a PNG sin pérdida para su análisis LSB y estadístico
           </p>
+          <div id="analysis-conversion-notice" class="badge badge-amber" style="display: none; margin-top: 0.75rem; padding: 0.4rem 0.85rem; font-size: 0.8rem; align-items: center; gap: 0.4rem;"></div>
         </div>
 
         <div id="analysis-preview-box" class="image-preview-box" style="display: none;">
@@ -296,18 +297,33 @@ export function renderAnalysisTab(container, initialData = null) {
     if (fileOrBlob && typeof fileOrBlob === 'object' && !(fileOrBlob instanceof Blob)) {
       blob = fileOrBlob.stegoBlob || fileOrBlob.blob || fileOrBlob;
     }
-    currentAnalysisBlob = blob;
+    if (!blob) return;
 
-    const url = URL.createObjectURL(blob);
-    previewImg.src = url;
-    previewBox.style.display = 'flex';
-    btnRunAnalysis.disabled = false;
-    resultsSection.style.display = 'none';
+    const conversionNotice = container.querySelector('#analysis-conversion-notice');
 
     try {
-      loadedImageElement = await StegoEngine.loadImage(blob);
-    } catch {
-      loadedImageElement = null;
+      // Conversión automática transparente si la imagen no es PNG (JPEG, WebP, BMP, etc.)
+      const conversion = await StegoEngine.convertToPng(blob);
+      currentAnalysisBlob = conversion.pngBlob;
+      loadedImageElement = conversion.imageElement;
+
+      const url = URL.createObjectURL(conversion.pngBlob);
+      previewImg.src = url;
+      previewBox.style.display = 'flex';
+      btnRunAnalysis.disabled = false;
+      resultsSection.style.display = 'none';
+
+      if (conversionNotice) {
+        if (conversion.wasConverted) {
+          const origFormat = (conversion.originalType || 'JPEG/JPG').replace('image/', '').toUpperCase();
+          conversionNotice.style.display = 'inline-flex';
+          conversionNotice.innerHTML = `⚡ <strong>Imagen convertida:</strong> de <code>${origFormat}</code> a <code>PNG</code> sin pérdida para análisis forense digital.`;
+        } else {
+          conversionNotice.style.display = 'none';
+        }
+      }
+    } catch (err) {
+      alert(`Error al procesar la imagen: ${err.message}`);
     }
   }
 
