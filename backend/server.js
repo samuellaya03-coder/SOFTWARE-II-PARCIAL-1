@@ -1,7 +1,29 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+
+// Cargar variables de entorno desde .env sin dependencias externas
+try {
+  const envPath = path.resolve('.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+    envContent.split(/\r?\n/).forEach(line => {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        const key = match[1];
+        let value = match[2] || '';
+        if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+        if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+        process.env[key] = value.trim();
+      }
+    });
+  }
+} catch (e) {}
+
 import cryptoRoutes from './routes/crypto.routes.js';
 import analyzeRoutes from './routes/analyze.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +51,7 @@ app.use((req, res, next) => {
 // Rutas de API
 app.use('/api/crypto', cryptoRoutes);
 app.use('/api/analyze', analyzeRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check y metadatos de seguridad
 app.get('/api/health', (req, res) => {

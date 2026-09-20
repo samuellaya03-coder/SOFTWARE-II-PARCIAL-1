@@ -119,48 +119,215 @@ export function renderCryptoTab(container) {
         </div>
       </div>
 
-      <!-- SECCIÓN 2: CIFRADO ASIMÉTRICO / HÍBRIDO (RSA-4096 + AES-GCM) -->
+      <!-- SECCIÓN 3: CIFRADO ASIMÉTRICO / HÍBRIDO (RSA-4096 + AES-GCM) -->
       <div class="card space-y-4" style="margin-top: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <!-- Header con Badges Matemáticos y Explicativos -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
           <div>
-            <h3 style="font-size: 1.25rem;">3. Cifrado Híbrido Asimétrico (RSA-4096 / RSA-OAEP + AES-256-GCM)</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
-              Uso de RSA para encapsular de forma segura la clave de sesión simétrica efímera de 256 bits generada por CSPRNG.
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+              <h3 style="font-size: 1.25rem;">3. Cifrado Híbrido Asimétrico (RSA-4096 / RSA-OAEP + AES-256-GCM)</h3>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+              Encapsulamiento seguro de clave efímera simétrica con RSA-OAEP y cifrado autenticado de datos con AES-256-GCM.
             </p>
+            <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.5rem;">
+              <span class="badge badge-purple" title="Módulo N = p * q de 4096 bits (1234 dígitos decimales)">MÓDULO N (4096 BITS)</span>
+              <span class="badge badge-cyan" title="Cuarto primo de Fermat e = 2^16 + 1 = 65537">EXPONENTE e = 65537</span>
+              <span class="badge badge-emerald" title="Optimal Asymmetric Encryption Padding con SHA-256 y máscara MGF1">RSA-OAEP (SHA-256 / MGF1)</span>
+            </div>
           </div>
           <button id="btn-gen-rsa" class="btn btn-secondary">
             ⚡ Generar Par de Claves RSA-4096
           </button>
         </div>
 
+        <!-- Par de Claves RSA con Botones de Copiar -->
         <div class="grid-2">
           <div>
-            <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
-              Clave Pública (Public Key PEM - SPKI):
-            </label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
+                Clave Pública (Public Key PEM - SPKI):
+              </label>
+              <button id="btn-copy-pub" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem; border-color: rgba(0, 240, 255, 0.3); color: var(--accent-cyan);" title="Copiar clave pública al portapapeles">
+                📋 Copiar
+              </button>
+            </div>
             <textarea id="rsa-public-key" rows="6" readonly class="font-mono" style="font-size: 0.75rem;" placeholder="Haz clic en 'Generar Par de Claves RSA-4096'..."></textarea>
           </div>
 
           <div>
-            <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
-              Clave Privada (Private Key PEM - PKCS#8):
-            </label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
+                Clave Privada (Private Key PEM - PKCS#8):
+              </label>
+              <button id="btn-copy-priv" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem; border-color: rgba(168, 85, 247, 0.3); color: #d8b4fe;" title="Copiar clave privada al portapapeles">
+                📋 Copiar
+              </button>
+            </div>
             <textarea id="rsa-private-key" rows="6" readonly class="font-mono" style="font-size: 0.75rem;" placeholder="Haz clic en 'Generar Par de Claves RSA-4096'..."></textarea>
           </div>
         </div>
 
-        <!-- Demostración Cifrado Híbrido -->
-        <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
-          <h4 style="font-size: 1rem; color: var(--accent-purple);">Demostración de Cifrado Híbrido de Sesión</h4>
-          <div style="display: flex; gap: 1rem;">
-            <input type="text" id="hybrid-message-input" value="Transacción bancaria confidencial aprobada #893712" style="flex: 3;" />
-            <button id="btn-run-hybrid" class="btn btn-primary" style="flex: 1;" disabled>
-              🔒 Ejecutar Cifrado Híbrido
-            </button>
+        <!-- FLUJO DE COMUNICACIÓN HÍBRIDA: LADO EMISOR (ALICE) VS LADO RECEPTOR (BOB) -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 1.15rem;">
+          <div style="margin-bottom: 1rem;">
+            <h4 style="font-size: 1.05rem; color: #ffffff; display: flex; align-items: center; gap: 0.4rem;">
+              <span>⚖️</span> Flujo de Comunicación Híbrida: Lado Emisor (Alice) vs Lado Receptor (Bob)
+            </h4>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.25rem;">
+              Demostración interactiva: Alice cifra con la Clave Pública de Bob; Bob descifra con su Clave Privada secreta.
+            </p>
           </div>
 
-          <div id="hybrid-result-box" style="display: none; background: rgba(0,0,0,0.35); padding: 1rem; border-radius: 8px; font-size: 0.85rem;">
-            <!-- Se llena dinámicamente -->
+          <!-- DIAGRAMA VISUAL INTERACTIVO (INFOGRAFÍA EN VIVO) -->
+          <div class="crypto-visual-pipeline">
+            <div class="pipeline-stepper">
+              <div id="step-1-indicator" class="pipeline-step active">
+                <div class="step-number">1</div>
+                <span>Generar Par RSA-4096 (Bob)</span>
+              </div>
+              <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1); margin: 0 0.75rem;"></div>
+              <div id="step-2-indicator" class="pipeline-step">
+                <div class="step-number">2</div>
+                <span>Alice Cifra Sobre Digital</span>
+              </div>
+              <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1); margin: 0 0.75rem;"></div>
+              <div id="step-3-indicator" class="pipeline-step">
+                <div class="step-number">3</div>
+                <span>Bob Abre con Clave Privada</span>
+              </div>
+            </div>
+
+            <div class="pipeline-nodes-container">
+              <!-- NODO 1: ALICE -->
+              <div id="diagram-node-alice" class="pipeline-actor-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--accent-cyan);">
+                    <span style="font-size: 1.25rem;">👩‍💻</span> Alice (Emisor)
+                  </div>
+                  <span class="badge badge-cyan" style="font-size: 0.65rem;">Origina Mensaje</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+                  <div>📝 Mensaje Confidencial</div>
+                  <div>➕ Clave Efímera AES-256 (32B)</div>
+                </div>
+                <div class="key-representation-box" style="background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.25); color: #cffafe;">
+                  <span style="font-size: 1.1rem;">🔓</span>
+                  <div>
+                    <strong style="display: block;">Candado de Bob (Clave Pública)</strong>
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">Sella la clave AES dentro del sobre</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- NODO 2: CANAL / SOBRE DIGITAL -->
+              <div class="pipeline-middle-channel">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                  🌐 Red Pública / Internet
+                </div>
+                <div class="transit-track">
+                  <div id="diagram-transit-pulse" class="transit-track-pulse" style="display: none;"></div>
+                </div>
+                <div id="diagram-envelope" class="digital-envelope-visual">
+                  <div id="diagram-envelope-icon" style="font-size: 1.35rem; margin-bottom: 0.2rem;">📦🔒</div>
+                  <strong id="diagram-envelope-title" style="color: #e9d5ff; display: block;">Sobre Digital Blindado</strong>
+                  <span id="diagram-envelope-status" style="font-size: 0.68rem; color: var(--text-secondary);">En espera de claves...</span>
+                </div>
+              </div>
+
+              <!-- NODO 3: BOB -->
+              <div id="diagram-node-bob" class="pipeline-actor-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.4rem; font-weight: 700; color: #d8b4fe;">
+                    <span style="font-size: 1.25rem;">👨‍💻</span> Bob (Receptor)
+                  </div>
+                  <span class="badge badge-purple" style="font-size: 0.65rem;">Destino Final</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+                  <div>📥 Recibe el paquete por internet</div>
+                  <div>🛡️ Valida AuthTag GHASH (128 bits)</div>
+                </div>
+                <div class="key-representation-box" style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.25); color: #e9d5ff;">
+                  <span style="font-size: 1.1rem;">🗝️</span>
+                  <div>
+                    <strong style="display: block;">Única Llave Secreta (Clave Privada)</strong>
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">Solo Bob puede abrir el candado</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2" style="gap: 1.25rem;">
+            <!-- COLUMNA 1: LADO EMISOR (ALICE) -->
+            <div style="background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 10px; padding: 1.15rem; display: flex; flex-direction: column; gap: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 240, 255, 0.15); padding-bottom: 0.5rem;">
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.35rem;">
+                  <span>📤</span> 1. Lado Emisor (Alice)
+                </div>
+                <span class="badge badge-cyan" style="font-size: 0.68rem;">Usa Clave Pública</span>
+              </div>
+
+              <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45; margin: 0;">
+                Alice redacta el mensaje confidencial. <strong>No necesita la clave privada</strong>. El sistema genera una clave efímera AES de 256 bits, cifra el mensaje y protege la clave dentro del sobre digital RSA-OAEP.
+              </p>
+
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">
+                  Mensaje Confidencial de Alice:
+                </label>
+                <textarea id="hybrid-message-input" rows="2" style="font-size: 0.85rem;">Transacción bancaria confidencial aprobada #893712</textarea>
+              </div>
+
+              <button id="btn-alice-encrypt" class="btn btn-primary" style="width: 100%;" disabled>
+                🔒 Cifrar y Empaquetar Sobre Digital (Alice)
+              </button>
+
+              <!-- Paquete Generado por Alice -->
+              <div id="alice-output-box" style="display: none; background: rgba(0,0,0,0.45); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.2); font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.6;">
+                <div style="color: var(--accent-cyan); font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                  <span>📦</span> SOBRE DIGITAL TRANSMITIDO POR ALICE:
+                </div>
+                <div>• <strong>Clave AES Efímera (Cifrada con RSA-OAEP 4096):</strong> <span id="alice-enc-key" style="color: #cffafe; word-break: break-all;">-</span></div>
+                <div>• <strong>IV GCM (Nonce 96 bits):</strong> <span id="alice-iv" style="color: var(--accent-cyan);">-</span></div>
+                <div>• <strong>Authentication Tag (128 bits):</strong> <span id="alice-tag" style="color: var(--accent-amber);">-</span></div>
+                <div>• <strong>Ciphertext (Datos AES-256):</strong> <span id="alice-cipher" style="color: var(--text-muted); word-break: break-all;">-</span></div>
+                <div style="margin-top: 0.5rem; color: #a7f3d0; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.4rem;">
+                  📡 Paquete en tránsito listo para ser entregado a Bob.
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: LADO RECEPTOR (BOB) -->
+            <div style="background: rgba(168, 85, 247, 0.03); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 10px; padding: 1.15rem; display: flex; flex-direction: column; gap: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(168, 85, 247, 0.15); padding-bottom: 0.5rem;">
+                <div style="font-weight: 700; font-size: 0.95rem; color: #d8b4fe; display: flex; align-items: center; gap: 0.35rem;">
+                  <span>📥</span> 2. Lado Receptor (Bob)
+                </div>
+                <span class="badge badge-purple" style="font-size: 0.68rem;">Usa Clave Privada</span>
+              </div>
+
+              <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45; margin: 0;">
+                Bob recibe el paquete de la red. Utiliza su <strong>Clave Privada secreta de 4096 bits</strong> para abrir el sobre digital, recuperar la clave simétrica efímera de 256 bits y validar la autenticidad con el AuthTag.
+              </p>
+
+              <button id="btn-bob-decrypt" class="btn btn-emerald" style="width: 100%;" disabled>
+                🔓 Abrir Sobre Digital y Descifrar (Bob)
+              </button>
+
+              <!-- Resultado del Descifrado de Bob -->
+              <div id="bob-output-box" style="display: none; background: rgba(0,0,0,0.45); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3); font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.6;">
+                <div style="color: var(--accent-emerald); font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                  <span>✅</span> DESENCRIPTADO Y VERIFICADO POR BOB:
+                </div>
+                <div>• <strong>Clave de Sesión AES Recuperada:</strong> <span id="bob-dec-key" style="color: #a7f3d0; word-break: break-all;">-</span></div>
+                <div>• <strong>Validación AuthTag (GHASH):</strong> <span style="color: var(--accent-emerald); font-weight: bold;">AUTÉNTICO (128 bits OK)</span></div>
+                <div style="margin-top: 0.45rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.45rem;">
+                  <span style="color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Texto Plano Final Recuperado:</span>
+                  <div id="bob-plaintext" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.45rem 0.75rem; border-radius: 4px; color: #ffffff; font-weight: 700; font-size: 0.88rem;"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -187,13 +354,39 @@ export function renderCryptoTab(container) {
   const decryptStatusAlert = container.querySelector('#decrypt-status-alert');
   const decryptedPlaintextOutput = container.querySelector('#decrypted-plaintext-output');
 
-  // RSA DOM
+  // RSA & Two-Column Hybrid DOM
   const btnGenRsa = container.querySelector('#btn-gen-rsa');
   const rsaPublicKey = container.querySelector('#rsa-public-key');
   const rsaPrivateKey = container.querySelector('#rsa-private-key');
+  const btnCopyPub = container.querySelector('#btn-copy-pub');
+  const btnCopyPriv = container.querySelector('#btn-copy-priv');
+
   const hybridMessageInput = container.querySelector('#hybrid-message-input');
-  const btnRunHybrid = container.querySelector('#btn-run-hybrid');
-  const hybridResultBox = container.querySelector('#hybrid-result-box');
+  const btnAliceEncrypt = container.querySelector('#btn-alice-encrypt');
+  const aliceOutputBox = container.querySelector('#alice-output-box');
+  const aliceEncKey = container.querySelector('#alice-enc-key');
+  const aliceIv = container.querySelector('#alice-iv');
+  const aliceTag = container.querySelector('#alice-tag');
+  const aliceCipher = container.querySelector('#alice-cipher');
+
+  const btnBobDecrypt = container.querySelector('#btn-bob-decrypt');
+  const bobOutputBox = container.querySelector('#bob-output-box');
+  const bobDecKey = container.querySelector('#bob-dec-key');
+  const bobPlaintext = container.querySelector('#bob-plaintext');
+
+  // Diagram Elements (Infografía Visual Dinámica)
+  const step1Indicator = container.querySelector('#step-1-indicator');
+  const step2Indicator = container.querySelector('#step-2-indicator');
+  const step3Indicator = container.querySelector('#step-3-indicator');
+  const diagramNodeAlice = container.querySelector('#diagram-node-alice');
+  const diagramNodeBob = container.querySelector('#diagram-node-bob');
+  const diagramTransitPulse = container.querySelector('#diagram-transit-pulse');
+  const diagramEnvelope = container.querySelector('#diagram-envelope');
+  const diagramEnvelopeIcon = container.querySelector('#diagram-envelope-icon');
+  const diagramEnvelopeTitle = container.querySelector('#diagram-envelope-title');
+  const diagramEnvelopeStatus = container.querySelector('#diagram-envelope-status');
+
+  let currentHybridPayload = null;
 
   // --- Ejecutar Cifrado Simétrico ---
   btnRunEncrypt.addEventListener('click', async () => {
@@ -279,6 +472,27 @@ export function renderCryptoTab(container) {
     }
   });
 
+  // --- Botones de Copiar al Portapapeles ---
+  const setupCopyButton = (btn, textarea, defaultLabel) => {
+    btn.addEventListener('click', async () => {
+      const val = textarea.value.trim();
+      if (!val) return;
+      try {
+        await navigator.clipboard.writeText(val);
+        btn.innerHTML = '✅ ¡Copiado!';
+        setTimeout(() => { btn.innerHTML = defaultLabel; }, 2000);
+      } catch {
+        textarea.select();
+        document.execCommand('copy');
+        btn.innerHTML = '✅ ¡Copiado!';
+        setTimeout(() => { btn.innerHTML = defaultLabel; }, 2000);
+      }
+    });
+  };
+
+  setupCopyButton(btnCopyPub, rsaPublicKey, '📋 Copiar');
+  setupCopyButton(btnCopyPriv, rsaPrivateKey, '📋 Copiar');
+
   // --- Generación de Par RSA-4096 ---
   btnGenRsa.addEventListener('click', async () => {
     try {
@@ -288,7 +502,17 @@ export function renderCryptoTab(container) {
       const keyPair = await ApiService.generateRSAKeys();
       rsaPublicKey.value = keyPair.publicKey;
       rsaPrivateKey.value = keyPair.privateKey;
-      btnRunHybrid.disabled = false;
+
+      btnAliceEncrypt.disabled = false;
+      btnBobDecrypt.disabled = true;
+      aliceOutputBox.style.display = 'none';
+      bobOutputBox.style.display = 'none';
+
+      // Actualizar Diagrama Visual
+      step1Indicator.classList.add('completed');
+      step2Indicator.classList.add('active');
+      diagramEnvelopeStatus.textContent = '🔓 Clave Pública de Bob publicada. Alice puede empaquetar.';
+      diagramEnvelopeStatus.style.color = 'var(--accent-cyan)';
     } catch (err) {
       alert(`Error generando RSA: ${err.message}`);
     } finally {
@@ -297,44 +521,92 @@ export function renderCryptoTab(container) {
     }
   });
 
-  // --- Ejecución de Cifrado Híbrido ---
-  btnRunHybrid.addEventListener('click', async () => {
+  // --- LADO EMISOR (ALICE): Cifrado Híbrido con Clave Pública ---
+  btnAliceEncrypt.addEventListener('click', async () => {
     try {
       const plaintext = hybridMessageInput.value;
       const pubKey = rsaPublicKey.value;
-      const privKey = rsaPrivateKey.value;
 
-      if (!pubKey || !privKey) {
-        alert('Debes generar las claves RSA primero.');
+      if (!pubKey) {
+        alert('Primero debes generar el par de claves RSA.');
         return;
       }
 
-      btnRunHybrid.disabled = true;
-      btnRunHybrid.innerHTML = '⏳ Ejecutando Cifrado Híbrido...';
+      btnAliceEncrypt.disabled = true;
+      btnAliceEncrypt.innerHTML = '⏳ Alice cifrando datos con AES y clave con RSA-OAEP...';
 
-      // 1. Cifrar con clave pública RSA
+      // Alice cifra el mensaje usando la Clave Pública de Bob
       const hybridPayload = await ApiService.hybridEncrypt(plaintext, pubKey);
+      currentHybridPayload = hybridPayload;
 
-      // 2. Descifrar con clave privada RSA para comprobar el ciclo completo
-      const decrypted = await ApiService.hybridDecrypt(hybridPayload, privKey);
+      // Mostrar componentes generados en el lado emisor
+      aliceEncKey.textContent = `${hybridPayload.encryptedKeyBase64.substring(0, 42)}... (${hybridPayload.encryptedKeyBase64.length} chars)`;
+      aliceIv.textContent = hybridPayload.ivHex;
+      aliceTag.textContent = hybridPayload.tagHex;
+      aliceCipher.textContent = `${hybridPayload.ciphertextBase64.substring(0, 42)}... (${hybridPayload.ciphertextBase64.length} chars)`;
+      aliceOutputBox.style.display = 'block';
 
-      hybridResultBox.style.display = 'block';
-      hybridResultBox.innerHTML = `
-        <div style="color: var(--accent-emerald); font-weight: 600; margin-bottom: 0.5rem;">
-          ✅ Esquema Híbrido Completado Exitosamente
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.8rem;">
-          <div>• <strong>Clave Simétrica AES Efímera (Cifrada con RSA-OAEP 4096):</strong> ${hybridPayload.encryptedKeyBase64.substring(0, 48)}... (${hybridPayload.encryptedKeyBase64.length} chars)</div>
-          <div>• <strong>IV GCM:</strong> ${hybridPayload.ivHex}</div>
-          <div>• <strong>AuthTag GCM:</strong> ${hybridPayload.tagHex}</div>
-          <div>• <strong>Mensaje Descifrado por Receptor con Clave Privada:</strong> <span style="color: var(--accent-cyan); font-weight: bold;">${decrypted.plaintext}</span></div>
-        </div>
-      `;
+      // Actualizar Diagrama Visual
+      step2Indicator.classList.add('completed');
+      step3Indicator.classList.add('active');
+      diagramNodeAlice.classList.add('alice-active');
+      diagramTransitPulse.style.display = 'block';
+      diagramEnvelope.classList.add('glow');
+      diagramEnvelopeIcon.textContent = '📦🔒';
+      diagramEnvelopeTitle.textContent = 'Sobre Digital Transmitido';
+      diagramEnvelopeStatus.textContent = '📡 Clave AES envuelta con RSA-OAEP en tránsito hacia Bob.';
+      diagramEnvelopeStatus.style.color = '#a7f3d0';
+
+      // Habilitar a Bob para que reciba y descifre
+      btnBobDecrypt.disabled = false;
+      bobOutputBox.style.display = 'none';
     } catch (err) {
-      alert(`Error en cifrado híbrido: ${err.message}`);
+      alert(`Error en cifrado de Alice: ${err.message}`);
     } finally {
-      btnRunHybrid.disabled = false;
-      btnRunHybrid.innerHTML = '🔒 Ejecutar Cifrado Híbrido';
+      btnAliceEncrypt.disabled = false;
+      btnAliceEncrypt.innerHTML = '🔒 Cifrar y Empaquetar Sobre Digital (Alice)';
+    }
+  });
+
+  // --- LADO RECEPTOR (BOB): Descifrado del Sobre con Clave Privada ---
+  btnBobDecrypt.addEventListener('click', async () => {
+    if (!currentHybridPayload) {
+      alert('Alice primero debe cifrar y transmitir el paquete.');
+      return;
+    }
+    const privKey = rsaPrivateKey.value;
+    if (!privKey) {
+      alert('Se requiere la clave privada de Bob.');
+      return;
+    }
+
+    try {
+      btnBobDecrypt.disabled = true;
+      btnBobDecrypt.innerHTML = '⏳ Bob abriendo sobre digital con Clave Privada...';
+
+      // Bob abre el sobre digital con su clave privada y descifra con AES-GCM
+      const decrypted = await ApiService.hybridDecrypt(currentHybridPayload, privKey);
+
+      bobDecKey.textContent = '256 bits recuperados con éxito vía RSA-OAEP';
+      bobPlaintext.textContent = decrypted.plaintext;
+      bobOutputBox.style.display = 'block';
+
+      // Actualizar Diagrama Visual
+      step3Indicator.classList.add('completed');
+      diagramNodeBob.classList.add('bob-active');
+      diagramTransitPulse.style.display = 'none';
+      diagramEnvelope.classList.remove('glow');
+      diagramEnvelopeIcon.textContent = '📦🔓';
+      diagramEnvelopeTitle.textContent = '¡Sobre Abierto y Verificado!';
+      diagramEnvelopeStatus.textContent = '✅ Llave Privada abrió el candado. Plaintext intacto.';
+      diagramEnvelopeStatus.style.color = 'var(--accent-emerald)';
+    } catch (err) {
+      alert(`Error en descifrado de Bob: ${err.message}`);
+    } finally {
+      btnBobDecrypt.disabled = false;
+      btnBobDecrypt.innerHTML = '🔓 Abrir Sobre Digital y Descifrar (Bob)';
     }
   });
 }
+
+

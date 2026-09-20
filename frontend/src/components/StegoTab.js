@@ -1,7 +1,7 @@
 import { StegoEngine } from '../services/stegoEngine.js';
 import { ApiService } from '../services/api.js';
 
-export function renderStegoTab(container, onNavigateToAnalysis) {
+export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAttack) {
   container.innerHTML = `
     <div class="space-y-6">
       <!-- Encabezado de la Pestaña -->
@@ -199,6 +199,9 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
                 <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1;">
                   🔬 Enviar a Estegoanálisis Forense
                 </button>
+                <button id="btn-send-to-attack" class="btn btn-rose" style="flex: 1; background: linear-gradient(135deg, #a855f7, #f43f5e); border: none;">
+                  💥 Atacar en Tiempo Real
+                </button>
               </div>
             </div>
           </div>
@@ -367,6 +370,10 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
   let loadedCarrierImage = null;
   let currentMaxCapacityBytes = 0;
   let lastInjectedCanvas = null;
+  let lastInjectedPayloadBytes = null;
+  let lastInjectedIsAes = false;
+  let lastInjectedPassword = '';
+  let lastInjectedPlaintext = '';
   let loadedRevealImage = null;
   let extractedRawBytes = null;
   let activeSecretType = 'text'; // 'text' | 'file'
@@ -648,6 +655,10 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
       // Ejecutar inyección LSB
       const { canvas, stats } = StegoEngine.hideData(loadedCarrierImage, payloadBytesToInject);
       lastInjectedCanvas = canvas;
+      lastInjectedPayloadBytes = payloadBytesToInject;
+      lastInjectedIsAes = isAes;
+      lastInjectedPassword = isAes ? stegoPassword.value : '';
+      lastInjectedPlaintext = activeSecretType === 'text' ? stegoMessage.value : (selectedSecretFile ? selectedSecretFile.name : '');
 
       // Mostrar en el canvas del resultado
       outputCanvas.width = canvas.width;
@@ -698,6 +709,24 @@ export function renderStegoTab(container, onNavigateToAnalysis) {
       onNavigateToAnalysis(blob);
     }
   });
+
+  // --- Enviar a Ataque en Tiempo Real ---
+  const btnSendToAttack = container.querySelector('#btn-send-to-attack');
+  if (btnSendToAttack) {
+    btnSendToAttack.addEventListener('click', () => {
+      if (!lastInjectedCanvas) return;
+      if (onNavigateToAttack) {
+        onNavigateToAttack({
+          canvas: lastInjectedCanvas,
+          payloadBytes: lastInjectedPayloadBytes,
+          isAes: lastInjectedIsAes,
+          password: lastInjectedPassword,
+          plaintext: lastInjectedPlaintext,
+          filename: 'Imagen Esteganográfica Inyectada'
+        });
+      }
+    });
+  }
 
   // --- SECCIÓN REVELAR / EXTRAER ---
   dropzoneReveal.addEventListener('click', () => stegoInputFile.click());

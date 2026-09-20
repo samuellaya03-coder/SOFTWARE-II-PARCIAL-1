@@ -32,16 +32,66 @@
         </div>
       </header>
 
-      <!-- Main Navigation Tabs -->
-      <nav class="tabs-nav">
-        <button id="tab-stego-btn" class="tab-btn active">
-          <span>🖼️</span> 1. Esteganografía LSB (Canvas)
+      <!-- Main Navigation Cards -->
+      <nav class="tabs-nav" aria-label="Módulos del Laboratorio">
+        <button id="tab-stego-btn" class="tab-btn tab-card active" type="button">
+          <div class="tab-card-header">
+            <div class="tab-card-icon icon-cyan">🖼️</div>
+            <span class="tab-card-badge badge-cyan">MÓDULO 1</span>
+          </div>
+          <div class="tab-card-body">
+            <h3 class="tab-card-title">Esteganografía LSB</h3>
+            <p class="tab-card-desc">Ocultamiento y extracción binaria con cabecera 32-bit en Canvas HTML5.</p>
+          </div>
+          <div class="tab-card-footer">
+            <span class="tab-card-indicator"><span></span> Activo</span>
+            <span class="tab-card-arrow">→</span>
+          </div>
         </button>
-        <button id="tab-crypto-btn" class="tab-btn">
-          <span>🔐</span> 2. Laboratorio Criptográfico (AES-256-GCM / RSA)
+
+        <button id="tab-crypto-btn" class="tab-btn tab-card" type="button">
+          <div class="tab-card-header">
+            <div class="tab-card-icon icon-purple">🔐</div>
+            <span class="tab-card-badge badge-purple">MÓDULO 2</span>
+          </div>
+          <div class="tab-card-body">
+            <h3 class="tab-card-title">Criptografía Híbrida</h3>
+            <p class="tab-card-desc">AES-256-GCM, PBKDF2 (600k), RSA-OAEP 4096 y simulación MITM.</p>
+          </div>
+          <div class="tab-card-footer">
+            <span class="tab-card-indicator"><span></span> Activo</span>
+            <span class="tab-card-arrow">→</span>
+          </div>
         </button>
-        <button id="tab-analysis-btn" class="tab-btn">
-          <span>📊</span> 3. Estegoanálisis Forense (χ² &amp; Shannon)
+
+        <button id="tab-analysis-btn" class="tab-btn tab-card" type="button">
+          <div class="tab-card-header">
+            <div class="tab-card-icon icon-emerald">📊</div>
+            <span class="tab-card-badge badge-emerald">MÓDULO 3</span>
+          </div>
+          <div class="tab-card-body">
+            <h3 class="tab-card-title">Estegoanálisis Forense</h3>
+            <p class="tab-card-desc">Inspección estadística PoVs con test Chi-cuadrado y Entropía de Shannon.</p>
+          </div>
+          <div class="tab-card-footer">
+            <span class="tab-card-indicator"><span></span> Activo</span>
+            <span class="tab-card-arrow">→</span>
+          </div>
+        </button>
+
+        <button id="tab-attack-btn" class="tab-btn tab-card" type="button">
+          <div class="tab-card-header">
+            <div class="tab-card-icon icon-rose">💥</div>
+            <span class="tab-card-badge badge-rose">MÓDULO 4</span>
+          </div>
+          <div class="tab-card-body">
+            <h3 class="tab-card-title">Ataques a Imágenes</h3>
+            <p class="tab-card-desc">Inyección maliciosa de ruido bit a bit y comparación visual de planos LSB.</p>
+          </div>
+          <div class="tab-card-footer">
+            <span class="tab-card-indicator"><span></span> Activo</span>
+            <span class="tab-card-arrow">→</span>
+          </div>
         </button>
       </nav>
 

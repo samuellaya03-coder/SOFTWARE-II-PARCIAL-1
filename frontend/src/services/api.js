@@ -123,4 +123,23 @@ export class ApiService {
     }
     return data.data;
   }
+
+  /**
+   * Consulta al Asistente Inteligente (CyberTutor IA).
+   * @param {string} prompt 
+   * @param {string} activeTab 
+   * @param {string|null} apiKey 
+   */
+  static async askAi(prompt, activeTab = 'general', apiKey = null) {
+    const res = await fetch(`${API_BASE_URL}/ai/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, activeTab, apiKey })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Error comunicando con CyberTutor IA.');
+    }
+    return data.data;
+  }
 }
