@@ -93,10 +93,27 @@ export function renderCryptoTab(container) {
           </div>
 
           <div>
-            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">
-              Contraseña de Descifrado:
-            </label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="font-size: 0.85rem; color: var(--text-secondary);">
+                Contraseña de Descifrado:
+              </label>
+              <span id="crypto-attempts-badge" class="badge badge-rose" style="display: none; font-size: 0.75rem; font-weight: 600;">Intentos restantes: 5/5</span>
+            </div>
             <input type="password" id="decrypt-pass-input" placeholder="Contraseña..." />
+          </div>
+
+          <!-- Banner de Bloqueo Temporal por Cooldown Anti-Fuerza Bruta -->
+          <div id="crypto-lockout-banner" class="alert-box alert-danger" style="display: none; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.12);">
+            <span style="font-size: 1.75rem; line-height: 1;">⏳</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 700; color: #fca5a5; font-size: 0.95rem; margin-bottom: 0.2rem;">
+                Bloqueo de Seguridad Anti-Fuerza Bruta
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                Demasiados intentos fallidos. Entrada suspendida por <strong id="crypto-penalty-label" style="color: #fca5a5;">1 minuto</strong>.
+                Podrás volver a intentar en: <span id="crypto-countdown-display" style="color: #ef4444; font-family: monospace; font-size: 1.1rem; font-weight: 700; margin-left: 0.25rem;">01:00</span>
+              </div>
+            </div>
           </div>
 
           <div style="display: flex; gap: 0.75rem;">
@@ -353,6 +370,10 @@ export function renderCryptoTab(container) {
   const decryptResultBox = container.querySelector('#decrypt-result-box');
   const decryptStatusAlert = container.querySelector('#decrypt-status-alert');
   const decryptedPlaintextOutput = container.querySelector('#decrypted-plaintext-output');
+  const cryptoAttemptsBadge = container.querySelector('#crypto-attempts-badge');
+  const cryptoLockoutBanner = container.querySelector('#crypto-lockout-banner');
+  const cryptoPenaltyLabel = container.querySelector('#crypto-penalty-label');
+  const cryptoCountdownDisplay = container.querySelector('#crypto-countdown-display');
 
   // RSA & Two-Column Hybrid DOM
   const btnGenRsa = container.querySelector('#btn-gen-rsa');
@@ -470,16 +491,181 @@ export function renderCryptoTab(container) {
     }
   });
 
+  // --- Sistema Anti-Fuerza Bruta y Cooldown Progresivo (1m -> 5m -> 10m) en Laboratorio ---
+  const CRYPTO_LOCKOUT_STORAGE_KEY = 'crypto_lab_bruteforce_lockout_v1';
+  let cryptoCountdownTimerId = null;
+
+  function getCryptoLockoutState() {
+    try {
+      const raw = localStorage.getItem(CRYPTO_LOCKOUT_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Fallback
+    }
+    return { failedAttempts: 0, penaltyStage: 0, lockoutUntil: 0 };
+  }
+
+  function saveCryptoLockoutState(state) {
+    try {
+      localStorage.setItem(CRYPTO_LOCKOUT_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Fallback
+    }
+  }
+
+  function clearCryptoLockoutState() {
+    try {
+      localStorage.removeItem(CRYPTO_LOCKOUT_STORAGE_KEY);
+    } catch {
+      // Fallback
+    }
+    if (cryptoCountdownTimerId) {
+      clearInterval(cryptoCountdownTimerId);
+      cryptoCountdownTimerId = null;
+    }
+  }
+
+  function startCryptoLockoutCountdown(lockoutUntil, penaltyStage) {
+    if (cryptoCountdownTimerId) clearInterval(cryptoCountdownTimerId);
+
+    cryptoLockoutBanner.style.display = 'flex';
+    decryptPassInput.disabled = true;
+    btnRunDecrypt.disabled = true;
+    btnRunDecrypt.style.cursor = 'not-allowed';
+
+    let penaltyLabelText = '1 minuto';
+    if (penaltyStage === 2) penaltyLabelText = '5 minutos';
+    else if (penaltyStage >= 3) penaltyLabelText = '10 minutos';
+    cryptoPenaltyLabel.textContent = penaltyLabelText;
+
+    cryptoAttemptsBadge.style.display = 'inline-block';
+    cryptoAttemptsBadge.className = 'badge badge-rose';
+    cryptoAttemptsBadge.textContent = '🔒 Bloqueado por Cooldown';
+
+    const tick = () => {
+      const now = Date.now();
+      const remainingMs = lockoutUntil - now;
+      if (remainingMs <= 0) {
+        clearInterval(cryptoCountdownTimerId);
+        cryptoCountdownTimerId = null;
+        cryptoLockoutBanner.style.display = 'none';
+        decryptPassInput.disabled = false;
+        btnRunDecrypt.disabled = false;
+        btnRunDecrypt.innerHTML = '🔓 Descifrar y Validar';
+        btnRunDecrypt.style.cursor = 'pointer';
+        decryptPassInput.focus();
+
+        cryptoAttemptsBadge.style.display = 'inline-block';
+        cryptoAttemptsBadge.className = 'badge badge-amber';
+        cryptoAttemptsBadge.textContent = '⚠️ Reintento desbloqueado';
+
+        showToast({
+          title: 'Tiempo de Espera Finalizado',
+          message: 'El bloqueo ha expirado. Ya puedes volver a ingresar la contraseña de descifrado.',
+          icon: '🔓',
+          type: 'info',
+          duration: 3000
+        });
+        return;
+      }
+
+      const totalSec = Math.ceil(remainingMs / 1000);
+      const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+      const secs = String(totalSec % 60).padStart(2, '0');
+      cryptoCountdownDisplay.textContent = `${mins}:${secs}`;
+      btnRunDecrypt.innerHTML = `⏳ Bloqueado por Seguridad (${mins}:${secs})`;
+    };
+
+    tick();
+    cryptoCountdownTimerId = setInterval(tick, 1000);
+  }
+
+  function updateCryptoLockoutUI() {
+    const state = getCryptoLockoutState();
+    const now = Date.now();
+
+    if (state.lockoutUntil && state.lockoutUntil > now) {
+      startCryptoLockoutCountdown(state.lockoutUntil, state.penaltyStage);
+      return;
+    }
+
+    if (cryptoCountdownTimerId) {
+      clearInterval(cryptoCountdownTimerId);
+      cryptoCountdownTimerId = null;
+    }
+
+    cryptoLockoutBanner.style.display = 'none';
+    decryptPassInput.disabled = false;
+    btnRunDecrypt.disabled = false;
+    btnRunDecrypt.innerHTML = '🔓 Descifrar y Validar';
+    btnRunDecrypt.style.cursor = 'pointer';
+
+    if (state.penaltyStage === 0 && state.failedAttempts > 0 && state.failedAttempts < 5) {
+      const remaining = 5 - state.failedAttempts;
+      cryptoAttemptsBadge.style.display = 'inline-block';
+      cryptoAttemptsBadge.className = remaining <= 2 ? 'badge badge-rose' : 'badge badge-amber';
+      cryptoAttemptsBadge.textContent = `Intentos restantes: ${remaining}/5`;
+    } else if (state.penaltyStage > 0) {
+      cryptoAttemptsBadge.style.display = 'inline-block';
+      cryptoAttemptsBadge.className = 'badge badge-rose';
+      cryptoAttemptsBadge.textContent = '⚠️ 1 intento antes de nuevo cooldown';
+    } else {
+      cryptoAttemptsBadge.style.display = 'none';
+    }
+  }
+
   // --- Ejecutar Descifrado Simétrico ---
   btnRunDecrypt.addEventListener('click', async () => {
+    const state = getCryptoLockoutState();
+    const now = Date.now();
+
+    // Verificación preventiva de bloqueo activo
+    if (state.lockoutUntil && state.lockoutUntil > now) {
+      startCryptoLockoutCountdown(state.lockoutUntil, state.penaltyStage);
+      showToast({
+        title: 'Acceso en Cooldown',
+        message: 'Debes esperar a que el temporizador finalice para reintentar.',
+        icon: '⏳',
+        type: 'warning',
+        duration: 2000
+      });
+      return;
+    }
+
+    const packedData = decryptBase64Input.value.trim();
+    const password = decryptPassInput.value;
+
+    if (!packedData) {
+      showToast({
+        title: 'Paquete Requerido',
+        message: 'Por favor ingresa o genera un paquete cifrado en Base64.',
+        icon: '⚠️',
+        type: 'warning',
+        duration: 2000
+      });
+      return;
+    }
+
+    if (!password) {
+      showToast({
+        title: 'Contraseña Requerida',
+        message: 'Por favor ingresa la contraseña para descifrar.',
+        icon: '⚠️',
+        type: 'warning',
+        duration: 2000
+      });
+      return;
+    }
+
     try {
       btnRunDecrypt.disabled = true;
       btnRunDecrypt.innerHTML = '⏳ Verificando AuthTag y descifrando...';
 
-      const packedData = decryptBase64Input.value.trim();
-      const password = decryptPassInput.value;
-
       const result = await ApiService.decryptAESGCM(packedData, password);
+
+      // ¡ÉXITO! Restablecer intentos y cooldown
+      clearCryptoLockoutState();
+      updateCryptoLockoutUI();
 
       decryptResultBox.style.display = 'flex';
       decryptStatusAlert.className = 'alert-box alert-success';
@@ -487,16 +673,88 @@ export function renderCryptoTab(container) {
         <strong>✅ Autenticación GCM Válida:</strong> El mensaje no ha sufrido ninguna modificación ni truncamiento. Se verificaron el Salt (${result.saltHex.substring(0,8)}...), el IV (${result.ivHex.substring(0,8)}...) y el Authentication Tag (${result.tagHex.substring(0,8)}...).
       `;
       decryptedPlaintextOutput.value = result.plaintextUtf8;
+
+      showToast({
+        title: '¡Descifrado y Autenticado!',
+        message: 'El Authentication Tag coincidió. Intentos restablecidos.',
+        icon: '✅',
+        type: 'success',
+        duration: 2500
+      });
     } catch (err) {
       decryptResultBox.style.display = 'flex';
       decryptStatusAlert.className = 'alert-box alert-danger';
-      decryptStatusAlert.innerHTML = `
-        <strong>❌ Fallo de Verificación Criptográfica:</strong> ${err.message}
-      `;
       decryptedPlaintextOutput.value = '';
+
+      // Registrar intento fallido y evaluar cooldown progresivo
+      let currentState = getCryptoLockoutState();
+      currentState.failedAttempts = (currentState.failedAttempts || 0) + 1;
+
+      let triggeredLockout = false;
+      let durationMs = 0;
+      let durationName = '';
+
+      if (currentState.penaltyStage === 0) {
+        if (currentState.failedAttempts >= 5) {
+          // 5 intentos fallidos -> Bloqueo de 1 minuto
+          currentState.penaltyStage = 1;
+          durationMs = 60 * 1000;
+          durationName = '1 minuto';
+          currentState.lockoutUntil = Date.now() + durationMs;
+          triggeredLockout = true;
+        }
+      } else if (currentState.penaltyStage === 1) {
+        // Vuelve a fallar tras el primer cooldown -> Bloqueo de 5 minutos
+        currentState.penaltyStage = 2;
+        durationMs = 5 * 60 * 1000;
+        durationName = '5 minutos';
+        currentState.lockoutUntil = Date.now() + durationMs;
+        triggeredLockout = true;
+      } else {
+        // Vuelve a fallar tras el segundo cooldown -> Bloqueo de 10 minutos
+        currentState.penaltyStage = 3;
+        durationMs = 10 * 60 * 1000;
+        durationName = '10 minutos';
+        currentState.lockoutUntil = Date.now() + durationMs;
+        triggeredLockout = true;
+      }
+
+      saveCryptoLockoutState(currentState);
+
+      if (triggeredLockout) {
+        startCryptoLockoutCountdown(currentState.lockoutUntil, currentState.penaltyStage);
+        decryptStatusAlert.innerHTML = `
+          <strong>❌ Fallo de Verificación Criptográfica:</strong> ${err.message}<br/>
+          <span style="font-size:0.85rem; color:#fca5a5;">⚠️ Bloqueo de Seguridad Activado: Has alcanzado el límite de intentos erróneos. Espera <strong>${durationName}</strong> antes de poder reintentar.</span>
+        `;
+        showToast({
+          title: 'Bloqueo Anti-Fuerza Bruta',
+          message: `Límite alcanzado. Entrada bloqueada por ${durationName}.`,
+          icon: '🛑',
+          type: 'danger',
+          duration: 3000
+        });
+      } else {
+        updateCryptoLockoutUI();
+        const remaining = 5 - currentState.failedAttempts;
+        decryptStatusAlert.innerHTML = `
+          <strong>❌ Fallo de Verificación Criptográfica:</strong> ${err.message}<br/>
+          <span style="font-size:0.85rem; color:#fca5a5;">⚠️ Te quedan <strong>${remaining} de 5</strong> intentos antes del bloqueo temporal de 1 minuto.</span>
+        `;
+        showToast({
+          title: 'Contraseña Incorrecta',
+          message: `Quedan ${remaining} de 5 intentos antes del bloqueo.`,
+          icon: '❌',
+          type: 'danger',
+          duration: 2500
+        });
+      }
     } finally {
-      btnRunDecrypt.disabled = false;
-      btnRunDecrypt.innerHTML = '🔓 Descifrar y Validar';
+      const finalState = getCryptoLockoutState();
+      if (!finalState.lockoutUntil || finalState.lockoutUntil <= Date.now()) {
+        btnRunDecrypt.disabled = false;
+        btnRunDecrypt.innerHTML = '🔓 Descifrar y Validar';
+      }
     }
   });
 
@@ -714,6 +972,9 @@ export function renderCryptoTab(container) {
       btnBobDecrypt.innerHTML = '🔓 Abrir Sobre Digital y Descifrar (Bob)';
     }
   });
+
+  // Inicializar estado de bloqueo al montar la pestaña
+  updateCryptoLockoutUI();
 }
 
 
