@@ -388,6 +388,53 @@ export function renderCryptoTab(container) {
 
   let currentHybridPayload = null;
 
+  // --- Sistema de Notificaciones Toast Modernas (Auto-cierre en 2s) ---
+  const showToast = ({ title, message, icon = '💥', type = 'danger', duration = 2000 }) => {
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'toast-container';
+      toastContainer.className = 'toast-container';
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `crypto-toast crypto-toast-${type}`;
+    toast.innerHTML = `
+      <div class="crypto-toast-icon">${icon}</div>
+      <div class="crypto-toast-content">
+        <div class="crypto-toast-title">${title}</div>
+        <div class="crypto-toast-body">${message}</div>
+      </div>
+      <div class="crypto-toast-progress" style="animation-duration: ${duration}ms;"></div>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    const timer = setTimeout(() => {
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        toast.remove();
+        if (toastContainer && toastContainer.children.length === 0) {
+          toastContainer.remove();
+        }
+      }, 300);
+    }, duration);
+
+    // Descartar inmediatamente al hacer clic
+    toast.style.cursor = 'pointer';
+    toast.addEventListener('click', () => {
+      clearTimeout(timer);
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        toast.remove();
+        if (toastContainer && toastContainer.children.length === 0) {
+          toastContainer.remove();
+        }
+      }, 200);
+    });
+  };
+
   // --- Ejecutar Cifrado Simétrico ---
   btnRunEncrypt.addEventListener('click', async () => {
     try {
@@ -410,7 +457,13 @@ export function renderCryptoTab(container) {
       decryptBase64Input.value = result.packedBase64;
       decryptPassInput.value = password;
     } catch (err) {
-      alert(`Error en cifrado: ${err.message}`);
+      showToast({
+        title: 'Error en Cifrado',
+        message: err.message,
+        icon: '❌',
+        type: 'danger',
+        duration: 2000
+      });
     } finally {
       btnRunEncrypt.disabled = false;
       btnRunEncrypt.innerHTML = '🔒 Cifrar con AES-256-GCM + PBKDF2';
@@ -451,7 +504,13 @@ export function renderCryptoTab(container) {
   btnTamperTest.addEventListener('click', () => {
     const raw = decryptBase64Input.value.trim();
     if (!raw) {
-      alert('Primero debes generar o ingresar un paquete cifrado en Base64.');
+      showToast({
+        title: 'Entrada Requerida',
+        message: 'Primero debes generar o ingresar un paquete cifrado en Base64.',
+        icon: '⚠️',
+        type: 'warning',
+        duration: 2000
+      });
       return;
     }
     try {
@@ -466,9 +525,21 @@ export function renderCryptoTab(container) {
       const tamperedStr = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
       decryptBase64Input.value = btoa(tamperedStr);
 
-      alert('💥 ¡ATAQUE SIMULADO! Se ha modificado 1 bit del texto cifrado.\nAhora haz clic en "Descifrar y Validar" para observar cómo el Authentication Tag de AES-GCM detecta inmediatamente la manipulación.');
+      showToast({
+        title: '¡Ataque Inyectado con Éxito!',
+        message: 'Se alteró 1 bit del texto cifrado. Haz clic en "Descifrar y Validar" para comprobar cómo el Authentication Tag detecta la manipulación.',
+        icon: '💥',
+        type: 'danger',
+        duration: 2000
+      });
     } catch (err) {
-      alert(`No se pudo manipular el payload: ${err.message}`);
+      showToast({
+        title: 'Error en Manipulación',
+        message: `No se pudo manipular el payload: ${err.message}`,
+        icon: '❌',
+        type: 'danger',
+        duration: 2000
+      });
     }
   });
 
@@ -514,7 +585,13 @@ export function renderCryptoTab(container) {
       diagramEnvelopeStatus.textContent = '🔓 Clave Pública de Bob publicada. Alice puede empaquetar.';
       diagramEnvelopeStatus.style.color = 'var(--accent-cyan)';
     } catch (err) {
-      alert(`Error generando RSA: ${err.message}`);
+      showToast({
+        title: 'Error en Generación RSA',
+        message: err.message,
+        icon: '❌',
+        type: 'danger',
+        duration: 2500
+      });
     } finally {
       btnGenRsa.disabled = false;
       btnGenRsa.innerHTML = '⚡ Generar Par de Claves RSA-4096';
@@ -528,7 +605,13 @@ export function renderCryptoTab(container) {
       const pubKey = rsaPublicKey.value;
 
       if (!pubKey) {
-        alert('Primero debes generar el par de claves RSA.');
+        showToast({
+          title: 'Clave Requerida',
+          message: 'Primero debes generar el par de claves RSA.',
+          icon: '⚠️',
+          type: 'warning',
+          duration: 2000
+        });
         return;
       }
 
@@ -561,7 +644,13 @@ export function renderCryptoTab(container) {
       btnBobDecrypt.disabled = false;
       bobOutputBox.style.display = 'none';
     } catch (err) {
-      alert(`Error en cifrado de Alice: ${err.message}`);
+      showToast({
+        title: 'Error en Cifrado de Alice',
+        message: err.message,
+        icon: '❌',
+        type: 'danger',
+        duration: 2500
+      });
     } finally {
       btnAliceEncrypt.disabled = false;
       btnAliceEncrypt.innerHTML = '🔒 Cifrar y Empaquetar Sobre Digital (Alice)';
@@ -571,12 +660,24 @@ export function renderCryptoTab(container) {
   // --- LADO RECEPTOR (BOB): Descifrado del Sobre con Clave Privada ---
   btnBobDecrypt.addEventListener('click', async () => {
     if (!currentHybridPayload) {
-      alert('Alice primero debe cifrar y transmitir el paquete.');
+      showToast({
+        title: 'Sobre no Disponible',
+        message: 'Alice primero debe cifrar y transmitir el paquete.',
+        icon: '⚠️',
+        type: 'warning',
+        duration: 2000
+      });
       return;
     }
     const privKey = rsaPrivateKey.value;
     if (!privKey) {
-      alert('Se requiere la clave privada de Bob.');
+      showToast({
+        title: 'Clave Requerida',
+        message: 'Se requiere la clave privada de Bob.',
+        icon: '⚠️',
+        type: 'warning',
+        duration: 2000
+      });
       return;
     }
 
@@ -601,7 +702,13 @@ export function renderCryptoTab(container) {
       diagramEnvelopeStatus.textContent = '✅ Llave Privada abrió el candado. Plaintext intacto.';
       diagramEnvelopeStatus.style.color = 'var(--accent-emerald)';
     } catch (err) {
-      alert(`Error en descifrado de Bob: ${err.message}`);
+      showToast({
+        title: 'Error en Descifrado de Bob',
+        message: err.message,
+        icon: '❌',
+        type: 'danger',
+        duration: 2500
+      });
     } finally {
       btnBobDecrypt.disabled = false;
       btnBobDecrypt.innerHTML = '🔓 Abrir Sobre Digital y Descifrar (Bob)';
