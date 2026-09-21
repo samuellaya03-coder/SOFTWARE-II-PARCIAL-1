@@ -238,12 +238,32 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
             </div>
 
             <!-- Si el payload extraído es un paquete cifrado AES-GCM -->
-            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: rgba(0,0,0,0.35); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span class="badge badge-purple">AES-256-GCM Detectado</span>
-                <span style="font-size: 0.85rem; color: var(--text-secondary);">El payload extraído corresponde a un paquete criptográfico [Salt|IV|Tag|Ciphertext].</span>
+            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: rgba(0,0,0,0.35); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.85rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="badge badge-purple">AES-256-GCM Detectado</span>
+                  <span style="font-size: 0.85rem; color: var(--text-secondary);">El payload extraído corresponde a un paquete criptográfico [Salt|IV|Tag|Ciphertext].</span>
+                </div>
+                <span id="stego-attempts-badge" class="badge badge-rose" style="display: none; font-size: 0.75rem; font-weight: 600;">Intentos restantes: 5/5</span>
               </div>
+
+              <!-- Input de contraseña -->
               <input type="password" id="reveal-decrypt-password" placeholder="Ingresa la contraseña para descifrar el paquete..." />
+
+              <!-- Banner de Bloqueo Temporal por Cooldown Anti-Fuerza Bruta -->
+              <div id="stego-lockout-banner" class="alert-box alert-danger" style="display: none; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.12);">
+                <span style="font-size: 1.75rem; line-height: 1;">⏳</span>
+                <div style="flex: 1;">
+                  <div style="font-weight: 700; color: #fca5a5; font-size: 0.95rem; margin-bottom: 0.2rem;">
+                    Bloqueo de Seguridad Anti-Fuerza Bruta
+                  </div>
+                  <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                    Demasiados intentos fallidos. Entrada suspendida por <strong id="stego-penalty-label" style="color: #fca5a5;">1 minuto</strong>.
+                    Podrás volver a intentar en: <span id="stego-countdown-display" style="color: #ef4444; font-family: monospace; font-size: 1.1rem; font-weight: 700; margin-left: 0.25rem;">01:00</span>
+                  </div>
+                </div>
+              </div>
+
               <button id="btn-decrypt-revealed" class="btn btn-emerald">
                 🔑 Descifrar y Verificar Autenticidad (GCM Tag)
               </button>
@@ -353,6 +373,10 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
   const revealCryptoDecryptBox = container.querySelector('#reveal-crypto-decrypt-box');
   const revealDecryptPassword = container.querySelector('#reveal-decrypt-password');
   const btnDecryptRevealed = container.querySelector('#btn-decrypt-revealed');
+  const stegoAttemptsBadge = container.querySelector('#stego-attempts-badge');
+  const stegoLockoutBanner = container.querySelector('#stego-lockout-banner');
+  const stegoPenaltyLabel = container.querySelector('#stego-penalty-label');
+  const stegoCountdownDisplay = container.querySelector('#stego-countdown-display');
 
   const revealedFileCard = container.querySelector('#revealed-file-card');
   const revealedFileIcon = container.querySelector('#revealed-file-icon');
@@ -829,6 +853,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
           <strong>Payload Cifrado Detectado:</strong> Se han extraído con éxito ${extracted.length.toLocaleString()} bytes binarios. El flujo contiene una cabecera con Salt, IV y Authentication Tag.
         `;
         revealCryptoDecryptBox.style.display = 'flex';
+        updateLockoutUI();
         revealedFileCard.style.display = 'none';
         revealedTextBox.style.display = 'block';
         const binaryStr = Array.from(extracted.rawBytes).map(b => String.fromCharCode(b)).join('');
@@ -853,13 +878,197 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
     }
   });
 
-  btnDecryptRevealed.addEventListener('click', async () => {
+  // --- Sistema de Notificaciones Toast en Esteganografía ---
+  const showToast = ({ title, message, icon = 'ℹ️', type = 'info', duration = 2500 }) => {
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'toast-container';
+      toastContainer.className = 'toast-container';
+      document.body.appendChild(toastContainer);
+    }
+    const toast = document.createElement('div');
+    toast.className = `crypto-toast crypto-toast-${type}`;
+    toast.innerHTML = `
+      <div class="crypto-toast-icon">${icon}</div>
+      <div class="crypto-toast-content">
+        <div class="crypto-toast-title">${title}</div>
+        <div class="crypto-toast-body">${message}</div>
+      </div>
+      <div class="crypto-toast-progress" style="animation-duration: ${duration}ms;"></div>
+    `;
+    toastContainer.appendChild(toast);
+    const timer = setTimeout(() => {
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        toast.remove();
+        if (toastContainer && toastContainer.children.length === 0) toastContainer.remove();
+      }, 300);
+    }, duration);
+    toast.style.cursor = 'pointer';
+    toast.addEventListener('click', () => {
+      clearTimeout(timer);
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        toast.remove();
+        if (toastContainer && toastContainer.children.length === 0) toastContainer.remove();
+      }, 200);
+    });
+  };
+
+  // --- Sistema Anti-Fuerza Bruta y Cooldown Progresivo (1m -> 5m -> 10m) ---
+  const LOCKOUT_STORAGE_KEY = 'stego_bruteforce_lockout_v1';
+  let countdownTimerId = null;
+
+  function getLockoutState() {
     try {
-      const password = revealDecryptPassword.value;
-      if (!password) {
-        alert('Por favor ingresa la contraseña maestra para descifrar.');
+      const raw = localStorage.getItem(LOCKOUT_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Fallback
+    }
+    return { failedAttempts: 0, penaltyStage: 0, lockoutUntil: 0 };
+  }
+
+  function saveLockoutState(state) {
+    try {
+      localStorage.setItem(LOCKOUT_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Fallback
+    }
+  }
+
+  function clearLockoutState() {
+    try {
+      localStorage.removeItem(LOCKOUT_STORAGE_KEY);
+    } catch {
+      // Fallback
+    }
+    if (countdownTimerId) {
+      clearInterval(countdownTimerId);
+      countdownTimerId = null;
+    }
+  }
+
+  function startLockoutCountdown(lockoutUntil, penaltyStage) {
+    if (countdownTimerId) clearInterval(countdownTimerId);
+
+    stegoLockoutBanner.style.display = 'flex';
+    revealDecryptPassword.disabled = true;
+    btnDecryptRevealed.disabled = true;
+    btnDecryptRevealed.style.cursor = 'not-allowed';
+
+    let penaltyLabelText = '1 minuto';
+    if (penaltyStage === 2) penaltyLabelText = '5 minutos';
+    else if (penaltyStage >= 3) penaltyLabelText = '10 minutos';
+    stegoPenaltyLabel.textContent = penaltyLabelText;
+
+    stegoAttemptsBadge.style.display = 'inline-block';
+    stegoAttemptsBadge.className = 'badge badge-rose';
+    stegoAttemptsBadge.textContent = '🔒 Bloqueado por Cooldown';
+
+    const tick = () => {
+      const now = Date.now();
+      const remainingMs = lockoutUntil - now;
+      if (remainingMs <= 0) {
+        clearInterval(countdownTimerId);
+        countdownTimerId = null;
+        stegoLockoutBanner.style.display = 'none';
+        revealDecryptPassword.disabled = false;
+        btnDecryptRevealed.disabled = false;
+        btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+        btnDecryptRevealed.style.cursor = 'pointer';
+        revealDecryptPassword.focus();
+
+        stegoAttemptsBadge.style.display = 'inline-block';
+        stegoAttemptsBadge.className = 'badge badge-amber';
+        stegoAttemptsBadge.textContent = '⚠️ Reintento desbloqueado';
+
+        showToast({
+          title: 'Tiempo de Espera Finalizado',
+          message: 'El bloqueo ha expirado. Ya puedes volver a ingresar la contraseña maestra.',
+          icon: '🔓',
+          type: 'info',
+          duration: 3000
+        });
         return;
       }
+
+      const totalSec = Math.ceil(remainingMs / 1000);
+      const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+      const secs = String(totalSec % 60).padStart(2, '0');
+      stegoCountdownDisplay.textContent = `${mins}:${secs}`;
+      btnDecryptRevealed.innerHTML = `⏳ Bloqueado por Seguridad (${mins}:${secs})`;
+    };
+
+    tick();
+    countdownTimerId = setInterval(tick, 1000);
+  }
+
+  function updateLockoutUI() {
+    const state = getLockoutState();
+    const now = Date.now();
+
+    if (state.lockoutUntil && state.lockoutUntil > now) {
+      startLockoutCountdown(state.lockoutUntil, state.penaltyStage);
+      return;
+    }
+
+    if (countdownTimerId) {
+      clearInterval(countdownTimerId);
+      countdownTimerId = null;
+    }
+
+    stegoLockoutBanner.style.display = 'none';
+    revealDecryptPassword.disabled = false;
+    btnDecryptRevealed.disabled = false;
+    btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+    btnDecryptRevealed.style.cursor = 'pointer';
+
+    if (state.penaltyStage === 0 && state.failedAttempts > 0 && state.failedAttempts < 5) {
+      const remaining = 5 - state.failedAttempts;
+      stegoAttemptsBadge.style.display = 'inline-block';
+      stegoAttemptsBadge.className = remaining <= 2 ? 'badge badge-rose' : 'badge badge-amber';
+      stegoAttemptsBadge.textContent = `Intentos restantes: ${remaining}/5`;
+    } else if (state.penaltyStage > 0) {
+      stegoAttemptsBadge.style.display = 'inline-block';
+      stegoAttemptsBadge.className = 'badge badge-rose';
+      stegoAttemptsBadge.textContent = '⚠️ 1 intento antes de nuevo cooldown';
+    } else {
+      stegoAttemptsBadge.style.display = 'none';
+    }
+  }
+
+  btnDecryptRevealed.addEventListener('click', async () => {
+    const state = getLockoutState();
+    const now = Date.now();
+
+    // Verificación preventiva de bloqueo activo
+    if (state.lockoutUntil && state.lockoutUntil > now) {
+      startLockoutCountdown(state.lockoutUntil, state.penaltyStage);
+      showToast({
+        title: 'Acceso en Cooldown',
+        message: 'Debes esperar a que el temporizador finalice para reintentar.',
+        icon: '⏳',
+        type: 'warning',
+        duration: 2000
+      });
+      return;
+    }
+
+    const password = revealDecryptPassword.value;
+    if (!password) {
+      showToast({
+        title: 'Contraseña Requerida',
+        message: 'Por favor ingresa la contraseña maestra para descifrar.',
+        icon: '⚠️',
+        type: 'warning',
+        duration: 2000
+      });
+      return;
+    }
+
+    try {
       btnDecryptRevealed.disabled = true;
       btnDecryptRevealed.innerHTML = '⏳ Descifrando y derivando PBKDF2...';
 
@@ -867,6 +1076,10 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       const base64Data = btoa(binaryStr);
 
       const decrypted = await ApiService.decryptAESGCM(base64Data, password);
+
+      // ¡CONTRASEÑA CORRECTA! Reiniciar los 5 intentos y el nivel de penalización
+      clearLockoutState();
+      updateLockoutUI();
 
       // Convertir plaintextBase64 a Uint8Array
       const decryptedBinaryStr = atob(decrypted.plaintextBase64);
@@ -883,12 +1096,83 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         <strong>¡Autenticación y Descifrado Exitosos!</strong> El Authentication Tag de 16 bytes coincidió matemáticamente. Se reconstruyó ${unpacked.type === 'file' ? `el archivo confidencial "${unpacked.filename}"` : 'el mensaje confidencial'}.
       `;
       renderRevealedContent(unpacked);
+
+      showToast({
+        title: '¡Descifrado Exitoso!',
+        message: 'Contraseña válida. Intentos de seguridad restablecidos.',
+        icon: '🔓',
+        type: 'success',
+        duration: 2500
+      });
     } catch (err) {
-      revealStatusAlert.className = 'alert-box alert-danger';
-      revealStatusAlert.innerHTML = `<strong>Fallo de Integridad / Clave Incorrecta:</strong> ${err.message}`;
+      // Registrar intento fallido y evaluar cooldown progresivo
+      let currentState = getLockoutState();
+      currentState.failedAttempts = (currentState.failedAttempts || 0) + 1;
+
+      let triggeredLockout = false;
+      let durationMs = 0;
+      let durationName = '';
+
+      if (currentState.penaltyStage === 0) {
+        if (currentState.failedAttempts >= 5) {
+          // 5 intentos fallidos -> Bloqueo de 1 minuto
+          currentState.penaltyStage = 1;
+          durationMs = 60 * 1000;
+          durationName = '1 minuto';
+          currentState.lockoutUntil = Date.now() + durationMs;
+          triggeredLockout = true;
+        }
+      } else if (currentState.penaltyStage === 1) {
+        // Vuelve a fallar tras el primer cooldown -> Bloqueo de 5 minutos
+        currentState.penaltyStage = 2;
+        durationMs = 5 * 60 * 1000;
+        durationName = '5 minutos';
+        currentState.lockoutUntil = Date.now() + durationMs;
+        triggeredLockout = true;
+      } else {
+        // Vuelve a fallar tras el segundo cooldown -> Bloqueo de 10 minutos
+        currentState.penaltyStage = 3;
+        durationMs = 10 * 60 * 1000;
+        durationName = '10 minutos';
+        currentState.lockoutUntil = Date.now() + durationMs;
+        triggeredLockout = true;
+      }
+
+      saveLockoutState(currentState);
+
+      if (triggeredLockout) {
+        startLockoutCountdown(currentState.lockoutUntil, currentState.penaltyStage);
+        revealStatusAlert.className = 'alert-box alert-danger';
+        revealStatusAlert.innerHTML = `<strong>⚠️ Bloqueo de Seguridad Activado:</strong> Has alcanzado el límite de intentos erróneos. El sistema está bloqueado por <strong>${durationName}</strong> contra ataques de fuerza bruta.`;
+        showToast({
+          title: 'Bloqueo Anti-Fuerza Bruta',
+          message: `Límite alcanzado. Entrada bloqueada por ${durationName}.`,
+          icon: '🛑',
+          type: 'danger',
+          duration: 3000
+        });
+      } else {
+        updateLockoutUI();
+        const remaining = 5 - currentState.failedAttempts;
+        revealStatusAlert.className = 'alert-box alert-danger';
+        revealStatusAlert.innerHTML = `<strong>Fallo de Integridad / Clave Incorrecta:</strong> ${err.message}<br/><span style="color: #fca5a5; font-size: 0.85rem;">⚠️ Te quedan <strong>${remaining} de 5</strong> intentos antes del bloqueo temporal de 1 minuto.</span>`;
+        showToast({
+          title: 'Contraseña Incorrecta',
+          message: `Quedan ${remaining} de 5 intentos antes del bloqueo.`,
+          icon: '❌',
+          type: 'danger',
+          duration: 2500
+        });
+      }
     } finally {
-      btnDecryptRevealed.disabled = false;
-      btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+      const finalState = getLockoutState();
+      if (!finalState.lockoutUntil || finalState.lockoutUntil <= Date.now()) {
+        btnDecryptRevealed.disabled = false;
+        btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+      }
     }
   });
+
+  // Inicializar estado de bloqueo al montar la pestaña
+  updateLockoutUI();
 }
