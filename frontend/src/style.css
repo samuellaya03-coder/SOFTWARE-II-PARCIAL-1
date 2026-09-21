@@ -919,6 +919,33 @@ textarea.font-mono {
   cursor: not-allowed;
 }
 
+.cybertutor-warning-banner {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.73rem;
+  border-radius: 8px;
+  margin: 0.35rem 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  line-height: 1.35;
+  animation: cybertutor-shake 0.3s ease-in-out;
+}
+
+.cybertutor-input-area.has-profanity input {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+}
+
+@keyframes cybertutor-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-3px); }
+}
+
 /* ==========================================================================
    Visual Flow Diagram - Cifrado Híbrido Asimétrico (Alice -> Bob)
    ========================================================================== */

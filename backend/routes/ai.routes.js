@@ -1,5 +1,6 @@
 import express from 'express';
 import { AiService } from '../services/ai.service.js';
+import { aiRateLimiter } from '../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
@@ -7,9 +8,9 @@ const router = express.Router();
  * POST /api/ai/ask
  * Consulta al Asistente Inteligente (CyberTutor IA)
  */
-router.post('/ask', async (req, res, next) => {
+router.post('/ask', aiRateLimiter, async (req, res, next) => {
   try {
-    const { prompt, activeTab, apiKey } = req.body;
+    const { prompt, activeTab } = req.body;
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({
@@ -20,8 +21,7 @@ router.post('/ask', async (req, res, next) => {
 
     const result = await AiService.ask({
       prompt: prompt.trim(),
-      activeTab: activeTab || 'general',
-      customApiKey: apiKey ? apiKey.trim() : null
+      activeTab: activeTab || 'general'
     });
 
     res.status(200).json({

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { parsePng, analyzeImagePixels } from '../services/stegoanalysis.service.js';
+import { analyzeRateLimiter } from '../middlewares/rateLimiter.js';
 
 const router = Router();
 const upload = multer({
@@ -13,7 +14,7 @@ const upload = multer({
  * Recibe una imagen PNG ya sea como multipart/form-data o como payload JSON en Base64.
  * Retorna análisis forense: Chi-cuadrado, entropía LSB, histogramas y veredicto.
  */
-router.post('/image', upload.single('image'), async (req, res) => {
+router.post('/image', analyzeRateLimiter, upload.single('image'), async (req, res) => {
   try {
     let imageBuffer;
 

@@ -5,6 +5,7 @@
  */
 
 import { CRYPTO_CONFIG } from './crypto.service.js';
+import { containsProfanity } from './profanity.service.js';
 
 export class AiService {
   /**
@@ -50,9 +51,20 @@ MODO DE RESPUESTA:
 
   /**
    * Resuelve una consulta con Gemini o el motor local de respaldo.
+   * La API Key se lee exclusivamente de las variables de entorno del servidor.
    */
-  static async ask({ prompt, activeTab = 'general', customApiKey = null }) {
-    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+  static async ask({ prompt, activeTab = 'general' }) {
+    // 1. Filtro de moderación y convivencia académica (Español e Inglés)
+    if (containsProfanity(prompt)) {
+      return {
+        success: true,
+        answer: '⚠️ **Aviso de Convivencia:** CyberTutor IA es un asistente académico de ciberseguridad. Por favor, formula tus consultas con un lenguaje respetuoso y enfocado en los temas del laboratorio.',
+        source: 'moderation',
+        model: 'CyberTutor Moderación'
+      };
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (apiKey) {
       try {
@@ -115,7 +127,16 @@ MODO DE RESPUESTA:
 
         if (res.ok) {
           const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          const candidate = data.candidates?.[0];
+          
+          if (candidate?.finishReason === 'SAFETY') {
+            return {
+              text: '⚠️ La consulta fue detenida por las políticas de seguridad de contenido de la IA. Por favor, reformula tu pregunta con términos técnicos.',
+              model: modelName
+            };
+          }
+
+          const text = candidate?.content?.parts?.[0]?.text;
           if (text) {
             return { text, model: modelName };
           }

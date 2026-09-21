@@ -102,49 +102,55 @@ export function encryptAESGCM(plaintext, password) {
 }
 
 /**
+/**
+ * MENSAJE DE ERROR OPACO Y UNIFORME (Mitigación de Oráculos de Validación)
+ * Evita fuga de información entre fases (longitud, clave incorrecta o mismatch de tag).
+ */
+export const OPAQUE_DECRYPTION_ERROR = 'FALLO DE DESCIFRADO: Los datos son inválidos, la clave es incorrecta o el paquete ha sido alterado.';
+
+/**
  * Desempaqueta y descifra un flujo binario protegido con AES-256-GCM.
  * @param {Buffer|string} packedData - Buffer empaquetado o cadena Base64/Hex.
  * @param {string} password - Contraseña maestra.
  * @returns {Buffer} Texto claro descifrado.
  */
 export function decryptAESGCM(packedData, password) {
-  let buffer;
-  if (Buffer.isBuffer(packedData)) {
-    buffer = packedData;
-  } else if (typeof packedData === 'string') {
-    // Si viene en Base64 o Hex
-    const isHex = /^[0-9a-fA-F]+$/.test(packedData) && packedData.length % 2 === 0;
-    buffer = Buffer.from(packedData, isHex ? 'hex' : 'base64');
-  } else {
-    throw new Error('Datos cifrados inválidos: se esperaba Buffer o String codificado.');
-  }
-
-  const HEADER_SIZE = CRYPTO_CONFIG.KDF.SALT_LENGTH + CRYPTO_CONFIG.CIPHER.IV_LENGTH + CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
-  if (buffer.length < HEADER_SIZE) {
-    throw new Error(`El paquete es demasiado corto (${buffer.length} bytes). Se requieren al menos ${HEADER_SIZE} bytes de cabecera.`);
-  }
-
-  // Desempaquetado con offsets exactos
-  let offset = 0;
-  const salt = buffer.subarray(offset, offset + CRYPTO_CONFIG.KDF.SALT_LENGTH);
-  offset += CRYPTO_CONFIG.KDF.SALT_LENGTH;
-
-  const iv = buffer.subarray(offset, offset + CRYPTO_CONFIG.CIPHER.IV_LENGTH);
-  offset += CRYPTO_CONFIG.CIPHER.IV_LENGTH;
-
-  const authTag = buffer.subarray(offset, offset + CRYPTO_CONFIG.CIPHER.TAG_LENGTH);
-  offset += CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
-
-  const ciphertext = buffer.subarray(offset);
-
-  // Derivación de clave idéntica usando el Salt original
-  const key = deriveKey(password, salt);
-
-  // Inicialización del descifrador
-  const decipher = crypto.createDecipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
-
   try {
+    let buffer;
+    if (Buffer.isBuffer(packedData)) {
+      buffer = packedData;
+    } else if (typeof packedData === 'string') {
+      const isHex = /^[0-9a-fA-F]+$/.test(packedData) && packedData.length % 2 === 0;
+      buffer = Buffer.from(packedData, isHex ? 'hex' : 'base64');
+    } else {
+      throw new Error('Formato de datos no compatible.');
+    }
+
+    const HEADER_SIZE = CRYPTO_CONFIG.KDF.SALT_LENGTH + CRYPTO_CONFIG.CIPHER.IV_LENGTH + CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
+    if (buffer.length < HEADER_SIZE) {
+      throw new Error('Longitud de cabecera menor al umbral criptográfico.');
+    }
+
+    // Desempaquetado con offsets exactos
+    let offset = 0;
+    const salt = buffer.subarray(offset, offset + CRYPTO_CONFIG.KDF.SALT_LENGTH);
+    offset += CRYPTO_CONFIG.KDF.SALT_LENGTH;
+
+    const iv = buffer.subarray(offset, offset + CRYPTO_CONFIG.CIPHER.IV_LENGTH);
+    offset += CRYPTO_CONFIG.CIPHER.IV_LENGTH;
+
+    const authTag = buffer.subarray(offset, offset + CRYPTO_CONFIG.CIPHER.TAG_LENGTH);
+    offset += CRYPTO_CONFIG.CIPHER.TAG_LENGTH;
+
+    const ciphertext = buffer.subarray(offset);
+
+    // Derivación de clave idéntica usando el Salt original
+    const key = deriveKey(password, salt);
+
+    // Inicialización del descifrador
+    const decipher = crypto.createDecipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
+
     const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     return {
       plaintextBuffer: decrypted,
@@ -155,7 +161,10 @@ export function decryptAESGCM(packedData, password) {
       tagHex: authTag.toString('hex')
     };
   } catch (error) {
-    throw new Error('FALLO DE INTEGRIDAD / AUTENTICACIÓN: El texto cifrado ha sido manipulado, la contraseña es incorrecta o el tag GCM no coincide.');
+    // Log de auditoría interna en el servidor (nunca filtrado al cliente HTTP)
+    console.warn(`[AUDITORÍA SEGURIDAD CRIPTO] Fallo interno en decryptAESGCM: ${error.message}`);
+    // Respuesta opaca estandarizada
+    throw new Error(OPAQUE_DECRYPTION_ERROR);
   }
 }
 
@@ -248,15 +257,22 @@ export function hybridEncrypt(plaintext, recipientPublicKeyPem) {
  * 2. Descifra el contenido con AES-256-GCM verificando el AuthTag.
  */
 export function hybridDecrypt(encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, recipientPrivateKeyPem) {
-  const encryptedKey = Buffer.from(encryptedKeyBase64, 'base64');
-  const ephemeralKey = decryptRSA(encryptedKey, recipientPrivateKeyPem);
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(tagHex, 'hex');
-  const ciphertext = Buffer.from(ciphertextBase64, 'base64');
+  try {
+    const encryptedKey = Buffer.from(encryptedKeyBase64, 'base64');
+    const ephemeralKey = decryptRSA(encryptedKey, recipientPrivateKeyPem);
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(tagHex, 'hex');
+    const ciphertext = Buffer.from(ciphertextBase64, 'base64');
 
-  const decipher = crypto.createDecipheriv('aes-256-gcm', ephemeralKey, iv);
-  decipher.setAuthTag(authTag);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', ephemeralKey, iv);
+    decipher.setAuthTag(authTag);
 
-  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-  return plaintext.toString('utf-8');
+    const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    return plaintext.toString('utf-8');
+  } catch (error) {
+    // Log interno en el servidor sin exponer trazas de OpenSSL al cliente
+    console.warn(`[AUDITORÍA SEGURIDAD CRIPTO] Fallo interno en hybridDecrypt: ${error.message}`);
+    // Error opaco unificado
+    throw new Error(OPAQUE_DECRYPTION_ERROR);
+  }
 }

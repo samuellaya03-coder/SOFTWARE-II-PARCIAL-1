@@ -6,6 +6,7 @@ import {
   hybridEncrypt,
   hybridDecrypt
 } from '../services/crypto.service.js';
+import { cryptoRateLimiter, rsaKeygenRateLimiter } from '../middlewares/rateLimiter.js';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ const router = Router();
  * POST /api/crypto/encrypt
  * Cifra un texto o payload binario con AES-256-GCM y deriva la clave con PBKDF2-SHA512.
  */
-router.post('/encrypt', (req, res) => {
+router.post('/encrypt', cryptoRateLimiter, (req, res) => {
   try {
     const { plaintext, plaintextBase64, password } = req.body;
 
@@ -47,7 +48,7 @@ router.post('/encrypt', (req, res) => {
  * POST /api/crypto/decrypt
  * Desempaqueta y descifra un flujo binario [Salt|IV|Tag|Ciphertext] verificando la autenticación GCM.
  */
-router.post('/decrypt', (req, res) => {
+router.post('/decrypt', cryptoRateLimiter, (req, res) => {
   try {
     const { packedData, password } = req.body;
 
@@ -76,7 +77,7 @@ router.post('/decrypt', (req, res) => {
  * GET /api/crypto/rsa/keygen
  * Genera un par de claves RSA de 4096 bits.
  */
-router.get('/rsa/keygen', (req, res) => {
+router.get('/rsa/keygen', rsaKeygenRateLimiter, (req, res) => {
   try {
     const keyPair = generateRSAKeyPair();
     res.status(200).json({
@@ -95,7 +96,7 @@ router.get('/rsa/keygen', (req, res) => {
  * POST /api/crypto/rsa/hybrid-encrypt
  * Cifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
  */
-router.post('/rsa/hybrid-encrypt', (req, res) => {
+router.post('/rsa/hybrid-encrypt', cryptoRateLimiter, (req, res) => {
   try {
     const { plaintext, publicKeyPem } = req.body;
     if (!plaintext || !publicKeyPem) {
@@ -119,7 +120,7 @@ router.post('/rsa/hybrid-encrypt', (req, res) => {
  * POST /api/crypto/rsa/hybrid-decrypt
  * Descifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
  */
-router.post('/rsa/hybrid-decrypt', (req, res) => {
+router.post('/rsa/hybrid-decrypt', cryptoRateLimiter, (req, res) => {
   try {
     const { encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, privateKeyPem } = req.body;
     if (!encryptedKeyBase64 || !ivHex || !tagHex || !ciphertextBase64 || !privateKeyPem) {

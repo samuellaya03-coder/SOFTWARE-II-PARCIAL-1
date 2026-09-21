@@ -28,11 +28,47 @@ import aiRoutes from './routes/ai.routes.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuración de Middlewares
+// Habilitar confianza en proxies inversos (Cloudflare Tunnel) para detección real de IPs
+app.set('trust proxy', 1);
+
+// Orígenes autorizados por defecto para desarrollo local
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+// Orígenes adicionales definidos en el archivo .env (separados por coma)
+const envAllowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
+const allowedOrigins = [...defaultAllowedOrigins, ...envAllowedOrigins];
+
+// Configuración de Middlewares con restricción de CORS
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    // Permitir peticiones sin cabecera origin (Postman, curl, peticiones internas)
+    if (!origin) return callback(null, true);
+
+    // 1. Origen explícitamente autorizado en la lista blanca
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // 2. Soporte dinámico para túneles de Cloudflare (*.trycloudflare.com)
+    if (/^https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    const corsError = new Error(`Acceso bloqueado por política CORS: El origen "${origin}" no está autorizado.`);
+    return callback(corsError);
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset', 'Retry-After'],
+  credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
@@ -71,6 +107,12 @@ app.get('/api/health', (req, res) => {
 
 // Manejador global de errores
 app.use((err, req, res, next) => {
+  if (err.message && err.message.includes('CORS')) {
+    return res.status(403).json({
+      success: false,
+      error: err.message
+    });
+  }
   console.error('[SERVER ERROR]', err);
   res.status(500).json({
     success: false,

@@ -126,15 +126,15 @@ export class ApiService {
 
   /**
    * Consulta al Asistente Inteligente (CyberTutor IA).
+   * La API key se gestiona exclusivamente en el backend (.env).
    * @param {string} prompt 
    * @param {string} activeTab 
-   * @param {string|null} apiKey 
    */
-  static async askAi(prompt, activeTab = 'general', apiKey = null) {
+  static async askAi(prompt, activeTab = 'general') {
     const res = await fetch(`${API_BASE_URL}/ai/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, activeTab, apiKey })
+      body: JSON.stringify({ prompt, activeTab })
     });
     const data = await res.json();
     if (!res.ok || !data.success) {

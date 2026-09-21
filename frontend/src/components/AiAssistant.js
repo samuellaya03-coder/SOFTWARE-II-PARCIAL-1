@@ -1,11 +1,14 @@
 import { ApiService } from '../services/api.js';
+import { containsProfanity } from '../utils/profanityFilter.js';
 
 export class AiAssistant {
   constructor() {
     this.activeTab = 'stego';
     this.isOpen = false;
-    this.isSettingsOpen = false;
-    this.apiKey = localStorage.getItem('cybertutor_gemini_api_key') || '';
+    // Purgar cualquier clave que haya quedado en localStorage para máxima seguridad
+    try {
+      localStorage.removeItem('cybertutor_gemini_api_key');
+    } catch (e) {}
     this.messages = [
       {
         sender: 'ai',
@@ -87,28 +90,8 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 0.4rem;">
-            <button id="cybertutor-settings-btn" class="cybertutor-icon-btn" title="Configurar Gemini API Key (Opcional)">
-              ⚙️
-            </button>
             <button id="cybertutor-close-btn" class="cybertutor-icon-btn" title="Cerrar Asistente">
               ✕
-            </button>
-          </div>
-        </div>
-
-        <!-- Panel de Configuración de API Key (Opcional) -->
-        <div id="cybertutor-settings-panel" class="cybertutor-settings" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-            <span style="font-size: 0.8rem; font-weight: 600; color: #ffffff;">🔑 Gemini API Key (Opcional):</span>
-            <span style="font-size: 0.7rem; color: var(--text-muted);">Gratis en Google AI Studio</span>
-          </div>
-          <p style="font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.5rem; line-height: 1.35;">
-            Si no ingresas una clave, el asistente responderá usando el motor pedagógico local sin necesidad de internet.
-          </p>
-          <div style="display: flex; gap: 0.4rem;">
-            <input type="password" id="cybertutor-api-key-input" placeholder="AIzaSy..." value="${this.apiKey}" style="font-size: 0.75rem; padding: 0.35rem 0.5rem; flex: 1;" />
-            <button id="cybertutor-save-key-btn" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;">
-              Guardar
             </button>
           </div>
         </div>
@@ -121,6 +104,9 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
 
         <!-- Contenedor de Mensajes -->
         <div id="cybertutor-messages" class="cybertutor-messages"></div>
+
+        <!-- Banner de advertencia de lenguaje inapropiado -->
+        <div id="cybertutor-warning" class="cybertutor-warning-banner" style="display: none;"></div>
 
         <!-- Input Bar -->
         <form id="cybertutor-form" class="cybertutor-input-area">
@@ -143,34 +129,66 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
     // Eventos
     const launcherBtn = document.getElementById('cybertutor-launcher-btn');
     const closeBtn = document.getElementById('cybertutor-close-btn');
-    const settingsBtn = document.getElementById('cybertutor-settings-btn');
-    const saveKeyBtn = document.getElementById('cybertutor-save-key-btn');
-    const apiKeyInput = document.getElementById('cybertutor-api-key-input');
     const form = document.getElementById('cybertutor-form');
+    const input = document.getElementById('cybertutor-input');
+    const sendBtn = document.getElementById('cybertutor-send-btn');
+    const warningEl = document.getElementById('cybertutor-warning');
 
     launcherBtn.addEventListener('click', () => this.toggleOpen());
     closeBtn.addEventListener('click', () => this.setOpen(false));
 
-    settingsBtn.addEventListener('click', () => {
-      this.isSettingsOpen = !this.isSettingsOpen;
-      const panel = document.getElementById('cybertutor-settings-panel');
-      panel.style.display = this.isSettingsOpen ? 'block' : 'none';
+    // Validador de moderación en vivo
+    const checkProfanity = (val) => {
+      const isBad = containsProfanity(val);
+      if (isBad) {
+        warningEl.innerHTML = '⚠️ <strong>Lenguaje no permitido:</strong> Por favor formula tu consulta de forma respetuosa para continuar.';
+        warningEl.style.display = 'flex';
+        form.classList.add('has-profanity');
+        sendBtn.disabled = true;
+        sendBtn.title = 'Bloqueado: no se permite lenguaje ofensivo';
+      } else {
+        warningEl.style.display = 'none';
+        form.classList.remove('has-profanity');
+        sendBtn.disabled = false;
+        sendBtn.title = 'Enviar Mensaje';
+      }
+      return isBad;
+    };
+
+    // Bloqueo en tiempo real al escribir o pegar texto
+    input.addEventListener('input', () => {
+      checkProfanity(input.value);
     });
 
-    saveKeyBtn.addEventListener('click', () => {
-      this.apiKey = apiKeyInput.value.trim();
-      localStorage.setItem('cybertutor_gemini_api_key', this.apiKey);
-      alert(this.apiKey ? '✅ Gemini API Key guardada correctamente.' : 'ℹ️ Clave eliminada. Se usará el motor local.');
-      document.getElementById('cybertutor-settings-panel').style.display = 'none';
-      this.isSettingsOpen = false;
+    // Bloqueo explícito al presionar la tecla Enter
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (checkProfanity(input.value)) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Sacudida visual de advertencia
+          warningEl.style.animation = 'none';
+          void warningEl.offsetWidth;
+          warningEl.style.animation = 'cybertutor-shake 0.3s ease-in-out';
+        }
+      }
     });
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const input = document.getElementById('cybertutor-input');
       const text = input.value.trim();
       if (!text) return;
+      
+      // Validación previa al envío
+      if (checkProfanity(text)) {
+        warningEl.style.animation = 'none';
+        void warningEl.offsetWidth;
+        warningEl.style.animation = 'cybertutor-shake 0.3s ease-in-out';
+        return;
+      }
+
       input.value = '';
+      checkProfanity('');
       this.handleUserMessage(text);
     });
 
@@ -276,7 +294,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
     if (sendBtn) sendBtn.disabled = true;
 
     try {
-      const result = await ApiService.askAi(text, this.activeTab, this.apiKey || null);
+      const result = await ApiService.askAi(text, this.activeTab);
       
       // Remover indicador
       const typingEl = document.getElementById('cybertutor-typing');
