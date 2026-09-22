@@ -18,6 +18,11 @@ export class EmailService {
 
     console.log(`[EMAIL SERVICE] Despachando correo a través de Google Apps Script: ${to}`);
 
+    // Limpiar prefijo data: si viene presente (e.g. data:image/png;base64,...)
+    const cleanBase64 = (attachmentBase64 || '').replace(/^data:[^;]+;base64,/, '');
+    const actualFilename = filename || 'archivo_seguro.png';
+    const actualMime = mimeType || 'image/png';
+
     const response = await fetch(scriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -25,11 +30,19 @@ export class EmailService {
       body: JSON.stringify({
         to,
         subject,
+        text: message,
         message,
         html: htmlContent,
-        attachmentBase64,
-        filename: filename || 'archivo_seguro.png',
-        mimeType: mimeType || 'image/png'
+        attachments: [
+          {
+            filename: actualFilename,
+            content: cleanBase64,
+            contentType: actualMime
+          }
+        ],
+        attachmentBase64: cleanBase64,
+        filename: actualFilename,
+        mimeType: actualMime
       })
     });
 
