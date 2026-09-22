@@ -2,20 +2,86 @@ import nodemailer from 'nodemailer';
 
 /**
  * SERVICIO DE GESTIÓN Y ENVÍO DE CORREOS ELECTRÓNICOS
- * Soporta transporte SMTP real (.env) y fallback automático a Ethereal Test Email
+ * Métodos soportados:
+ * 1. Google Apps Script Webhook (GOOGLE_APPS_SCRIPT_URL)
+ * 2. Gmail Directo con Google App Password (GMAIL_USER + GMAIL_APP_PASSWORD)
+ * 3. Servidor SMTP Estándar (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)
+ * 4. Fallback de prueba con Ethereal Email
  */
 export class EmailService {
   /**
-   * Obtiene o genera un transportador de Nodemailer.
+   * Envía a través de Google Apps Script Web App si está configurado.
+   */
+  static async sendViaGoogleAppsScript({ to, subject, message, attachmentBase64, filename, mimeType, htmlContent }) {
+    const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+    if (!scriptUrl) return null;
+
+    console.log(`[EMAIL SERVICE] Despachando correo a través de Google Apps Script: ${to}`);
+
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      redirect: 'follow',
+      body: JSON.stringify({
+        to,
+        subject,
+        message,
+        html: htmlContent,
+        attachmentBase64,
+        filename: filename || 'archivo_seguro.png',
+        mimeType: mimeType || 'image/png'
+      })
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { success: response.ok, raw: text };
+    }
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || 'Fallo en la ejecución del Webhook de Google Apps Script.');
+    }
+
+    return {
+      success: true,
+      messageId: `gas_${Date.now()}`,
+      previewUrl: null,
+      mode: 'google_apps_script',
+      recipient: to
+    };
+  }
+
+  /**
+   * Obtiene o genera el transportador de Nodemailer.
    */
   static async getTransporter() {
+    // Opción 1: Gmail con Google App Password
+    const gmailUser = process.env.GMAIL_USER || process.env.GOOGLE_APP_USER;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.GOOGLE_APP_PASSWORD;
+
+    if (gmailUser && gmailPass) {
+      console.log(`[EMAIL SERVICE] Usando transporte directo de Gmail (Google App Password) para: ${gmailUser}`);
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass.replace(/\s+/g, '') // Eliminar espacios que Google suele mostrar en contraseñas de aplicación
+        }
+      });
+      return { transporter, isTest: false, sender: gmailUser };
+    }
+
+    // Opción 2: SMTP genérico (.env)
     const host = process.env.SMTP_HOST;
     const port = parseInt(process.env.SMTP_PORT || '587', 10);
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
-    // Si existen credenciales reales en .env, usar transporte SMTP configurado
     if (host && user && pass) {
+      console.log(`[EMAIL SERVICE] Usando servidor SMTP: ${host}:${port}`);
       const isSecure = port === 465;
       const transporter = nodemailer.createTransport({
         host,
@@ -23,10 +89,11 @@ export class EmailService {
         secure: isSecure,
         auth: { user, pass }
       });
-      return { transporter, isTest: false };
+      return { transporter, isTest: false, sender: user };
     }
 
-    // Fallback: Crear cuenta de prueba en Ethereal Email (no requiere configuración)
+    // Opción 3: Fallback a Ethereal Test Email
+    console.warn(`[EMAIL SERVICE] No se detectó configuración de Gmail o SMTP real en .env. Usando buzón de prueba Ethereal Email.`);
     const testAccount = await nodemailer.createTestAccount();
     const transporter = nodemailer.createTransport({
       host: testAccount.smtp.host,
@@ -37,18 +104,11 @@ export class EmailService {
         pass: testAccount.pass
       }
     });
-    return { transporter, isTest: true };
+    return { transporter, isTest: true, sender: testAccount.user };
   }
 
   /**
    * Envía un correo con un archivo esteganográfico o paquete criptográfico adjunto.
-   * @param {Object} options
-   * @param {string} options.to - Dirección de correo destino
-   * @param {string} [options.subject] - Asunto del correo
-   * @param {string} [options.message] - Mensaje explicativo o notas
-   * @param {string} options.attachmentBase64 - Archivo en formato Base64
-   * @param {string} options.filename - Nombre del archivo adjunto (ej. "stego_secreto.png")
-   * @param {string} [options.mimeType] - Tipo MIME (ej. "image/png")
    */
   static async sendSecureFile({ to, subject, message, attachmentBase64, filename, mimeType }) {
     if (!to || !to.includes('@')) {
@@ -59,15 +119,8 @@ export class EmailService {
       throw new Error('No se ha proporcionado el archivo adjunto para el envío.');
     }
 
-    const { transporter, isTest } = await this.getTransporter();
-
-    // Limpiar posible prefijo data URI (ej. "data:image/png;base64,")
-    const cleanBase64 = attachmentBase64.replace(/^data:[^;]+;base64,/, '');
-    const fileBuffer = Buffer.from(cleanBase64, 'base64');
-
     const mailSubject = subject?.trim() || '🔐 Archivo Confidencial - Laboratorio de Criptografía y Esteganografía';
     const mailText = message?.trim() || 'Se te ha enviado un archivo confidencial con información inyectada mediante técnicas de seguridad informática.';
-    const sender = process.env.SMTP_FROM || '"CyberSec Lab" <seguridad@laboratorio.local>';
 
     const htmlContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; border-radius: 12px; max-width: 600px; margin: auto; border: 1px solid #334155;">
@@ -100,8 +153,35 @@ export class EmailService {
       </div>
     `;
 
+    // 1. Probar primero si hay Google Apps Script configurado
+    if (process.env.GOOGLE_APPS_SCRIPT_URL) {
+      try {
+        const gasResult = await this.sendViaGoogleAppsScript({
+          to,
+          subject: mailSubject,
+          message: mailText,
+          attachmentBase64,
+          filename,
+          mimeType,
+          htmlContent
+        });
+        if (gasResult) return gasResult;
+      } catch (gasErr) {
+        console.warn(`[EMAIL SERVICE] Error con Google Apps Script (${gasErr.message}). Intentando transporte Nodemailer...`);
+      }
+    }
+
+    // 2. Usar Nodemailer (Gmail App Password, SMTP o Ethereal)
+    const { transporter, isTest, sender } = await this.getTransporter();
+
+    // Limpiar posible prefijo data URI
+    const cleanBase64 = attachmentBase64.replace(/^data:[^;]+;base64,/, '');
+    const fileBuffer = Buffer.from(cleanBase64, 'base64');
+
+    const fromAddress = process.env.SMTP_FROM || `"${sender.split('@')[0]}" <${sender}>`;
+
     const info = await transporter.sendMail({
-      from: sender,
+      from: fromAddress,
       to,
       subject: mailSubject,
       text: mailText,
@@ -121,7 +201,7 @@ export class EmailService {
       success: true,
       messageId: info.messageId,
       previewUrl,
-      mode: isTest ? 'test_preview' : 'smtp_sent',
+      mode: isTest ? 'test_preview' : 'real_smtp',
       recipient: to
     };
   }

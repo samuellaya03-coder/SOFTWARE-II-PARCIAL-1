@@ -165,10 +165,10 @@ export function openEmailModal({
         if (result.previewUrl) {
           // Fallback Ethereal: Permitir abrir en nueva pestaña para ver el correo
           showToast({
-            title: '¡Correo Despachado!',
-            message: `Enviado a ${to}. Puedes inspeccionar el buzón de prueba haciendo clic en la notificación.`,
+            title: 'Modo de Prueba (Ethereal)',
+            message: `El correo se envió al buzón de prueba. Para recibirlo en tu bandeja real de Gmail, configura tu Google App Password o Google Apps Script en el backend .env. Se abrió la vista previa.`,
             icon: '📨',
-            type: 'success',
+            type: 'warning',
             duration: 6000
           });
           // Abrir automáticamente la vista previa web del correo en nueva pestaña
@@ -176,10 +176,10 @@ export function openEmailModal({
         } else {
           showToast({
             title: '¡Correo Enviado con Éxito!',
-            message: `El archivo seguro fue despachado a ${to}.`,
+            message: `El archivo seguro fue despachado a la bandeja real de ${to}.`,
             icon: '✅',
             type: 'success',
-            duration: 3500
+            duration: 4000
           });
         }
       }
