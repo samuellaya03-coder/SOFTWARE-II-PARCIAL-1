@@ -24,6 +24,7 @@ try {
 import cryptoRoutes from './routes/crypto.routes.js';
 import analyzeRoutes from './routes/analyze.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import emailRoutes from './routes/email.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -88,6 +89,7 @@ app.use((req, res, next) => {
 app.use('/api/crypto', cryptoRoutes);
 app.use('/api/analyze', analyzeRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/email', emailRoutes);
 
 // Health check y metadatos de seguridad
 app.get('/api/health', (req, res) => {

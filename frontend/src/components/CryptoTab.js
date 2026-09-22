@@ -1,4 +1,5 @@
 import { ApiService } from '../services/api.js';
+import { openEmailModal } from '../utils/emailModal.js';
 
 export function renderCryptoTab(container) {
   container.innerHTML = `
@@ -74,6 +75,9 @@ export function renderCryptoTab(container) {
             <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem;">
               <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Flujo Binario Completo (Base64):</label>
               <textarea id="packed-base64-output" rows="3" readonly class="font-mono" style="font-size: 0.8rem;"></textarea>
+              <button id="btn-email-aes-package" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.45rem 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                📧 Enviar Paquete Cifrado por Correo
+              </button>
             </div>
           </div>
         </div>
@@ -312,6 +316,9 @@ export function renderCryptoTab(container) {
                 <div style="margin-top: 0.5rem; color: #a7f3d0; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.4rem;">
                   📡 Paquete en tránsito listo para ser entregado a Bob.
                 </div>
+                <button id="btn-email-hybrid-envelope" class="btn btn-primary" style="width: 100%; margin-top: 0.65rem; font-size: 0.8rem; padding: 0.45rem 0.75rem; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                  📧 Enviar Sobre Digital a Bob por Correo
+                </button>
               </div>
             </div>
 
@@ -362,6 +369,7 @@ export function renderCryptoTab(container) {
   const hexTag = container.querySelector('#hex-tag');
   const hexCipher = container.querySelector('#hex-cipher');
   const packedBase64Output = container.querySelector('#packed-base64-output');
+  const btnEmailAesPackage = container.querySelector('#btn-email-aes-package');
 
   const decryptBase64Input = container.querySelector('#decrypt-base64-input');
   const decryptPassInput = container.querySelector('#decrypt-pass-input');
@@ -384,6 +392,7 @@ export function renderCryptoTab(container) {
 
   const hybridMessageInput = container.querySelector('#hybrid-message-input');
   const btnAliceEncrypt = container.querySelector('#btn-alice-encrypt');
+  const btnEmailHybridEnvelope = container.querySelector('#btn-email-hybrid-envelope');
   const aliceOutputBox = container.querySelector('#alice-output-box');
   const aliceEncKey = container.querySelector('#alice-enc-key');
   const aliceIv = container.querySelector('#alice-iv');
@@ -490,6 +499,31 @@ export function renderCryptoTab(container) {
       btnRunEncrypt.innerHTML = '🔒 Cifrar con AES-256-GCM + PBKDF2';
     }
   });
+
+  // --- Despachar Paquete Cifrado AES por Correo Electrónico ---
+  if (btnEmailAesPackage) {
+    btnEmailAesPackage.addEventListener('click', () => {
+      const base64 = packedBase64Output.value.trim();
+      if (!base64) {
+        showToast({
+          title: 'Sin Datos Cifrados',
+          message: 'Primero debes cifrar un mensaje con AES-256-GCM antes de enviarlo.',
+          icon: '⚠️',
+          type: 'warning',
+          duration: 2000
+        });
+        return;
+      }
+      openEmailModal({
+        filename: 'paquete_cifrado_aes_gcm.txt',
+        mimeType: 'text/plain',
+        getAttachmentBase64: () => btoa(base64),
+        defaultSubject: '🔐 Paquete Cifrado AES-256-GCM + PBKDF2 (Laboratorio)',
+        defaultNote: 'Te envío un paquete binario cifrado con AES-256-GCM y clave derivada mediante PBKDF2 (600,000 iteraciones). Cárgalo en la sección "Descifrado y Prueba de Integridad" para validar su autenticidad.',
+        showToast
+      });
+    });
+  }
 
   // --- Sistema Anti-Fuerza Bruta y Cooldown Progresivo (1m -> 5m -> 10m) en Laboratorio ---
   const CRYPTO_LOCKOUT_STORAGE_KEY = 'crypto_lab_bruteforce_lockout_v1';
@@ -914,6 +948,31 @@ export function renderCryptoTab(container) {
       btnAliceEncrypt.innerHTML = '🔒 Cifrar y Empaquetar Sobre Digital (Alice)';
     }
   });
+
+  // --- Despachar Sobre Digital Híbrido a Bob por Correo ---
+  if (btnEmailHybridEnvelope) {
+    btnEmailHybridEnvelope.addEventListener('click', () => {
+      if (!currentHybridPayload) {
+        showToast({
+          title: 'Sobre no Disponible',
+          message: 'Primero debes cifrar y empaquetar el sobre digital antes de despacharlo.',
+          icon: '⚠️',
+          type: 'warning',
+          duration: 2000
+        });
+        return;
+      }
+      const jsonStr = JSON.stringify(currentHybridPayload, null, 2);
+      openEmailModal({
+        filename: 'sobre_digital_alice_bob.json',
+        mimeType: 'application/json',
+        getAttachmentBase64: () => btoa(unescape(encodeURIComponent(jsonStr))),
+        defaultSubject: '📦 Sobre Digital Blindado (RSA-OAEP 4096 + AES-GCM)',
+        defaultNote: 'Hola Bob, te envío el sobre digital generado por Alice. Contiene la clave simétrica efímera de 256 bits protegida con tu clave pública RSA-4096 y el mensaje cifrado con AES-GCM.',
+        showToast
+      });
+    });
+  }
 
   // --- LADO RECEPTOR (BOB): Descifrado del Sobre con Clave Privada ---
   btnBobDecrypt.addEventListener('click', async () => {

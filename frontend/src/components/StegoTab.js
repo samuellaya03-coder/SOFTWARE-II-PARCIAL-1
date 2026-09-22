@@ -1,5 +1,6 @@
 import { StegoEngine } from '../services/stegoEngine.js';
 import { ApiService } from '../services/api.js';
+import { openEmailModal } from '../utils/emailModal.js';
 
 export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAttack) {
   container.innerHTML = `
@@ -193,13 +194,16 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               </div>
 
               <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button id="btn-download-stego" class="btn btn-emerald" style="flex: 1;">
-                  💾 Descargar PNG Esteganografiado
+                <button id="btn-download-stego" class="btn btn-emerald" style="flex: 1; min-width: 180px;">
+                  💾 Descargar PNG
                 </button>
-                <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1;">
-                  🔬 Enviar a Estegoanálisis Forense
+                <button id="btn-email-stego" class="btn btn-primary" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none;">
+                  📧 Enviar por Correo
                 </button>
-                <button id="btn-send-to-attack" class="btn btn-rose" style="flex: 1; background: linear-gradient(135deg, #a855f7, #f43f5e); border: none;">
+                <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1; min-width: 180px;">
+                  🔬 Enviar a Estegoanálisis
+                </button>
+                <button id="btn-send-to-attack" class="btn btn-rose" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #a855f7, #f43f5e); border: none;">
                   💥 Atacar en Tiempo Real
                 </button>
               </div>
@@ -360,6 +364,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
   const outputCanvas = container.querySelector('#stego-output-canvas');
   const stegoStatsDetails = container.querySelector('#stego-stats-details');
   const btnDownloadStego = container.querySelector('#btn-download-stego');
+  const btnEmailStego = container.querySelector('#btn-email-stego');
   const btnSendToAnalysis = container.querySelector('#btn-send-to-analysis');
 
   // Reveal elements
@@ -724,6 +729,22 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
     a.click();
     URL.revokeObjectURL(url);
   });
+
+  // --- Despachar Imagen Stego por Correo Electrónico ---
+  if (btnEmailStego) {
+    btnEmailStego.addEventListener('click', () => {
+      if (!lastInjectedCanvas) return;
+      openEmailModal({
+        filename: `stego_secreto_${Date.now()}.png`,
+        mimeType: 'image/png',
+        getAttachmentBase64: () => lastInjectedCanvas.toDataURL('image/png'),
+        defaultSubject: '🔐 Imagen Esteganográfica con Datos Ocultos (Laboratorio)',
+        defaultNote: 'Te envío esta imagen portadora con datos confidenciales ocultos en sus bits menos significativos (LSB). Descárgala en tu equipo y súbela en la pestaña "Revelar Información (Extracción LSB)" para extraer el secreto.',
+        previewThumbnail: lastInjectedCanvas.toDataURL('image/png'),
+        showToast
+      });
+    });
+  }
 
   // --- Enviar a Estegoanálisis ---
   btnSendToAnalysis.addEventListener('click', async () => {

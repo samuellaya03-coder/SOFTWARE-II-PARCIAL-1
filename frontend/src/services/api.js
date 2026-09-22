@@ -142,4 +142,27 @@ export class ApiService {
     }
     return data.data;
   }
+
+  /**
+   * Despacha un archivo confidencial o imagen esteganográfica por correo electrónico.
+   * @param {Object} payload
+   * @param {string} payload.to - Correo destinatario
+   * @param {string} [payload.subject] - Asunto
+   * @param {string} [payload.message] - Mensaje
+   * @param {string} payload.attachmentBase64 - Archivo adjunto en Base64
+   * @param {string} [payload.filename] - Nombre de archivo
+   * @param {string} [payload.mimeType] - Tipo MIME
+   */
+  static async sendEmail({ to, subject, message, attachmentBase64, filename, mimeType }) {
+    const res = await fetch(`${API_BASE_URL}/email/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, message, attachmentBase64, filename, mimeType })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Error al despachar el correo.');
+    }
+    return data.data;
+  }
 }
