@@ -9,7 +9,7 @@ export function renderImageAttackTab(container, initialData = null) {
         <div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
             <span style="font-size: 1.5rem;">💥</span>
-            <h2 style="font-size: 1.45rem; color: #fff;">Laboratorio de Ataque de Bits a Imágenes en Tiempo Real</h2>
+            <h2 style="font-size: 1.45rem; color: var(--text-primary);">Laboratorio de Ataque de Bits a Imágenes en Tiempo Real</h2>
           </div>
           <p style="color: var(--text-secondary); font-size: 0.875rem;">
             Demostración visual del impacto de la corrupción de bits en imágenes. Compara a la izquierda los bits invisibles (LSB) y a la derecha la máscara negra con los bits atacados en rojo (o la foto con distorsión visual).

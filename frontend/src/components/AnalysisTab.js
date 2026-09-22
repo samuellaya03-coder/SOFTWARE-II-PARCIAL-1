@@ -545,12 +545,25 @@ export function renderAnalysisTab(container, initialData = null) {
   // ==========================================
   // HISTOGRAMA RGB
   // ==========================================
+  let lastRenderedHistograms = null;
+
+  window.addEventListener('cyberlab-theme-change', () => {
+    if (lastRenderedHistograms && chartCanvas) {
+      renderHistogramChart(lastRenderedHistograms);
+    }
+  });
+
   function renderHistogramChart(histograms) {
+    lastRenderedHistograms = histograms;
     if (chartInstance) {
       chartInstance.destroy();
     }
 
     const labels = Array.from({ length: 256 }, (_, i) => i);
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.05)';
+    const titleColor = isLight ? '#475569' : '#94a3b8';
+    const ticksColor = isLight ? '#64748b' : '#64748b';
 
     const ctx = chartCanvas.getContext('2d');
     chartInstance = new Chart(ctx, {
@@ -561,8 +574,8 @@ export function renderAnalysisTab(container, initialData = null) {
           {
             label: 'Canal Rojo',
             data: histograms.red,
-            borderColor: 'rgba(248, 113, 113, 0.85)',
-            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+            borderColor: 'rgba(239, 68, 68, 0.85)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
             borderWidth: 1.5,
             pointRadius: 0,
             fill: true
@@ -570,8 +583,8 @@ export function renderAnalysisTab(container, initialData = null) {
           {
             label: 'Canal Verde',
             data: histograms.green,
-            borderColor: 'rgba(74, 222, 128, 0.85)',
-            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+            borderColor: 'rgba(16, 185, 129, 0.85)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
             borderWidth: 1.5,
             pointRadius: 0,
             fill: true
@@ -579,8 +592,8 @@ export function renderAnalysisTab(container, initialData = null) {
           {
             label: 'Canal Azul',
             data: histograms.blue,
-            borderColor: 'rgba(96, 165, 250, 0.85)',
-            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+            borderColor: 'rgba(99, 102, 241, 0.85)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
             borderWidth: 1.5,
             pointRadius: 0,
             fill: true
@@ -596,14 +609,14 @@ export function renderAnalysisTab(container, initialData = null) {
         },
         scales: {
           x: {
-            title: { display: true, text: 'Intensidad de Color (0 a 255)', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#64748b', maxTicksLimit: 16 }
+            title: { display: true, text: 'Intensidad de Color (0 a 255)', color: titleColor },
+            grid: { color: gridColor },
+            ticks: { color: ticksColor, maxTicksLimit: 16 }
           },
           y: {
-            title: { display: true, text: 'Frecuencia de Píxeles', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#64748b' }
+            title: { display: true, text: 'Frecuencia de Píxeles', color: titleColor },
+            grid: { color: gridColor },
+            ticks: { color: ticksColor }
           }
         },
         plugins: {
@@ -611,10 +624,10 @@ export function renderAnalysisTab(container, initialData = null) {
             display: false
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-            titleColor: '#00f0ff',
-            bodyColor: '#f1f5f9',
-            borderColor: 'rgba(0, 240, 255, 0.3)',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.96)',
+            titleColor: isLight ? '#4f46e5' : '#6366f1',
+            bodyColor: isLight ? '#0f172a' : '#f1f5f9',
+            borderColor: isLight ? 'rgba(79, 70, 229, 0.3)' : 'rgba(99, 102, 241, 0.3)',
             borderWidth: 1
           }
         }

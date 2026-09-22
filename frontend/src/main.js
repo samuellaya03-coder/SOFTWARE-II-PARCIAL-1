@@ -5,8 +5,12 @@ import { renderCryptoTab } from './components/CryptoTab.js';
 import { renderAnalysisTab } from './components/AnalysisTab.js';
 import { renderImageAttackTab } from './components/ImageAttackTab.js';
 import { AiAssistant } from './components/AiAssistant.js';
+import { ThemeManager } from './utils/themeManager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Inicializar Gestor de Temas (Modo Claro / Modo Oscuro)
+  ThemeManager.init();
+
   const tabStegoBtn = document.getElementById('tab-stego-btn');
   const tabCryptoBtn = document.getElementById('tab-crypto-btn');
   const tabAnalysisBtn = document.getElementById('tab-analysis-btn');

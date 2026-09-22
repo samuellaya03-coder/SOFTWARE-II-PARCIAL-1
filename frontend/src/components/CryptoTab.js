@@ -192,7 +192,7 @@ export function renderCryptoTab(container) {
         <!-- FLUJO DE COMUNICACIÓN HÍBRIDA: LADO EMISOR (ALICE) VS LADO RECEPTOR (BOB) -->
         <div style="border-top: 1px solid var(--border-color); padding-top: 1.15rem;">
           <div style="margin-bottom: 1rem;">
-            <h4 style="font-size: 1.05rem; color: #ffffff; display: flex; align-items: center; gap: 0.4rem;">
+            <h4 style="font-size: 1.05rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
               <span>⚖️</span> Flujo de Comunicación Híbrida: Lado Emisor (Alice) vs Lado Receptor (Bob)
             </h4>
             <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.25rem;">
@@ -348,7 +348,7 @@ export function renderCryptoTab(container) {
                 <div>• <strong>Validación AuthTag (GHASH):</strong> <span style="color: var(--accent-emerald); font-weight: bold;">AUTÉNTICO (128 bits OK)</span></div>
                 <div style="margin-top: 0.45rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.45rem;">
                   <span style="color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Texto Plano Final Recuperado:</span>
-                  <div id="bob-plaintext" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.45rem 0.75rem; border-radius: 4px; color: #ffffff; font-weight: 700; font-size: 0.88rem;"></div>
+                  <div id="bob-plaintext" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.45rem 0.75rem; border-radius: 4px; color: var(--text-primary); font-weight: 700; font-size: 0.88rem;"></div>
                 </div>
               </div>
             </div>
