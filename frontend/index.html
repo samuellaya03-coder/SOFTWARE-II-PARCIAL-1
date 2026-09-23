@@ -15,21 +15,23 @@
         } catch (e) {}
       })();
     </script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..500,0..1,0" rel="stylesheet" />
   </head>
   <body>
     <div class="app-container">
       <!-- Top Navigation & Branding Header -->
       <header class="app-header">
-        <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
           <div class="brand-avatar">
-            🛡️
+            <span class="micon" aria-hidden="true">shield</span> 
           </div>
           <div>
-            <h1 style="font-size: 1.35rem; line-height: 1.2;">LABORATORIO DE CRIPTOGRAFÍA & ESTEGANOGRAFÍA</h1>
-            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem;">
+            <h1 style="font-size: 1.375rem; line-height: 1.2;">LABORATORIO DE CRIPTOGRAFÍA & ESTEGANOGRAFÍA</h1>
+            <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
               <span>Proyecto de Ciberseguridad &amp; Forense Multimedia</span>
               <span>•</span>
-              <span class="badge badge-rose" style="font-size: 0.65rem; padding: 0.1rem 0.45rem;">MODO DIFÍCIL</span>
+              <span class="badge badge-rose" style="font-size: 0.6875rem; padding: 0.1rem 0.45rem;">MODO DIFÍCIL</span>
             </div>
           </div>
         </div>
@@ -39,7 +41,7 @@
             ● Verificando Backend...
           </div>
           <button id="theme-toggle-btn" class="theme-toggle-btn" type="button" aria-label="Cambiar tema">
-            <span id="theme-toggle-icon" class="theme-toggle-icon">🌙</span>
+            <span id="theme-toggle-icon" class="theme-toggle-icon"><span class="micon" aria-hidden="true">dark_mode</span> </span>
             <span id="theme-toggle-label" class="theme-toggle-label">Oscuro</span>
           </button>
         </div>
@@ -49,7 +51,7 @@
       <nav class="tabs-nav" aria-label="Módulos del Laboratorio">
         <button id="tab-stego-btn" class="tab-btn tab-card active" type="button">
           <div class="tab-card-header">
-            <div class="tab-card-icon icon-cyan">🖼️</div>
+            <div class="tab-card-icon icon-cyan"><span class="micon" aria-hidden="true">image</span> </div>
             <span class="tab-card-badge badge-cyan">MÓDULO 1</span>
           </div>
           <div class="tab-card-body">
@@ -64,7 +66,7 @@
 
         <button id="tab-crypto-btn" class="tab-btn tab-card" type="button">
           <div class="tab-card-header">
-            <div class="tab-card-icon icon-purple">🔐</div>
+            <div class="tab-card-icon icon-purple"><span class="micon" aria-hidden="true">key</span> </div>
             <span class="tab-card-badge badge-purple">MÓDULO 2</span>
           </div>
           <div class="tab-card-body">
@@ -79,7 +81,7 @@
 
         <button id="tab-analysis-btn" class="tab-btn tab-card" type="button">
           <div class="tab-card-header">
-            <div class="tab-card-icon icon-emerald">📊</div>
+            <div class="tab-card-icon icon-emerald"><span class="micon" aria-hidden="true">bar_chart</span> </div>
             <span class="tab-card-badge badge-emerald">MÓDULO 3</span>
           </div>
           <div class="tab-card-body">
@@ -94,7 +96,7 @@
 
         <button id="tab-attack-btn" class="tab-btn tab-card" type="button">
           <div class="tab-card-header">
-            <div class="tab-card-icon icon-rose">💥</div>
+            <div class="tab-card-icon icon-rose"><span class="micon" aria-hidden="true">broken_image</span> </div>
             <span class="tab-card-badge badge-rose">MÓDULO 4</span>
           </div>
           <div class="tab-card-body">
@@ -112,7 +114,7 @@
       <main id="tab-content"></main>
 
       <!-- Footer con Fundamentos Técnicos -->
-      <footer style="margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+      <footer style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.75rem; color: var(--text-muted);">
         <div>
           Arquitectura Criptográfica: <strong>AES-256-GCM (NIST SP 800-38D)</strong> | KDF: <strong>PBKDF2-HMAC-SHA512 (600,000 iteraciones)</strong>
         </div>

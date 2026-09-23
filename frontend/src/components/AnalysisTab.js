@@ -9,9 +9,9 @@ export function renderAnalysisTab(container, initialData = null) {
   container.innerHTML = `
     <div class="space-y-6">
       <!-- Encabezado de la Pestaña -->
-      <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <div class="card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: 1rem;">
         <div>
-          <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Estegoanálisis y Forense Digital de Imágenes</h2>
+          <h2 style="font-size: 1.375rem; margin-bottom: 0.25rem;">Estegoanálisis y Forense Digital de Imágenes</h2>
           <p style="color: var(--text-secondary); font-size: 0.875rem;">
             Detección de esteganografía mediante visualización del Plano LSB en Blanco y Negro, Entropía de Shannon y Análisis de Frecuencias PoVs.
           </p>
@@ -26,26 +26,26 @@ export function renderAnalysisTab(container, initialData = null) {
 
       <!-- Zona de Carga Única de Imagen para Análisis Forense -->
       <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
-        <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <h3 style="font-size: 1.125rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
           Seleccionar Imagen para Análisis Forense Digital
         </h3>
 
         <div id="dropzone-analysis" class="dropzone">
           <input type="file" id="analysis-file-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
-          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔬</div>
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;"><span class="micon" aria-hidden="true">biotech</span> </div>
           <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen (PNG, JPG, JPEG, WebP, etc.) o haz clic para subir</p>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
             Cualquier formato no-PNG se convertirá automáticamente a PNG sin pérdida para su análisis LSB y estadístico
           </p>
-          <div id="analysis-conversion-notice" class="badge badge-amber" style="display: none; margin-top: 0.75rem; padding: 0.4rem 0.85rem; font-size: 0.8rem; align-items: center; gap: 0.4rem;"></div>
+          <div id="analysis-conversion-notice" class="badge badge-amber" style="display: none; margin-top: 0.75rem; padding: 0.4rem 0.85rem; font-size: 0.75rem; align-items: center; gap: 0.5rem;"></div>
         </div>
 
         <div id="analysis-preview-box" class="image-preview-box" style="display: none;">
           <img id="analysis-preview-img" alt="Imagen en análisis" />
         </div>
 
-        <button id="btn-run-analysis" class="btn btn-primary" style="width: 100%; font-size: 1rem; padding: 0.8rem;" disabled>
-          🚀 Iniciar Análisis Forense
+        <button id="btn-run-analysis" class="btn btn-primary" style="width: 100%; font-size: 1rem; padding: 0.75rem;" disabled>
+          <span class="micon" aria-hidden="true">rocket_launch</span>  Iniciar Análisis Forense
         </button>
       </div>
 
@@ -61,10 +61,10 @@ export function renderAnalysisTab(container, initialData = null) {
         <div class="card card-glow-purple">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-              <h3 style="font-size: 1.25rem; color: var(--accent-purple); display: flex; align-items: center; gap: 0.5rem;">
-                <span>🔬</span> Visualización de Bits Alterados (Plano LSB)
+              <h3 style="font-size: 1.125rem; color: var(--accent-purple); display: flex; align-items: center; gap: 0.5rem;">
+                <span><span class="micon" aria-hidden="true">biotech</span> </span> Visualización de Bits Alterados (Plano LSB)
               </h3>
-              <p style="font-size: 0.825rem; color: var(--text-secondary); margin-top: 0.25rem;">
+              <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
                 Inspección pericial de los bits menos significativos con personalización de paletas de color y marcado de figuras forenses.
               </p>
             </div>
@@ -72,9 +72,9 @@ export function renderAnalysisTab(container, initialData = null) {
             <!-- Controles de Personalización: Plano de Bit, Modo de Vista, Canal, Paleta y Figura -->
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
               <!-- Plano de Bit Objetivo -->
-              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                <label style="font-size: 0.7rem; color: var(--accent-rose); font-weight: 700; text-transform: uppercase;">Plano de Bit:</label>
-                <select id="bitplane-index-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto; border: 1px solid var(--accent-rose); background: rgba(16, 22, 34, 0.95); color: #fca5a5; font-weight: 700; border-radius: 4px;">
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.6875rem; color: var(--accent-rose); font-weight: 700; text-transform: uppercase;">Plano de Bit:</label>
+                <select id="bitplane-index-select" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; width: auto; border: 1px solid var(--accent-rose); background: rgba(16, 22, 34, 0.95); color: #fca5a5; font-weight: 700; border-radius: 4px;">
                   <option value="0" selected>Bit 0 (LSB - Esteganografía)</option>
                   <option value="1">Bit 1 (±2)</option>
                   <option value="2">Bit 2 (±4)</option>
@@ -87,9 +87,9 @@ export function renderAnalysisTab(container, initialData = null) {
               </div>
 
               <!-- Modo de Vista -->
-              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                <label style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Modo de Vista:</label>
-                <select id="bitplane-view-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto; border: 1px solid var(--accent-cyan);">
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.6875rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Modo de Vista:</label>
+                <select id="bitplane-view-select" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; width: auto; border: 1px solid var(--accent-cyan);">
                   <option value="microscope" selected>🔬 Microscopio Digital (Zoom 16x)</option>
                   <option value="highlight">🌐 Resaltador de Zona Inyectada</option>
                   <option value="full">▦ Plano de Bits Completo (Matriz 1:1)</option>
@@ -97,9 +97,9 @@ export function renderAnalysisTab(container, initialData = null) {
               </div>
 
               <!-- Canal -->
-              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Canal:</label>
-                <select id="bitplane-channel-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto;">
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Canal:</label>
+                <select id="bitplane-channel-select" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; width: auto;">
                   <option value="all">Luminancia (RGB)</option>
                   <option value="red">Canal Rojo (R)</option>
                   <option value="green">Canal Verde (G)</option>
@@ -108,9 +108,9 @@ export function renderAnalysisTab(container, initialData = null) {
               </div>
 
               <!-- Paleta de Color -->
-              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Paleta de Color:</label>
-                <select id="bitplane-color-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto;">
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Paleta de Color:</label>
+                <select id="bitplane-color-select" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; width: auto;">
                   <option value="neon" selected>⚡ Neón Cyberpunk (Cian / Púrpura)</option>
                   <option value="matrix">📟 Terminal Matrix (Verde Fósforo)</option>
                   <option value="amber">🟡 Ámbar Radar Forense</option>
@@ -120,9 +120,9 @@ export function renderAnalysisTab(container, initialData = null) {
               </div>
 
               <!-- Modo de Figura / Marcador -->
-              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Figura / Marcador:</label>
-                <select id="bitplane-shape-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto;">
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Figura / Marcador:</label>
+                <select id="bitplane-shape-select" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; width: auto;">
                   <option value="dots" selected>🟢 Puntos Luminosos Neón (Glow)</option>
                   <option value="crosses">✖️ Cruces Periciales (+)</option>
                   <option value="bounding-box">🔲 Bloques con Bits (1 / 0)</option>
@@ -132,8 +132,8 @@ export function renderAnalysisTab(container, initialData = null) {
 
               <!-- Botón Forzar Actualización -->
               <div style="display: flex; flex-direction: column; justify-content: flex-end;">
-                <button id="btn-extract-lsb-plane" class="btn btn-cyan" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; height: 32px; white-space: nowrap;">
-                  🔄 Actualizar
+                <button id="btn-extract-lsb-plane" class="btn btn-cyan" style="padding: 0.4rem 0.85rem; font-size: 0.75rem; height: 32px; white-space: nowrap;">
+                  <span class="micon" aria-hidden="true">autorenew</span>  Actualizar
                 </button>
               </div>
             </div>
@@ -146,52 +146,52 @@ export function renderAnalysisTab(container, initialData = null) {
 
           <!-- Botón de Descarga y Ratio -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div id="bitplane-stats" style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">
+            <div id="bitplane-stats" style="font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-mono);">
               <!-- Ratio de bits 1 vs 0 -->
             </div>
-            <button id="btn-download-lsb-mask" class="btn btn-emerald" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;">
-              💾 Descargar Imagen de Plano LSB (.PNG)
+            <button id="btn-download-lsb-mask" class="btn btn-emerald" style="padding: 0.45rem 0.9rem; font-size: 0.75rem;">
+              <span class="micon" aria-hidden="true">download</span>  Descargar Imagen de Plano LSB (.PNG)
             </button>
           </div>
 
           <!-- PANEL INFERIOR: CANTIDAD DE BITS MODIFICADOS E INFORMACIÓN DETALLADA -->
-          <div id="bitplane-kpi-panel" style="margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+          <div id="bitplane-kpi-panel" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
             <h4 style="font-size: 1rem; color: var(--accent-cyan); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-              <span>📊</span> Auditoría Cuantitativa de Bits Modificados
+              <span><span class="micon" aria-hidden="true">bar_chart</span> </span> Auditoría Cuantitativa de Bits Modificados
             </h4>
 
             <div class="grid-2" style="gap: 1rem;">
               <!-- KPI 1: Bits Modificados -->
-              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+              <div style="background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cantidad de Bits Modificados</div>
-                <div id="kpi-bitplane-total-bits" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-total-bits" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-total-bytes" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
 
               <!-- KPI 2: Ocupación de Capacidad -->
-              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+              <div style="background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Ocupación de Capacidad Portadora</div>
-                <div id="kpi-bitplane-capacity-pct" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-capacity-pct" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-capacity-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
 
               <!-- KPI 3: Coordenadas Espaciales -->
-              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+              <div style="background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Extensión Espacial en Matriz</div>
-                <div id="kpi-bitplane-coords" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-coords" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-coords-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
 
               <!-- KPI 4: Balance de Bits Cifrados -->
-              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
+              <div style="background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Equilibrio de Bits (Criptoanálisis)</div>
-                <div id="kpi-bitplane-entropy-balance" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-amber); margin: 0.2rem 0;">-</div>
+                <div id="kpi-bitplane-entropy-balance" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-amber); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-entropy-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
             </div>
 
             <!-- Fila de Detalles Técnicos Adicionales -->
-            <div id="bitplane-additional-details" style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 6px; font-size: 0.8rem; color: #e2e8f0; line-height: 1.5;">
+            <div id="bitplane-additional-details" style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 4px; font-size: 0.75rem; color: #e2e8f0; line-height: 1.5;">
               <!-- Detalles adicionales -->
             </div>
           </div>
@@ -202,15 +202,15 @@ export function renderAnalysisTab(container, initialData = null) {
           <!-- Card de Entropía de Shannon -->
           <div class="card card-glow-cyan" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              <h4 style="font-size: 1.1rem;">Entropía de la Información (Shannon)</h4>
+              <h4 style="font-size: 1.125rem;">Entropía de la Información (Shannon)</h4>
               <span class="badge badge-cyan font-mono">H(X)</span>
             </div>
 
-            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.4;">
               Mide la aleatoriedad en el plano de los Bits Menos Significativos (LSB). Un payload cifrado con AES-GCM genera ruido pseudo-aleatorio que eleva la entropía LSB a valores extremadamente cercanos a <strong>1.000000</strong>.
             </p>
 
-            <div id="entropy-metrics-list" style="display: flex; flex-direction: column; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem;">
+            <div id="entropy-metrics-list" style="display: flex; flex-direction: column; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.875rem;">
               <!-- Se llena dinámicamente -->
             </div>
           </div>
@@ -218,15 +218,15 @@ export function renderAnalysisTab(container, initialData = null) {
           <!-- Card de Ataque Chi-Cuadrado (PoVs) -->
           <div class="card card-glow-emerald" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-              <h4 style="font-size: 1.1rem;">Ataque Chi-Cuadrado (PoVs)</h4>
+              <h4 style="font-size: 1.125rem;">Ataque Chi-Cuadrado (PoVs)</h4>
               <span class="badge badge-emerald font-mono">χ² Test</span>
             </div>
 
-            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.4;">
               Algoritmo de Pares de Valores (2k, 2k+1): Compara las frecuencias de valores contiguos. La incrustación LSB iguala artificialmente estos pares alrededor de su media aritmética.
             </p>
 
-            <div id="chi-metrics-list" style="display: flex; flex-direction: column; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem;">
+            <div id="chi-metrics-list" style="display: flex; flex-direction: column; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.875rem;">
               <!-- Se llena dinámicamente -->
             </div>
           </div>
@@ -235,7 +235,7 @@ export function renderAnalysisTab(container, initialData = null) {
         <!-- 4. Gráfico del Histograma de Frecuencias RGB -->
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-            <h4 style="font-size: 1.1rem;">Distribución Espectral de Frecuencias (Histograma RGB de 256 Bins)</h4>
+            <h4 style="font-size: 1.125rem;">Distribución Espectral de Frecuencias (Histograma RGB de 256 Bins)</h4>
             <div style="display: flex; gap: 0.5rem;">
               <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Canal Rojo (R)</span>
               <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);">Canal Verde (G)</span>
@@ -334,7 +334,7 @@ export function renderAnalysisTab(container, initialData = null) {
         if (conversion.wasConverted) {
           const origFormat = (conversion.originalType || 'JPEG/JPG').replace('image/', '').toUpperCase();
           conversionNotice.style.display = 'inline-flex';
-          conversionNotice.innerHTML = `⚡ <strong>Imagen convertida:</strong> de <code>${origFormat}</code> a <code>PNG</code> sin pérdida para análisis forense digital.`;
+          conversionNotice.innerHTML = `<span class="micon" aria-hidden="true">bolt</span>  <strong>Imagen convertida:</strong> de <code>${origFormat}</code> a <code>PNG</code> sin pérdida para análisis forense digital.`;
         } else {
           conversionNotice.style.display = 'none';
         }
@@ -360,7 +360,7 @@ export function renderAnalysisTab(container, initialData = null) {
   async function runForensicAnalysis() {
     try {
       btnRunAnalysis.disabled = true;
-      btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y extrayendo plano en B/N...';
+      btnRunAnalysis.innerHTML = '<span class="micon" aria-hidden="true">hourglass_top</span>  Procesando bytes en backend y extrayendo plano en B/N...';
 
       const data = await ApiService.analyzeImage(currentAnalysisBlob);
       currentForensicReport = data;
@@ -374,7 +374,7 @@ export function renderAnalysisTab(container, initialData = null) {
       alert(`Error en análisis forense: ${err.message}`);
     } finally {
       btnRunAnalysis.disabled = false;
-      btnRunAnalysis.innerHTML = '🚀 Iniciar Análisis Forense';
+      btnRunAnalysis.innerHTML = '<span class="micon" aria-hidden="true">rocket_launch</span>  Iniciar Análisis Forense';
     }
   }
 
@@ -395,21 +395,21 @@ export function renderAnalysisTab(container, initialData = null) {
     verdictCard.style.borderColor = borderColor;
     verdictCard.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-        <h3 style="font-size: 1.25rem;">Veredicto Forense Digital</h3>
-        <span class="badge ${badgeClass}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+        <h3 style="font-size: 1.125rem;">Veredicto Forense Digital</h3>
+        <span class="badge ${badgeClass}" style="font-size: 0.875rem; padding: 0.4rem 0.8rem;">
           ${verdict.status.replace(/_/g, ' ')}
         </span>
       </div>
 
       <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem;">
         <div>
-          <div style="font-size: 2.25rem; font-weight: 800; font-family: var(--font-mono); color: ${borderColor};">
+          <div style="font-size: 2.5rem; font-weight: 800; font-family: var(--font-mono); color: ${borderColor};">
             ${verdict.suspicionPercentage}%
           </div>
           <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Índice de Sospecha</div>
         </div>
 
-        <div style="flex: 1; font-size: 0.9rem; color: var(--text-secondary); border-left: 2px solid ${borderColor}; padding-left: 1rem;">
+        <div style="flex: 1; font-size: 0.875rem; color: var(--text-secondary); border-left: 2px solid ${borderColor}; padding-left: 1rem;">
           ${verdict.summary}
         </div>
       </div>
@@ -423,39 +423,39 @@ export function renderAnalysisTab(container, initialData = null) {
     // 2. Entropía de Shannon
     const ent = report.shannonEntropy;
     entropyMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #f87171;">Entropía LSB (Canal R):</span>
         <span style="color: #ffffff;">${ent.redLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #4ade80;">Entropía LSB (Canal G):</span>
         <span style="color: #ffffff;">${ent.greenLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #60a5fa;">Entropía LSB (Canal B):</span>
         <span style="color: #ffffff;">${ent.blueLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; font-weight: bold;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; font-weight: bold;">
         <span style="color: var(--accent-cyan);">Entropía Global LSB:</span>
         <span style="color: var(--accent-cyan);">${ent.globalLSB} / 1.000000</span>
       </div>
       <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-        ${ent.isAnomalouslyHigh ? '⚠️ Alerta: Entropía > 0.9985 indica sustitución deliberada de bits por una fuente pseudo-aleatoria (Cifrado GCM).' : '✓ Dispersión normal de bits de baja significancia.'}
+        ${ent.isAnomalouslyHigh ? '<span class="micon" aria-hidden="true">warning</span>  Alerta: Entropía > 0.9985 indica sustitución deliberada de bits por una fuente pseudo-aleatoria (Cifrado GCM).' : '✓ Dispersión normal de bits de baja significancia.'}
       </div>
     `;
 
     // 3. Chi-Cuadrado PoVs
     const chi = report.chiSquarePoV;
     chiMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #f87171;">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
         <span style="color: #ffffff;">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #4ade80;">χ² Canal Verde (df=${chi.green.degreesOfFreedom}):</span>
         <span style="color: #ffffff;">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #60a5fa;">χ² Canal Azul (df=${chi.blue.degreesOfFreedom}):</span>
         <span style="color: #ffffff;">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
       </div>
@@ -551,7 +551,7 @@ export function renderAnalysisTab(container, initialData = null) {
     // Fila de Información Técnica Adicional
     bitplaneAdditionalDetails.innerHTML = `
       <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
-        <div><strong>Protocolo / Modo:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : (s.isBitAttack ? '<span style="color:#f43f5e; font-weight: 600;">⚠️ Ataque / Manipulación de Bits Detectada</span>' : (bitIndex === 0 ? '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:#00f0ff; font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`))}</div>
+        <div><strong>Protocolo / Modo:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : (s.isBitAttack ? '<span style="color:#f43f5e; font-weight: 600;"><span class="micon" aria-hidden="true">warning</span>  Ataque / Manipulación de Bits Detectada</span>' : (bitIndex === 0 ? '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:#00f0ff; font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`))}</div>
         <div><strong>Canal Alfa (Transparencia):</strong> <span style="color:#00f0ff; font-weight: 600;">A = 255 (100% Intacto, sin fuga de opacidad)</span></div>
         <div><strong>Modo Visual Activo:</strong> <span style="color:#a855f7; font-weight: 600;">${viewMode.toUpperCase()} • Paleta ${colorTheme.toUpperCase()} • Marcador ${shapeMode.toUpperCase()}</span></div>
       </div>

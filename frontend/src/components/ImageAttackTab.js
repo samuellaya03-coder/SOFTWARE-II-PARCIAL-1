@@ -5,35 +5,35 @@ export function renderImageAttackTab(container, initialData = null) {
   container.innerHTML = `
     <div class="space-y-6">
       <!-- Encabezado de la Pestaña -->
-      <div class="card card-glow-rose" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-color: rgba(244, 63, 94, 0.4); box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.15);">
+      <div class="card card-glow-rose" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: 1rem; border-color: rgba(244, 63, 94, 0.4); box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.15);">
         <div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-            <span style="font-size: 1.5rem;">🎬</span>
-            <h2 style="font-size: 1.45rem; color: var(--text-primary);">Simulador Interactivo de Ataque y Mutación de Bits en Tiempo Real</h2>
+            <span style="font-size: 1.375rem;"><span class="micon" aria-hidden="true">movie</span> </span>
+            <h2 style="font-size: 1.375rem; color: var(--text-primary);">Simulador Interactivo de Ataque y Mutación de Bits en Tiempo Real</h2>
           </div>
           <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">
             Reproduce en vivo la degradación progresiva de imágenes (Modo Vídeo). Compara en paralelo la referencia original, la imagen mutada con glitches cromáticos y el mapa de calor forense térmico con telemetría byte a byte.
           </p>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <span class="badge badge-rose">🎬 Modo Vídeo Interactivo</span>
-          <span class="badge badge-cyan">🔬 Vista Tripartita</span>
-          <span class="badge badge-emerald">📟 Telemetría Forense</span>
+          <span class="badge badge-rose"><span class="micon" aria-hidden="true">movie</span>  Modo Vídeo Interactivo</span>
+          <span class="badge badge-cyan"><span class="micon" aria-hidden="true">biotech</span>  Vista Tripartita</span>
+          <span class="badge badge-emerald"><span class="micon" aria-hidden="true">terminal</span>  Telemetría Forense</span>
         </div>
       </div>
 
       <!-- 1. Barra de Carga de Imagen -->
       <div class="card" style="display: flex; flex-direction: column; gap: 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-          <h3 style="font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem;">
-            <span>🖼️</span> 1. Imagen Portadora en Análisis
+          <h3 style="font-size: 1.125rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem;">
+            <span><span class="micon" aria-hidden="true">image</span> </span> 1. Imagen Portadora en Análisis
           </h3>
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <button id="btn-download-attacked-top" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.45rem 1rem; color: #fca5a5; border-color: rgba(244, 63, 94, 0.45); display: none; align-items: center; gap: 0.4rem;" title="Descargar imagen atacada en formato PNG">
-              <span>💾</span> Descargar Imagen Atacada (PNG)
+            <button id="btn-download-attacked-top" class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.45rem 1rem; color: #fca5a5; border-color: rgba(244, 63, 94, 0.45); display: none; align-items: center; gap: 0.5rem;" title="Descargar imagen atacada en formato PNG">
+              <span><span class="micon" aria-hidden="true">download</span> </span> Descargar Imagen Atacada (PNG)
             </button>
-            <button id="btn-reset-attack" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.45rem 1rem;" disabled>
-              🔄 Restablecer Todo
+            <button id="btn-reset-attack" class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.45rem 1rem;" disabled>
+              <span class="micon" aria-hidden="true">autorenew</span>  Restablecer Todo
             </button>
           </div>
         </div>
@@ -41,12 +41,12 @@ export function renderImageAttackTab(container, initialData = null) {
         <div class="grid-2" style="gap: 1rem; align-items: center;">
           <div id="dropzone-attack" class="dropzone" style="padding: 1.25rem 1rem; cursor: pointer;">
             <input type="file" id="attack-file-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
-            <div style="font-size: 2rem; margin-bottom: 0.35rem;">📂</div>
-            <p style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">Arrastra una imagen o haz clic para seleccionarla</p>
-            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Soporta PNG, JPEG, WebP o BMP para someter a mutación de bits</p>
+            <div style="font-size: 1.75rem; margin-bottom: 0.25rem;"><span class="micon" aria-hidden="true">folder_open</span> </div>
+            <p style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary);">Arrastra una imagen o haz clic para seleccionarla</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, WebP o BMP para someter a mutación de bits</p>
           </div>
 
-          <div style="background: var(--bg-inset-strong); padding: 1.25rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.75rem;">
+          <div style="background: var(--bg-inset-strong); padding: 1.25rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.875rem; display: flex; flex-direction: column; gap: 0.75rem;">
             <div style="display: flex; justify-content: space-between;">
               <span style="color: var(--text-muted);">Imagen Cargada:</span>
               <span id="carrier-status-tag" class="font-mono text-white">Ninguna imagen cargada</span>
@@ -70,31 +70,31 @@ export function renderImageAttackTab(container, initialData = null) {
         <div class="card space-y-4" style="border-left: 4px solid var(--accent-rose);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-              <h3 style="font-size: 1.15rem; color: #f87171; display: flex; align-items: center; gap: 0.5rem;">
-                <span>⚡</span> 2. Presets Didácticos & Configuración del Ataque
+              <h3 style="font-size: 1.125rem; color: #f87171; display: flex; align-items: center; gap: 0.5rem;">
+                <span><span class="micon" aria-hidden="true">bolt</span> </span> 2. Presets Didácticos & Configuración del Ataque
               </h3>
-              <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
                 Elige un escenario preconfigurado para demostrar la diferencia entre ataques invisibles y destrucción masiva.
               </p>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button id="preset-stealth" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
-                🕵️ Modo Sigiloso (Bit 0 LSB)
+              <button id="preset-stealth" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+                <span class="micon" aria-hidden="true">person_search</span>  Modo Sigiloso (Bit 0 LSB)
               </button>
-              <button id="preset-glitch" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(244, 63, 94, 0.4); color: #f87171;">
-                💥 Glitch Destructivo (Bit 7 MSB)
+              <button id="preset-glitch" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-color: rgba(244, 63, 94, 0.4); color: #f87171;">
+                <span class="micon" aria-hidden="true">broken_image</span>  Glitch Destructivo (Bit 7 MSB)
               </button>
-              <button id="preset-sabotage" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
+              <button id="preset-sabotage" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
                 🌪 Sabotaje Total (Ruido Puro)
               </button>
             </div>
           </div>
 
-          <div style="background: var(--bg-inset); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
+          <div style="background: var(--bg-inset); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
             <!-- Controles de Bit e Intensidad -->
             <div class="grid-3" style="gap: 1rem; align-items: center;">
               <div>
-                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
+                <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
                   Plano de Bit Objetivo:
                 </label>
                 <select id="select-target-bit">
@@ -108,7 +108,7 @@ export function renderImageAttackTab(container, initialData = null) {
               </div>
 
               <div>
-                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
+                <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
                   Canales de Color Afectados:
                 </label>
                 <select id="select-target-channel">
@@ -120,7 +120,7 @@ export function renderImageAttackTab(container, initialData = null) {
               </div>
 
               <div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem;">
                   <span style="color: var(--text-secondary); font-weight: 600;">Objetivo del Ataque (% Píxeles):</span>
                   <span id="label-bitflip-pct" class="font-mono" style="color: var(--accent-rose); font-weight: 700;">2.00%</span>
                 </div>
@@ -131,24 +131,24 @@ export function renderImageAttackTab(container, initialData = null) {
             <!-- 3. BARRA DE REPRODUCCIÓN / TRANSPORTE (MODO VÍDEO) -->
             <div class="sim-transport-bar">
               <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                <button id="btn-sim-play" class="btn sim-btn-play" style="font-size: 0.85rem; padding: 0.45rem 1rem; display: flex; align-items: center; gap: 0.35rem;">
-                  <span>▶️</span> Iniciar Simulación
+                <button id="btn-sim-play" class="btn sim-btn-play" style="font-size: 0.875rem; padding: 0.45rem 1rem; display: flex; align-items: center; gap: 0.25rem;">
+                  <span><span class="micon" aria-hidden="true">play_arrow</span> </span> Iniciar Simulación
                 </button>
-                <button id="btn-sim-pause" class="btn sim-btn-pause" style="font-size: 0.85rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.35rem;" disabled>
-                  <span>⏸️</span> Pausar
+                <button id="btn-sim-pause" class="btn sim-btn-pause" style="font-size: 0.875rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.25rem;" disabled>
+                  <span><span class="micon" aria-hidden="true">pause</span> </span> Pausar
                 </button>
-                <button id="btn-sim-step" class="btn sim-btn-step" style="font-size: 0.85rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.35rem;">
-                  <span>⏭️</span> Paso a Paso
+                <button id="btn-sim-step" class="btn sim-btn-step" style="font-size: 0.875rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.25rem;">
+                  <span><span class="micon" aria-hidden="true">skip_next</span> </span> Paso a Paso
                 </button>
-                <button id="btn-sim-stop" class="btn sim-btn-stop" style="font-size: 0.85rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.35rem;">
-                  <span>⏹️</span> Reiniciar
+                <button id="btn-sim-stop" class="btn sim-btn-stop" style="font-size: 0.875rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.25rem;">
+                  <span><span class="micon" aria-hidden="true">stop</span> </span> Reiniciar
                 </button>
               </div>
 
               <!-- Selector de Velocidad Didáctica -->
-              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-                <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">⏱️ Velocidad:</span>
-                <select id="select-sim-speed" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-weight: 600;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;"><span class="micon" aria-hidden="true">timer</span>  Velocidad:</span>
+                <select id="select-sim-speed" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-weight: 600;">
                   <option value="350">Ultra Lento (350 ms/paso - Clase explicativa)</option>
                   <option value="120">Didáctico Lento (120 ms/paso)</option>
                   <option value="40" selected>Normal (40 ms/paso)</option>
@@ -164,7 +164,7 @@ export function renderImageAttackTab(container, initialData = null) {
 
             <!-- Barra de Progreso de la Simulación -->
             <div>
-              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">
                 <span>Progreso de Inyección en el Lienzo:</span>
                 <span id="sim-progress-label" class="font-mono" style="color: var(--accent-cyan); font-weight: 700;">0% / 2.00%</span>
               </div>
@@ -178,10 +178,10 @@ export function renderImageAttackTab(container, initialData = null) {
         <!-- 3. VISTA TRIPLE COMPARATIVA SINCRONIZADA (3 CANVASES) -->
         <div>
           <div style="margin-bottom: 0.75rem;">
-            <h3 style="font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-              <span>🔬</span> 3. Vista Tripartita Sincronizada (Original vs Atacada vs Máscara Forense)
+            <h3 style="font-size: 1.125rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+              <span><span class="micon" aria-hidden="true">biotech</span> </span> 3. Vista Tripartita Sincronizada (Original vs Atacada vs Máscara Forense)
             </h3>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">
               Tres proyecciones simultáneas calculadas en memoria gráfica para evidenciar la detección forense de anomalías.
             </p>
           </div>
@@ -189,12 +189,12 @@ export function renderImageAttackTab(container, initialData = null) {
           <div class="grid-3-canvases">
             
             <!-- LIENZO 1: IMAGEN ORIGINAL (REFERENCIA LIMPIA) -->
-            <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; border-color: rgba(0, 240, 255, 0.35);">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
-                <h4 style="font-size: 0.92rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.35rem; margin: 0;">
-                  <span>🖼️</span> 1. Referencia Limpia
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.75rem; border-color: rgba(0, 240, 255, 0.35);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <h4 style="font-size: 0.875rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.25rem; margin: 0;">
+                  <span><span class="micon" aria-hidden="true">image</span> </span> 1. Referencia Limpia
                 </h4>
-                <select id="select-left-view-mode" style="padding: 0.2rem 0.45rem; font-size: 0.72rem; border: 1px solid var(--accent-cyan); background: rgba(16, 22, 34, 0.9); color: var(--accent-cyan); font-weight: 600; border-radius: 4px;">
+                <select id="select-left-view-mode" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; border: 1px solid var(--accent-cyan); background: rgba(16, 22, 34, 0.9); color: var(--accent-cyan); font-weight: 600; border-radius: 4px;">
                   <option value="photo" selected>Foto Natural Visible</option>
                   <option value="lsb-bw">Plano LSB (B/N)</option>
                   <option value="lsb-rgb">Plano LSB Cromático (RGB)</option>
@@ -205,23 +205,23 @@ export function renderImageAttackTab(container, initialData = null) {
                 <canvas id="canvas-orig-view" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
               </div>
 
-              <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
                 <span id="orig-view-desc">Imagen intacta sin corrupción</span>
                 <span id="orig-view-coords" class="font-mono text-white">-</span>
               </div>
             </div>
 
             <!-- LIENZO 2: IMAGEN ATACADA EN VIVO (GLITCHES & MUTACIÓN) -->
-            <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; border-color: rgba(244, 63, 94, 0.45); box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.15);">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
-                <h4 style="font-size: 0.92rem; color: #f87171; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
-                  <span>💥</span> 2. Atacada en Vivo
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.75rem; border-color: rgba(244, 63, 94, 0.45); box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.15);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <h4 style="font-size: 0.875rem; color: #f87171; display: flex; align-items: center; gap: 0.25rem; margin: 0;">
+                  <span><span class="micon" aria-hidden="true">broken_image</span> </span> 2. Atacada en Vivo
                 </h4>
-                <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                  <button id="btn-download-attacked" class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.6rem; color: #fca5a5; border-color: rgba(244, 63, 94, 0.45); display: flex; align-items: center; gap: 0.3rem;" title="Descargar imagen mutada / atacada en formato PNG">
-                    <span>💾</span> Descargar PNG
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <button id="btn-download-attacked" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.6rem; color: #fca5a5; border-color: rgba(244, 63, 94, 0.45); display: flex; align-items: center; gap: 0.25rem;" title="Descargar imagen mutada / atacada en formato PNG">
+                    <span><span class="micon" aria-hidden="true">download</span> </span> Descargar PNG
                   </button>
-                  <span id="badge-attack-mode-label" class="badge badge-rose" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">
+                  <span id="badge-attack-mode-label" class="badge badge-rose" style="font-size: 0.6875rem; padding: 0.15rem 0.45rem;">
                     GLITCH EN VIVO
                   </span>
                 </div>
@@ -231,19 +231,19 @@ export function renderImageAttackTab(container, initialData = null) {
                 <canvas id="canvas-attacked-view" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
               </div>
 
-              <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
                 <span id="attacked-view-desc">Mutaciones reflejadas en tiempo real</span>
                 <span id="attacked-pixel-counter" class="font-mono" style="color: #f87171; font-weight: 700;">0 px mutados</span>
               </div>
             </div>
 
             <!-- LIENZO 3: MÁSCARA FORENSE DE DIFERENCIAS (HEATMAP TÉRMICO) -->
-            <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; border-color: rgba(168, 85, 247, 0.45);">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
-                <h4 style="font-size: 0.92rem; color: #d8b4fe; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
-                  <span>🎯</span> 3. Máscara Forense
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.75rem; border-color: rgba(168, 85, 247, 0.45);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <h4 style="font-size: 0.875rem; color: #d8b4fe; display: flex; align-items: center; gap: 0.25rem; margin: 0;">
+                  <span><span class="micon" aria-hidden="true">target</span> </span> 3. Máscara Forense
                 </h4>
-                <select id="select-heatmap-theme" style="padding: 0.2rem 0.45rem; font-size: 0.72rem; border: 1px solid rgba(168, 85, 247, 0.4); background: rgba(16, 22, 34, 0.9); color: #d8b4fe; font-weight: 600; border-radius: 4px;">
+                <select id="select-heatmap-theme" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; border: 1px solid rgba(168, 85, 247, 0.4); background: rgba(16, 22, 34, 0.9); color: #d8b4fe; font-weight: 600; border-radius: 4px;">
                   <option value="pure-red" selected>Rojo Neón Forense</option>
                   <option value="matrix">Verde Matrix</option>
                   <option value="cyan-glow">Cian Térmico</option>
@@ -256,7 +256,7 @@ export function renderImageAttackTab(container, initialData = null) {
                 <canvas id="canvas-heatmap-view" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
               </div>
 
-              <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
                 <span>Fondo negro: ilumina las coordenadas alteradas</span>
                 <span id="heatmap-coords" class="font-mono text-white">-</span>
               </div>
@@ -267,18 +267,18 @@ export function renderImageAttackTab(container, initialData = null) {
 
         <!-- 4. CONSOLA DE TELEMETRÍA DE BYTES EN VIVO -->
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.6rem;">
-            <h3 style="font-size: 1.05rem; color: #00f2fe; text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.5rem; margin: 0; text-shadow: 0 0 12px rgba(0, 242, 254, 0.35);">
-              <span>🔬</span> CONSOLA DE TELEMETRÍA DE BYTES EN VIVO:
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <h3 style="font-size: 1rem; color: #00f2fe; text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.5rem; margin: 0; text-shadow: 0 0 12px rgba(0, 242, 254, 0.35);">
+              <span><span class="micon" aria-hidden="true">biotech</span> </span> CONSOLA DE TELEMETRÍA DE BYTES EN VIVO:
             </h3>
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <span id="telemetry-event-count" class="badge badge-cyan" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span id="telemetry-event-count" class="badge badge-cyan" style="font-size: 0.6875rem; padding: 0.2rem 0.5rem;">
                 0 eventos registrados
               </span>
-              <button id="btn-toggle-autoscroll" class="btn btn-secondary" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-color: rgba(255,255,255,0.15);">
-                📌 Auto-Scroll: ON
+              <button id="btn-toggle-autoscroll" class="btn btn-secondary" style="font-size: 0.6875rem; padding: 0.2rem 0.5rem; border-color: rgba(255,255,255,0.15);">
+                <span class="micon" aria-hidden="true">push_pin</span>  Auto-Scroll: ON
               </button>
-              <button id="btn-clear-telemetry" class="btn btn-secondary" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-color: rgba(255,255,255,0.15);">
+              <button id="btn-clear-telemetry" class="btn btn-secondary" style="font-size: 0.6875rem; padding: 0.2rem 0.5rem; border-color: rgba(255,255,255,0.15);">
                 🧹 Limpiar Terminal
               </button>
             </div>
@@ -287,7 +287,7 @@ export function renderImageAttackTab(container, initialData = null) {
           <div class="telemetry-terminal-card">
             <div id="telemetry-log-body" class="telemetry-terminal-body">
               <div style="color: #64748b; font-style: italic; padding: 0.5rem 0.25rem;">
-                [Esperando inicio de la simulación... Pulsa "▶️ Iniciar Simulación" o "⏭️ Paso a Paso" para registrar mutaciones binarias]
+                [Esperando inicio de la simulación... Pulsa "<span class="micon" aria-hidden="true">play_arrow</span>  Iniciar Simulación" o "<span class="micon" aria-hidden="true">skip_next</span>  Paso a Paso" para registrar mutaciones binarias]
               </div>
             </div>
           </div>
@@ -296,47 +296,47 @@ export function renderImageAttackTab(container, initialData = null) {
         <!-- 5. AUDITORÍA CUANTITATIVA DE INTEGRIDAD (MÉTRICAS MATEMÁTICAS) -->
         <div class="card space-y-4" style="background: rgba(16, 22, 34, 0.95); border: 1px solid var(--border-glow);">
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-            <h3 style="font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
-              <span>📊</span> 5. Auditoría Cuantitativa de Integridad Forense
+            <h3 style="font-size: 1.125rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+              <span><span class="micon" aria-hidden="true">bar_chart</span> </span> 5. Auditoría Cuantitativa de Integridad Forense
             </h3>
-            <span id="attack-verdict-pill" class="badge badge-emerald" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">
+            <span id="attack-verdict-pill" class="badge badge-emerald" style="font-size: 0.875rem; padding: 0.35rem 0.75rem;">
               ● IMAGEN INTACTA
             </span>
           </div>
 
           <!-- Alerta de Diagnóstico del Ataque -->
           <div id="attack-verdict-alert" class="alert-box alert-success" style="line-height: 1.6; margin: 0;">
-            <strong>✅ Imagen Limpia:</strong> No se ha aplicado corrupción de bits. Todos los píxeles coinciden exactamente con la imagen original.
+            <strong><span class="micon" aria-hidden="true">check_circle</span>  Imagen Limpia:</strong> No se ha aplicado corrupción de bits. Todos los píxeles coinciden exactamente con la imagen original.
           </div>
 
           <!-- KPIs Numéricos Cuantitativos -->
           <div class="grid-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
             
             <!-- KPI 1: PSNR -->
-            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
-              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Fidelidad Visual (PSNR)</div>
-              <div id="kpi-attack-psnr" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">99.99 dB</div>
+            <div style="background: var(--bg-inset-strong); padding: 0.75rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Fidelidad Visual (PSNR)</div>
+              <div id="kpi-attack-psnr" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">99.99 dB</div>
               <div id="kpi-attack-psnr-desc" style="font-size: 0.75rem; color: var(--text-secondary);">Idéntica a la original</div>
             </div>
 
             <!-- KPI 2: Píxeles Modificados -->
-            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-rose);">
-              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Píxeles Alterados</div>
-              <div id="kpi-attack-modified-pixels" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: #f87171; margin: 0.2rem 0;">0 (0.00%)</div>
+            <div style="background: var(--bg-inset-strong); padding: 0.75rem; border-radius: 8px; border-left: 3px solid var(--accent-rose);">
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Píxeles Alterados</div>
+              <div id="kpi-attack-modified-pixels" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: #f87171; margin: 0.2rem 0;">0 (0.00%)</div>
               <div id="kpi-attack-pixels-desc" style="font-size: 0.75rem; color: var(--text-secondary);">0 / 0 px</div>
             </div>
 
             <!-- KPI 3: Error Cuadrático Medio (MSE) -->
-            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
-              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Error Cuadrático (MSE)</div>
-              <div id="kpi-attack-mse" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">0.00</div>
+            <div style="background: var(--bg-inset-strong); padding: 0.75rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Error Cuadrático (MSE)</div>
+              <div id="kpi-attack-mse" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">0.00</div>
               <div id="kpi-attack-mse-desc" style="font-size: 0.75rem; color: var(--text-secondary);">Sin distorsión cromática</div>
             </div>
 
             <!-- KPI 4: Severidad del Daño de Bits -->
-            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
-              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Severidad del Canal</div>
-              <div id="kpi-attack-severity" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">CANAL LIMPIO</div>
+            <div style="background: var(--bg-inset-strong); padding: 0.75rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Severidad del Canal</div>
+              <div id="kpi-attack-severity" class="font-mono" style="font-size: 1.375rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">CANAL LIMPIO</div>
               <div id="kpi-attack-severity-desc" style="font-size: 0.75rem; color: var(--text-secondary);">0 bits atacados</div>
             </div>
 
@@ -488,7 +488,7 @@ export function renderImageAttackTab(container, initialData = null) {
       showToast({
         title: 'Sin Imagen',
         message: 'Primero debes cargar una imagen para poder descargarla.',
-        icon: '⚠️',
+        icon: '<span class="micon" aria-hidden="true">warning</span> ',
         type: 'warning'
       });
       return;
@@ -518,7 +518,7 @@ export function renderImageAttackTab(container, initialData = null) {
       showToast({
         title: 'Imagen Atacada Descargada',
         message: `Guardado como "${filename}" (${currentMutatedPixelsCount.toLocaleString()} píxeles mutados).`,
-        icon: '💾',
+        icon: '<span class="micon" aria-hidden="true">download</span> ',
         type: 'success'
       });
     }, 'image/png');
@@ -914,42 +914,42 @@ export function renderImageAttackTab(container, initialData = null) {
       bitVerdictHtml = `
         <span style="color: #fca5a5;">Bit 7 (MSB) invertido (Δ = ${deltaSign})</span>
         <span style="color: #64748b;"> | </span>
-        <span style="color: #ef4444; font-weight: 800;">💥 ¡GLITCH VISUAL DESTRUCTIVO EN LA FOTO!</span>
+        <span style="color: #ef4444; font-weight: 800;"><span class="micon" aria-hidden="true">broken_image</span>  ¡GLITCH VISUAL DESTRUCTIVO EN LA FOTO!</span>
       `;
     } else if (isLsb) {
       bitVerdictHtml = `
         <span style="color: #6ee7b7;">Bit 0 (LSB) invertido (Δ = ${deltaSign})</span>
         <span style="color: #64748b;"> | </span>
-        <span style="color: #10b981; font-weight: 800;">🕵️ ¡CAMBIO INVISIBLE AL OJO HUMANO (ESTEGANOGRAFÍA)!</span>
+        <span style="color: #10b981; font-weight: 800;"><span class="micon" aria-hidden="true">person_search</span>  ¡CAMBIO INVISIBLE AL OJO HUMANO (ESTEGANOGRAFÍA)!</span>
       `;
     } else if (typeof log.bitShift === 'number' && log.bitShift <= 3) {
       bitVerdictHtml = `
         <span style="color: #93c5fd;">Bit ${log.bitShift} invertido (Δ = ${deltaSign})</span>
         <span style="color: #64748b;"> | </span>
-        <span style="color: #38bdf8; font-weight: 800;">🔍 ¡ALTERACIÓN SUBPERCEPTUAL (MICRO-TEXTURA)!</span>
+        <span style="color: #38bdf8; font-weight: 800;"><span class="micon" aria-hidden="true">search</span>  ¡ALTERACIÓN SUBPERCEPTUAL (MICRO-TEXTURA)!</span>
       `;
     } else {
       bitVerdictHtml = `
         <span style="color: #fde047;">Bit ${log.bitShift} invertido (Δ = ${deltaSign})</span>
         <span style="color: #64748b;"> | </span>
-        <span style="color: #f59e0b; font-weight: 800;">⚠️ ¡DISTORSIÓN CROMÁTICA VISIBLE!</span>
+        <span style="color: #f59e0b; font-weight: 800;"><span class="micon" aria-hidden="true">warning</span>  ¡DISTORSIÓN CROMÁTICA VISIBLE!</span>
       `;
     }
 
     row.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-        <span style="color: #fbbf24; font-size: 0.85rem;">⚡</span>
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <span style="color: #fbbf24; font-size: 0.875rem;"><span class="micon" aria-hidden="true">bolt</span> </span>
         <span style="color: #38bdf8; font-weight: 700;">[Paso #${log.stepStr} | ${log.timeStr}]</span>
         <span style="color: #f8fafc; font-weight: 600;">Píxel (${log.x}, ${log.y})</span>
         <span style="color: ${channelColor}; font-weight: 700;">[${channelLabel}]</span>
       </div>
-      <div style="padding-left: 1.25rem; color: #cbd5e1; margin-top: 0.15rem;">
+      <div style="padding-left: 1.25rem; color: #cbd5e1; margin-top: 0.25rem;">
         <span style="color: #94a3b8;">• Byte Original:</span>
         <span style="color: #f1f5f9; font-weight: 600;">${log.origVal} (0b${toByte8(log.origVal)})</span>
         <span style="color: #94a3b8;"> → Mutado:</span>
         <span style="color: #ef4444; font-weight: 700;">${log.newVal} (0b${toByte8(log.newVal)})</span>
       </div>
-      <div style="padding-left: 1.25rem; margin-top: 0.15rem;">
+      <div style="padding-left: 1.25rem; margin-top: 0.25rem;">
         <span style="color: #94a3b8;">• </span>${bitVerdictHtml}
       </div>
     `;
@@ -971,7 +971,7 @@ export function renderImageAttackTab(container, initialData = null) {
     telemetryEventCount.textContent = '0 eventos registrados';
     telemetryLogBody.innerHTML = `
       <div style="color: #64748b; font-style: italic; padding: 0.5rem 0.25rem;">
-        [Esperando inicio de la simulación... Pulsa "▶️ Iniciar Simulación" o "⏭️ Paso a Paso" para registrar mutaciones binarias]
+        [Esperando inicio de la simulación... Pulsa "<span class="micon" aria-hidden="true">play_arrow</span>  Iniciar Simulación" o "<span class="micon" aria-hidden="true">skip_next</span>  Paso a Paso" para registrar mutaciones binarias]
       </div>
     `;
   }
@@ -1006,7 +1006,7 @@ export function renderImageAttackTab(container, initialData = null) {
 
       attackVerdictAlert.className = 'alert-box alert-success';
       attackVerdictAlert.innerHTML = `
-        <strong>✅ Imagen Limpia:</strong> No se ha aplicado corrupción de bits. Todos los píxeles coinciden exactamente con la imagen original.
+        <strong><span class="micon" aria-hidden="true">check_circle</span>  Imagen Limpia:</strong> No se ha aplicado corrupción de bits. Todos los píxeles coinciden exactamente con la imagen original.
       `;
 
       kpiAttackSeverity.textContent = 'NINGUNO';
@@ -1022,7 +1022,7 @@ export function renderImageAttackTab(container, initialData = null) {
 
       attackVerdictAlert.className = 'alert-box alert-danger';
       attackVerdictAlert.innerHTML = `
-        <strong>💥 Simulación Activa (${metrics.modifiedPixels.toLocaleString()} píxeles alterados - ${metrics.modifiedPct}%):</strong>
+        <strong><span class="micon" aria-hidden="true">broken_image</span>  Simulación Activa (${metrics.modifiedPixels.toLocaleString()} píxeles alterados - ${metrics.modifiedPct}%):</strong>
         Se está mutando el <strong>Bit ${targetBitVal}</strong> ${isLsb ? '(LSB - Regla Esteganográfica de ±1)' : (isMsb ? '(MSB - Peso Máximo de ±128)' : '')}.
         ${isLsb ? 'La foto luce visualmente intacta al ojo humano, pero la máscara térmica forense delata la alteración.' : 'El ataque produce distorsión agresiva, glitches cromáticos y destrucción de planos.'}
       `;

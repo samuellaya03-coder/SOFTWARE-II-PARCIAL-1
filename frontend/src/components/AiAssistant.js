@@ -16,7 +16,7 @@ export class AiAssistant {
 
 Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques en tiempo real o resolver dudas teóricas y matemáticas sobre **AES-256-GCM**, **RSA-4096**, **Esteganografía LSB** y **Estegoanálisis Chi-cuadrado**.
 
-💡 *Puedes escribir tu pregunta abajo o hacer clic en cualquiera de las preguntas rápidas recomendadas.*`,
+<span class="micon" aria-hidden="true">lightbulb</span>  *Puedes escribir tu pregunta abajo o hacer clic en cualquiera de las preguntas rápidas recomendadas.*`,
         model: 'CyberTutor'
       }
     ];
@@ -53,10 +53,10 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
     const chip = document.getElementById('cybertutor-context-chip');
     if (chip) {
       const names = {
-        stego: '🖼️ Módulo 1: Esteganografía LSB',
-        crypto: '🔐 Módulo 2: Criptografía Híbrida',
-        analysis: '📊 Módulo 3: Estegoanálisis Forense',
-        attack: '💥 Módulo 4: Ataques a Imágenes'
+        stego: '<span class="micon" aria-hidden="true">image</span>  Módulo 1: Esteganografía LSB',
+        crypto: '<span class="micon" aria-hidden="true">key</span>  Módulo 2: Criptografía Híbrida',
+        analysis: '<span class="micon" aria-hidden="true">bar_chart</span>  Módulo 3: Estegoanálisis Forense',
+        attack: '<span class="micon" aria-hidden="true">broken_image</span>  Módulo 4: Ataques a Imágenes'
       };
       chip.textContent = names[tabName] || '🛡️ Laboratorio General';
     }
@@ -69,7 +69,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
       <!-- Botón Flotante Launcher -->
       <button id="cybertutor-launcher-btn" class="cybertutor-launcher" type="button" title="Abrir Asistente CyberTutor IA">
         <div class="cybertutor-launcher-pulse"></div>
-        <div class="cybertutor-launcher-icon">🤖</div>
+        <div class="cybertutor-launcher-icon"><span class="micon" aria-hidden="true">smart_toy</span> </div>
         <span class="cybertutor-launcher-text">CyberTutor IA</span>
       </button>
 
@@ -77,28 +77,28 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
       <div id="cybertutor-drawer" class="cybertutor-drawer">
         <!-- Header -->
         <div class="cybertutor-header">
-          <div style="display: flex; align-items: center; gap: 0.65rem;">
-            <div class="cybertutor-avatar">🤖</div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="cybertutor-avatar"><span class="micon" aria-hidden="true">smart_toy</span> </div>
             <div>
-              <div style="font-weight: 700; font-size: 0.95rem; color: #ffffff; display: flex; align-items: center; gap: 0.4rem;">
+              <div style="font-weight: 700; font-size: 1rem; color: #ffffff; display: flex; align-items: center; gap: 0.5rem;">
                 CyberTutor IA
-                <span class="badge badge-cyan" style="font-size: 0.62rem; padding: 0.1rem 0.4rem;">ONLINE</span>
+                <span class="badge badge-cyan" style="font-size: 0.6875rem; padding: 0.1rem 0.4rem;">ONLINE</span>
               </div>
-              <div id="cybertutor-context-chip" style="font-size: 0.72rem; color: var(--accent-cyan); font-family: var(--font-mono);">
-                🖼️ Módulo 1: Esteganografía LSB
+              <div id="cybertutor-context-chip" style="font-size: 0.75rem; color: var(--accent-cyan); font-family: var(--font-mono);">
+                <span class="micon" aria-hidden="true">image</span>  Módulo 1: Esteganografía LSB
               </div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
             <button id="cybertutor-close-btn" class="cybertutor-icon-btn" title="Cerrar Asistente">
-              ✕
+              <span class="micon" aria-hidden="true">close</span> 
             </button>
           </div>
         </div>
 
         <!-- Sugerencias de Preguntas Rápidas -->
         <div class="cybertutor-pills-bar">
-          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.3rem;">💡 PREGUNTAS SUGERIDAS:</div>
+          <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;"><span class="micon" aria-hidden="true">lightbulb</span>  PREGUNTAS SUGERIDAS:</div>
           <div id="cybertutor-pills-container" class="cybertutor-pills"></div>
         </div>
 
@@ -118,7 +118,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
             required 
           />
           <button type="submit" id="cybertutor-send-btn" class="cybertutor-send-btn" title="Enviar Mensaje">
-            ➤
+            <span class="micon" aria-hidden="true">send</span> 
           </button>
         </form>
       </div>
@@ -141,7 +141,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
     const checkProfanity = (val) => {
       const isBad = containsProfanity(val);
       if (isBad) {
-        warningEl.innerHTML = '⚠️ <strong>Lenguaje no permitido:</strong> Por favor formula tu consulta de forma respetuosa para continuar.';
+        warningEl.innerHTML = '<span class="micon" aria-hidden="true">warning</span>  <strong>Lenguaje no permitido:</strong> Por favor formula tu consulta de forma respetuosa para continuar.';
         warningEl.style.display = 'flex';
         form.classList.add('has-profanity');
         sendBtn.disabled = true;
@@ -312,7 +312,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
 
       this.messages.push({
         sender: 'ai',
-        text: `⚠️ Error al consultar el asistente: ${err.message}`,
+        text: `<span class="micon" aria-hidden="true">warning</span>  Error al consultar el asistente: ${err.message}`,
         model: 'Error de Red'
       });
       this.renderMessages();
@@ -331,7 +331,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
       .replace(/>/g, '&gt;');
 
     // Encabezados ### Header
-    safe = safe.replace(/^### (.*$)/gim, '<h4 style="color:var(--accent-cyan); font-size: 0.95rem; margin: 0.4rem 0 0.3rem;">$1</h4>');
+    safe = safe.replace(/^### (.*$)/gim, '<h4 style="color:var(--accent-cyan); font-size: 1rem; margin: 0.4rem 0 0.3rem;">$1</h4>');
     safe = safe.replace(/^## (.*$)/gim, '<h3 style="color:#ffffff; font-size: 1rem; margin: 0.4rem 0 0.3rem;">$1</h3>');
 
     // Negrita **text**
@@ -344,7 +344,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
     safe = safe.replace(/`(.*?)`/g, '<code style="background: var(--bg-inset-strong); padding: 0.15rem 0.35rem; border-radius: 4px; color: #67e8f9; font-family: var(--font-mono); font-size: 0.85em;">$1</code>');
 
     // Viñetas * item o - item
-    safe = safe.replace(/^\s*[\*\-]\s+(.*$)/gim, '<li style="margin-left: 1.2rem; margin-bottom: 0.25rem;">$1</li>');
+    safe = safe.replace(/^\s*[\*\-]\s+(.*$)/gim, '<li style="margin-left: 1rem; margin-bottom: 0.25rem;">$1</li>');
 
     // Bloques de listas <li>
     safe = safe.replace(/(<li.*<\/li>)/gms, '<ul style="margin: 0.4rem 0; padding-left: 0.2rem;">$1</ul>');

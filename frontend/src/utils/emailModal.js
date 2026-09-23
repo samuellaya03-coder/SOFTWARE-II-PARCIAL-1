@@ -7,7 +7,7 @@ export function openEmailModal({
   filename = 'archivo_seguro.png',
   mimeType = 'image/png',
   getAttachmentBase64,
-  defaultSubject = '🔐 Archivo Confidencial - Laboratorio de Seguridad',
+  defaultSubject = '<span class="micon" aria-hidden="true">key</span>  Archivo Confidencial - Laboratorio de Seguridad',
   defaultNote = 'Te adjunto un archivo con datos confidenciales generados en el Laboratorio Criptográfico. Descárgalo y cárgalo en el módulo correspondiente para extraer su contenido.',
   previewThumbnail = null,
   showToast
@@ -24,31 +24,31 @@ export function openEmailModal({
     <div class="email-modal-card">
       <div class="email-modal-header">
         <h3 class="email-modal-title">
-          <span>📧</span> Despachar por Correo Electrónico
+          <span><span class="micon" aria-hidden="true">mail</span> </span> Despachar por Correo Electrónico
         </h3>
-        <button class="email-modal-close" id="btn-close-email-modal" title="Cerrar">✕</button>
+        <button class="email-modal-close" id="btn-close-email-modal" title="Cerrar"><span class="micon" aria-hidden="true">close</span> </button>
       </div>
 
       <div class="email-modal-body">
         <!-- Píldora del archivo adjunto -->
         <div class="email-modal-attachment-pill">
           ${previewThumbnail 
-            ? `<img src="${previewThumbnail}" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(56, 189, 248, 0.4);" alt="Preview" />`
-            : `<div style="font-size: 1.8rem; line-height: 1;">📦</div>`
+            ? `<img src="${previewThumbnail}" style="width: 44px; height: 44px; border-radius: 4px; object-fit: cover; border: 1px solid rgba(56, 189, 248, 0.4);" alt="Preview" />`
+            : `<div style="font-size: 1.75rem; line-height: 1;"><span class="micon" aria-hidden="true">inventory_2</span> </div>`
           }
           <div style="flex: 1; overflow: hidden;">
-            <div style="font-weight: 600; font-size: 0.9rem; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div style="font-weight: 600; font-size: 0.875rem; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
               ${filename}
             </div>
-            <div style="font-size: 0.78rem; color: #38bdf8;">
+            <div style="font-size: 0.75rem; color: #38bdf8;">
               Adjunto protegido (${mimeType})
             </div>
           </div>
-          <span class="badge badge-cyan" style="font-size: 0.7rem;">Listo para envío</span>
+          <span class="badge badge-cyan" style="font-size: 0.6875rem;">Listo para envío</span>
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600;">
+          <label style="display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">
             Correo del Destinatario (Bob / Receptor):
           </label>
           <input 
@@ -61,7 +61,7 @@ export function openEmailModal({
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600;">
+          <label style="display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">
             Asunto:
           </label>
           <input 
@@ -73,7 +73,7 @@ export function openEmailModal({
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600;">
+          <label style="display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">
             Mensaje / Nota para el Destinatario:
           </label>
           <textarea 
@@ -83,8 +83,8 @@ export function openEmailModal({
           >${defaultNote}</textarea>
         </div>
 
-        <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 0.6rem 0.8rem; border-radius: 4px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
-          💡 <strong>Integridad Garantizada:</strong> El archivo se enviará como adjunto binario puro, preservando al 100% los bits de la imagen para que la extracción LSB o criptográfica funcione de inmediato.
+        <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 0.6rem 0.8rem; border-radius: 4px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+          <span class="micon" aria-hidden="true">lightbulb</span>  <strong>Integridad Garantizada:</strong> El archivo se enviará como adjunto binario puro, preservando al 100% los bits de la imagen para que la extracción LSB o criptográfica funcione de inmediato.
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export function openEmailModal({
           Cancelar
         </button>
         <button id="btn-submit-email-modal" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
-          🚀 Enviar Correo con Adjunto
+          <span class="micon" aria-hidden="true">rocket_launch</span>  Enviar Correo con Adjunto
         </button>
       </div>
     </div>
@@ -132,7 +132,7 @@ export function openEmailModal({
         showToast({
           title: 'Correo Inválido',
           message: 'Por favor ingresa una dirección de correo válida.',
-          icon: '⚠️',
+          icon: '<span class="micon" aria-hidden="true">warning</span> ',
           type: 'warning',
           duration: 2000
         });
@@ -142,7 +142,7 @@ export function openEmailModal({
 
     try {
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '⏳ Despachando correo seguro...';
+      btnSubmit.innerHTML = '<span class="micon" aria-hidden="true">hourglass_top</span>  Despachando correo seguro...';
       btnCancel.disabled = true;
 
       // Obtener el Base64 del archivo
@@ -177,7 +177,7 @@ export function openEmailModal({
           showToast({
             title: '¡Correo Enviado con Éxito!',
             message: `El archivo seguro fue despachado a la bandeja real de ${to}.`,
-            icon: '✅',
+            icon: '<span class="micon" aria-hidden="true">check_circle</span> ',
             type: 'success',
             duration: 4000
           });
@@ -185,13 +185,13 @@ export function openEmailModal({
       }
     } catch (err) {
       btnSubmit.disabled = false;
-      btnSubmit.innerHTML = '🚀 Reintentar Envío';
+      btnSubmit.innerHTML = '<span class="micon" aria-hidden="true">rocket_launch</span>  Reintentar Envío';
       btnCancel.disabled = false;
       if (showToast) {
         showToast({
           title: 'Error al Enviar',
           message: err.message,
-          icon: '❌',
+          icon: '<span class="micon" aria-hidden="true">cancel</span> ',
           type: 'danger',
           duration: 3000
         });

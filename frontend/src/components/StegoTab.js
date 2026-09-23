@@ -8,7 +8,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       <!-- Encabezado de la Pestaña -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 card card-glow-cyan" style="display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Esteganografía en Canvas HTML5</h2>
+          <h2 style="font-size: 1.375rem; margin-bottom: 0.25rem;">Esteganografía en Canvas HTML5</h2>
           <p style="color: var(--text-secondary); font-size: 0.875rem;">
             Ocultación de payloads mediante inyección bit a bit en los Bits Menos Significativos (LSB) de los canales R, G y B.
           </p>
@@ -23,10 +23,10 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       <!-- Selector de Modo de Operación (Ocultar vs Extraer) -->
       <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
         <button id="stego-mode-hide-btn" class="btn btn-primary" style="flex: 1;">
-          📥 Ocultar Información (Inyección LSB)
+          <span class="micon" aria-hidden="true">file_download</span>  Ocultar Información (Inyección LSB)
         </button>
         <button id="stego-mode-reveal-btn" class="btn btn-secondary" style="flex: 1;">
-          🔍 Revelar Información (Extracción LSB)
+          <span class="micon" aria-hidden="true">search</span>  Revelar Información (Extracción LSB)
         </button>
       </div>
 
@@ -34,19 +34,19 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       <div id="stego-hide-section" style="margin-top: 1.5rem;">
         <div class="grid-2">
           <!-- Columna Izquierda: Carga de Imagen y Configuración -->
-          <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1.25rem;">
-            <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+          <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
+            <h3 style="font-size: 1.125rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
               1. Imagen Portadora (Carrier)
             </h3>
 
             <div id="dropzone-hide" class="dropzone">
               <input type="file" id="carrier-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
-              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
+              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;"><span class="micon" aria-hidden="true">image</span> </div>
               <p style="font-weight: 600; color: var(--text-primary);">Arrastra una imagen o haz clic para seleccionarla</p>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, JPG, WebP, BMP (Se convertirá a PNG automáticamente sin pérdida)</p>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, JPG, WebP, BMP (Se convertirá a PNG automáticamente sin pérdida)</p>
             </div>
 
-            <div id="carrier-info" style="display: none; background: var(--bg-inset); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+            <div id="carrier-info" style="display: none; background: var(--bg-inset); padding: 0.75rem; border-radius: 8px; font-size: 0.875rem;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                 <span style="color: var(--text-muted);">Resolución:</span>
                 <span id="carrier-res" class="font-mono text-white">-</span>
@@ -65,13 +65,13 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
           </div>
 
           <!-- Columna Derecha: Carga de Payload y Cifrado -->
-          <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1.25rem;">
-            <h3 style="font-size: 1.15rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+          <div class="card space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
+            <h3 style="font-size: 1.125rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
               2. Datos a Ocultar (Payload)
             </h3>
 
             <div>
-              <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              <label style="display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                 Modo de Protección Criptográfica:
               </label>
               <select id="stego-crypto-mode" style="margin-bottom: 1rem;">
@@ -81,7 +81,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
             </div>
 
             <div id="password-group">
-              <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">
+              <label style="display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
                 Contraseña Maestra para Derivación (PBKDF2 600,000 iteraciones):
               </label>
               <input type="password" id="stego-password" placeholder="Ingresa una clave segura..." />
@@ -89,23 +89,23 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
 
             <!-- Selector de Tipo de Secreto: Texto vs Archivo -->
             <div>
-              <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              <label style="display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                 Tipo de Información a Ocultar:
               </label>
               <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                <button type="button" id="btn-secret-type-text" class="btn btn-primary" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
-                  📝 Mensaje de Texto
+                <button type="button" id="btn-secret-type-text" class="btn btn-primary" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.875rem;">
+                  <span class="micon" aria-hidden="true">edit_note</span>  Mensaje de Texto
                 </button>
-                <button type="button" id="btn-secret-type-file" class="btn btn-secondary" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
-                  📁 Archivo Confidencial (Cualquiera)
+                <button type="button" id="btn-secret-type-file" class="btn btn-secondary" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.875rem;">
+                  <span class="micon" aria-hidden="true">folder</span>  Archivo Confidencial (Cualquiera)
                 </button>
               </div>
             </div>
 
             <!-- Grupo de Mensaje de Texto -->
             <div id="secret-text-group">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
-                <label style="font-size: 0.85rem; color: var(--text-secondary);">Mensaje o Secreto:</label>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                <label style="font-size: 0.875rem; color: var(--text-secondary);">Mensaje o Secreto:</label>
                 <span id="payload-size-counter" class="font-mono" style="font-size: 0.75rem; color: var(--text-muted);">0 bytes</span>
               </div>
               <textarea id="stego-message" rows="4" placeholder="Escribe aquí el texto confidencial o mensaje secreto que deseas camuflar..."></textarea>
@@ -113,24 +113,24 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
 
             <!-- Grupo de Carga de Archivo Confidencial -->
             <div id="secret-file-group" style="display: none; flex-direction: column; gap: 0.75rem;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
-                <label style="font-size: 0.85rem; color: var(--text-secondary);">Archivo Confidencial a Camuflar:</label>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                <label style="font-size: 0.875rem; color: var(--text-secondary);">Archivo Confidencial a Camuflar:</label>
                 <span id="secret-file-size-counter" class="font-mono" style="font-size: 0.75rem; color: var(--text-muted);">Ningún archivo seleccionado</span>
               </div>
 
               <div id="dropzone-secret-file" class="dropzone" style="padding: 1.25rem 1rem; border-style: dashed; cursor: pointer;">
                 <input type="file" id="secret-file-input" style="display: none;" />
-                <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">📁</div>
-                <p style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">Arrastra un archivo o haz clic para seleccionarlo</p>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Soporta PDF, DOCX, ZIP, PNG, JPG, TXT, KEY o cualquier binario</p>
+                <div style="font-size: 2.5rem; margin-bottom: 0.25rem;"><span class="micon" aria-hidden="true">folder</span> </div>
+                <p style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary);">Arrastra un archivo o haz clic para seleccionarlo</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PDF, DOCX, ZIP, PNG, JPG, TXT, KEY o cualquier binario</p>
               </div>
 
               <!-- Tarjeta de Archivo Seleccionado -->
               <div id="selected-secret-file-card" style="display: none; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 0.75rem 1rem; align-items: center; justify-content: space-between; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden;">
-                  <div id="selected-secret-file-icon" style="font-size: 1.8rem;">📎</div>
+                  <div id="selected-secret-file-icon" style="font-size: 1.75rem;">📎</div>
                   <div style="overflow: hidden;">
-                    <div id="selected-secret-file-name" class="font-mono" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</div>
+                    <div id="selected-secret-file-name" class="font-mono" style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.5rem;">
                       <span id="selected-secret-file-size">-</span>
                       <span>•</span>
@@ -139,40 +139,40 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
                   </div>
                 </div>
                 <button type="button" id="btn-remove-secret-file" class="btn btn-rose" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; white-space: nowrap;">
-                  ✕ Quitar
+                  <span class="micon" aria-hidden="true">close</span>  Quitar
                 </button>
               </div>
 
               <!-- Miniatura si el archivo secreto es una imagen -->
-              <div id="selected-secret-img-preview" style="display: none; justify-content: center; background: var(--bg-inset-strong); border-radius: 6px; padding: 0.5rem; max-height: 140px; overflow: hidden;">
+              <div id="selected-secret-img-preview" style="display: none; justify-content: center; background: var(--bg-inset-strong); border-radius: 4px; padding: 0.5rem; max-height: 140px; overflow: hidden;">
                 <img id="selected-secret-img" style="max-height: 120px; border-radius: 4px; object-fit: contain;" alt="Vista previa de imagen secreta" />
               </div>
             </div>
 
             <!-- Barra de Capacidad en Tiempo Real -->
             <div>
-              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem;">
                 <span style="color: var(--text-muted);">Ocupación de Capacidad:</span>
                 <span id="capacity-percentage" class="font-mono">0%</span>
               </div>
               <div class="progress-container">
                 <div id="capacity-bar" class="progress-bar progress-normal" style="width: 0%;"></div>
               </div>
-              <div id="capacity-warning-msg" style="display: none; margin-top: 0.35rem; font-size: 0.75rem; color: #f87171;">
+              <div id="capacity-warning-msg" style="display: none; margin-top: 0.25rem; font-size: 0.75rem; color: #f87171;">
                 <!-- Mensaje de sobrecupo si el archivo excede -->
               </div>
             </div>
 
             <button id="btn-inject-data" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" disabled>
-              ⚡ Ejecutar Inyección LSB en Canvas
+              <span class="micon" aria-hidden="true">bolt</span>  Ejecutar Inyección LSB en Canvas
             </button>
           </div>
         </div>
 
         <!-- Resultados de la Inyección LSB -->
         <div id="stego-result-container" class="card card-glow-emerald" style="display: none; margin-top: 1.5rem;">
-          <h3 style="color: var(--accent-emerald); font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            ✅ Inyección LSB Finalizada Exitosamente
+          <h3 style="color: var(--accent-emerald); font-size: 1.125rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span class="micon" aria-hidden="true">check_circle</span>  Inyección LSB Finalizada Exitosamente
           </h3>
 
           <div class="grid-2" style="align-items: center;">
@@ -189,22 +189,22 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
                 </div>
               </div>
 
-              <div id="stego-stats-details" class="font-mono" style="font-size: 0.85rem; background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; line-height: 1.6;">
+              <div id="stego-stats-details" class="font-mono" style="font-size: 0.875rem; background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; line-height: 1.6;">
                 <!-- Se llena dinámicamente -->
               </div>
 
               <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
                 <button id="btn-download-stego" class="btn btn-emerald" style="flex: 1; min-width: 180px;">
-                  💾 Descargar PNG
+                  <span class="micon" aria-hidden="true">download</span>  Descargar PNG
                 </button>
                 <button id="btn-email-stego" class="btn btn-primary" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none;">
-                  📧 Enviar por Correo
+                  <span class="micon" aria-hidden="true">mail</span>  Enviar por Correo
                 </button>
                 <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1; min-width: 180px;">
-                  🔬 Enviar a Estegoanálisis
+                  <span class="micon" aria-hidden="true">biotech</span>  Enviar a Estegoanálisis
                 </button>
                 <button id="btn-send-to-attack" class="btn btn-rose" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #a855f7, #f43f5e); border: none;">
-                  💥 Atacar en Tiempo Real
+                  <span class="micon" aria-hidden="true">broken_image</span>  Atacar en Tiempo Real
                 </button>
               </div>
             </div>
@@ -214,16 +214,16 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
 
       <!-- SECCIÓN 2: REVELAR INFORMACIÓN -->
       <div id="stego-reveal-section" style="display: none; margin-top: 1.5rem;">
-        <div class="card space-y-4" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem;">
-          <h3 style="font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <div class="card space-y-4" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem;">
+          <h3 style="font-size: 1.125rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
             Extracción Inversa de Datos Ocultos
           </h3>
 
           <div id="dropzone-reveal" class="dropzone">
             <input type="file" id="stego-input-file" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🕵️‍♂️</div>
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;"><span class="micon" aria-hidden="true">person_search</span> ‍♂️</div>
             <p style="font-weight: 600; color: var(--text-primary);">Sube la imagen sospechosa de contener datos (PNG, JPEG, WebP, etc.)</p>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Se convertirá y analizará automáticamente sin pérdida para extraer el payload LSB</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Se convertirá y analizará automáticamente sin pérdida para extraer el payload LSB</p>
             <div id="reveal-conversion-badge" class="badge badge-amber" style="display: none; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.35rem 0.65rem;"></div>
           </div>
 
@@ -232,7 +232,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
           </div>
 
           <button id="btn-extract-data" class="btn btn-primary" style="width: 100%;" disabled>
-            🔓 Extraer Payload LSB
+            <span class="micon" aria-hidden="true">lock_open</span>  Extraer Payload LSB
           </button>
 
           <!-- Resultado de la Extracción -->
@@ -242,11 +242,11 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
             </div>
 
             <!-- Si el payload extraído es un paquete cifrado AES-GCM -->
-            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: var(--bg-inset-strong); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.85rem;">
+            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: var(--bg-inset-strong); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.75rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <span class="badge badge-purple">AES-256-GCM Detectado</span>
-                  <span style="font-size: 0.85rem; color: var(--text-secondary);">El payload extraído corresponde a un paquete criptográfico [Salt|IV|Tag|Ciphertext].</span>
+                  <span style="font-size: 0.875rem; color: var(--text-secondary);">El payload extraído corresponde a un paquete criptográfico [Salt|IV|Tag|Ciphertext].</span>
                 </div>
                 <span id="stego-attempts-badge" class="badge badge-rose" style="display: none; font-size: 0.75rem; font-weight: 600;">Intentos restantes: 5/5</span>
               </div>
@@ -255,21 +255,21 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               <input type="password" id="reveal-decrypt-password" placeholder="Ingresa la contraseña para descifrar el paquete..." />
 
               <!-- Banner de Bloqueo Temporal por Cooldown Anti-Fuerza Bruta -->
-              <div id="stego-lockout-banner" class="alert-box alert-danger" style="display: none; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.12);">
-                <span style="font-size: 1.75rem; line-height: 1;">⏳</span>
+              <div id="stego-lockout-banner" class="alert-box alert-danger" style="display: none; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.12);">
+                <span style="font-size: 1.75rem; line-height: 1;"><span class="micon" aria-hidden="true">hourglass_top</span> </span>
                 <div style="flex: 1;">
-                  <div style="font-weight: 700; color: #fca5a5; font-size: 0.95rem; margin-bottom: 0.2rem;">
+                  <div style="font-weight: 700; color: #fca5a5; font-size: 1rem; margin-bottom: 0.25rem;">
                     Bloqueo de Seguridad Anti-Fuerza Bruta
                   </div>
-                  <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                  <div style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.4;">
                     Demasiados intentos fallidos. Entrada suspendida por <strong id="stego-penalty-label" style="color: #fca5a5;">1 minuto</strong>.
-                    Podrás volver a intentar en: <span id="stego-countdown-display" style="color: #ef4444; font-family: monospace; font-size: 1.1rem; font-weight: 700; margin-left: 0.25rem;">01:00</span>
+                    Podrás volver a intentar en: <span id="stego-countdown-display" style="color: #ef4444; font-family: monospace; font-size: 1.125rem; font-weight: 700; margin-left: 0.25rem;">01:00</span>
                   </div>
                 </div>
               </div>
 
               <button id="btn-decrypt-revealed" class="btn btn-emerald">
-                🔑 Descifrar y Verificar Autenticidad (GCM Tag)
+                <span class="micon" aria-hidden="true">vpn_key</span>  Descifrar y Verificar Autenticidad (GCM Tag)
               </button>
             </div>
 
@@ -277,10 +277,10 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
             <div id="revealed-file-card" class="card card-glow-emerald" style="display: none; flex-direction: column; gap: 1rem; background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.4);">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                  <div id="revealed-file-icon" style="font-size: 2.2rem;">📄</div>
+                  <div id="revealed-file-icon" style="font-size: 2.5rem;"><span class="micon" aria-hidden="true">description</span> </div>
                   <div>
-                    <div id="revealed-file-name" class="font-mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-emerald);">-</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 0.75rem; margin-top: 0.2rem;">
+                    <div id="revealed-file-name" class="font-mono" style="font-size: 1rem; font-weight: 700; color: var(--accent-emerald);">-</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.75rem; margin-top: 0.25rem;">
                       <span id="revealed-file-size">-</span>
                       <span>•</span>
                       <span id="revealed-file-type" style="color: var(--accent-cyan);">-</span>
@@ -291,20 +291,20 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               </div>
 
               <!-- Vista previa si el archivo secreto es imagen -->
-              <div id="revealed-image-preview-box" style="display: none; justify-content: center; background: var(--bg-inset-strong); border-radius: 6px; padding: 0.75rem; max-height: 240px; overflow: hidden;">
+              <div id="revealed-image-preview-box" style="display: none; justify-content: center; background: var(--bg-inset-strong); border-radius: 4px; padding: 0.75rem; max-height: 240px; overflow: hidden;">
                 <img id="revealed-secret-image" style="max-height: 220px; border-radius: 4px; object-fit: contain;" alt="Imagen secreta revelada" />
               </div>
 
               <div style="display: flex; gap: 0.75rem;">
-                <button id="btn-download-revealed-file" class="btn btn-emerald" style="flex: 1; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 600;">
-                  💾 Descargar Archivo Extraído
+                <button id="btn-download-revealed-file" class="btn btn-emerald" style="flex: 1; padding: 0.65rem 1.25rem; font-size: 0.875rem; font-weight: 600;">
+                  <span class="micon" aria-hidden="true">download</span>  Descargar Archivo Extraído
                 </button>
               </div>
             </div>
 
             <!-- Caja si el contenido revelado es texto -->
             <div id="revealed-text-box">
-              <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">
+              <label style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">
                 Contenido Revelado:
               </label>
               <textarea id="revealed-content-text" rows="5" readonly class="font-mono"></textarea>
@@ -420,16 +420,16 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
 
   function getFileIcon(filename, mimeType) {
     const ext = (filename || '').split('.').pop().toLowerCase();
-    if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp'].includes(ext) || (mimeType && mimeType.startsWith('image/'))) return '🖼️';
+    if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp'].includes(ext) || (mimeType && mimeType.startsWith('image/'))) return '<span class="micon" aria-hidden="true">image</span> ';
     if (['pdf'].includes(ext) || mimeType === 'application/pdf') return '📕';
     if (['doc', 'docx'].includes(ext)) return '📘';
-    if (['xls', 'xlsx', 'csv'].includes(ext)) return '📊';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return '<span class="micon" aria-hidden="true">bar_chart</span> ';
     if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜️';
-    if (['txt', 'md', 'json', 'xml', 'log'].includes(ext)) return '📄';
-    if (['key', 'pem', 'crt', 'cer', 'pub'].includes(ext)) return '🔑';
+    if (['txt', 'md', 'json', 'xml', 'log'].includes(ext)) return '<span class="micon" aria-hidden="true">description</span> ';
+    if (['key', 'pem', 'crt', 'cer', 'pub'].includes(ext)) return '<span class="micon" aria-hidden="true">vpn_key</span> ';
     if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return '🎵';
-    if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return '🎬';
-    return '📁';
+    if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return '<span class="micon" aria-hidden="true">movie</span> ';
+    return '<span class="micon" aria-hidden="true">folder</span> ';
   }
 
   // --- Alternancia de modos (Ocultar / Revelar) ---
@@ -513,7 +513,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         if (conversion.wasConverted) {
           const origFormat = (conversion.originalType || 'JPEG').replace('image/', '').toUpperCase();
           carrierBadge.style.display = 'inline-flex';
-          carrierBadge.innerHTML = `⚡ Convertido de <code>${origFormat}</code> a <code>PNG</code> sin pérdida`;
+          carrierBadge.innerHTML = `<span class="micon" aria-hidden="true">bolt</span>  Convertido de <code>${origFormat}</code> a <code>PNG</code> sin pérdida`;
         } else {
           carrierBadge.style.display = 'none';
         }
@@ -620,7 +620,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       if (pct > 100) {
         capacityBar.className = 'progress-bar progress-danger';
         capacityWarningMsg.style.display = 'block';
-        capacityWarningMsg.innerHTML = `⚠️ Sobrecupo: El payload (${formatBytes(estimatedTotalBytes)}) supera la capacidad máxima de la portadora (${formatBytes(currentMaxCapacityBytes)}). Sube una imagen de mayor resolución.`;
+        capacityWarningMsg.innerHTML = `<span class="micon" aria-hidden="true">warning</span>  Sobrecupo: El payload (${formatBytes(estimatedTotalBytes)}) supera la capacidad máxima de la portadora (${formatBytes(currentMaxCapacityBytes)}). Sube una imagen de mayor resolución.`;
       } else if (pct > 75) {
         capacityBar.className = 'progress-bar progress-warning';
         capacityWarningMsg.style.display = 'none';
@@ -651,7 +651,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
   btnInjectData.addEventListener('click', async () => {
     try {
       btnInjectData.disabled = true;
-      btnInjectData.innerHTML = '⏳ Procesando inyección en Canvas...';
+      btnInjectData.innerHTML = '<span class="micon" aria-hidden="true">hourglass_top</span>  Procesando inyección en Canvas...';
 
       let unencryptedPayloadBytes;
       if (activeSecretType === 'text') {
@@ -714,7 +714,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       alert(`Error en inyección LSB: ${err.message}`);
     } finally {
       btnInjectData.disabled = false;
-      btnInjectData.innerHTML = '⚡ Ejecutar Inyección LSB en Canvas';
+      btnInjectData.innerHTML = '<span class="micon" aria-hidden="true">bolt</span>  Ejecutar Inyección LSB en Canvas';
     }
   });
 
@@ -738,7 +738,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         filename: `stego_secreto_${Date.now()}.png`,
         mimeType: 'image/png',
         getAttachmentBase64: () => lastInjectedCanvas.toDataURL('image/png'),
-        defaultSubject: '🔐 Imagen Esteganográfica con Datos Ocultos (Laboratorio)',
+        defaultSubject: '<span class="micon" aria-hidden="true">key</span>  Imagen Esteganográfica con Datos Ocultos (Laboratorio)',
         defaultNote: 'Te envío esta imagen portadora con datos confidenciales ocultos en sus bits menos significativos (LSB). Descárgala en tu equipo y súbela en la pestaña "Revelar Información (Extracción LSB)" para extraer el secreto.',
         previewThumbnail: lastInjectedCanvas.toDataURL('image/png'),
         showToast
@@ -806,7 +806,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         if (conversion.wasConverted) {
           const origFormat = (conversion.originalType || 'JPEG').replace('image/', '').toUpperCase();
           revealBadge.style.display = 'inline-flex';
-          revealBadge.innerHTML = `⚡ Convertido de <code>${origFormat}</code> a <code>PNG</code> sin pérdida`;
+          revealBadge.innerHTML = `<span class="micon" aria-hidden="true">bolt</span>  Convertido de <code>${origFormat}</code> a <code>PNG</code> sin pérdida`;
         } else {
           revealBadge.style.display = 'none';
         }
@@ -997,7 +997,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         stegoLockoutBanner.style.display = 'none';
         revealDecryptPassword.disabled = false;
         btnDecryptRevealed.disabled = false;
-        btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+        btnDecryptRevealed.innerHTML = '<span class="micon" aria-hidden="true">vpn_key</span>  Descifrar y Verificar Autenticidad (GCM Tag)';
         btnDecryptRevealed.style.cursor = 'pointer';
         revealDecryptPassword.focus();
 
@@ -1008,7 +1008,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         showToast({
           title: 'Tiempo de Espera Finalizado',
           message: 'El bloqueo ha expirado. Ya puedes volver a ingresar la contraseña maestra.',
-          icon: '🔓',
+          icon: '<span class="micon" aria-hidden="true">lock_open</span> ',
           type: 'info',
           duration: 3000
         });
@@ -1019,7 +1019,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
       const secs = String(totalSec % 60).padStart(2, '0');
       stegoCountdownDisplay.textContent = `${mins}:${secs}`;
-      btnDecryptRevealed.innerHTML = `⏳ Bloqueado por Seguridad (${mins}:${secs})`;
+      btnDecryptRevealed.innerHTML = `<span class="micon" aria-hidden="true">hourglass_top</span>  Bloqueado por Seguridad (${mins}:${secs})`;
     };
 
     tick();
@@ -1043,7 +1043,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
     stegoLockoutBanner.style.display = 'none';
     revealDecryptPassword.disabled = false;
     btnDecryptRevealed.disabled = false;
-    btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+    btnDecryptRevealed.innerHTML = '<span class="micon" aria-hidden="true">vpn_key</span>  Descifrar y Verificar Autenticidad (GCM Tag)';
     btnDecryptRevealed.style.cursor = 'pointer';
 
     if (state.penaltyStage === 0 && state.failedAttempts > 0 && state.failedAttempts < 5) {
@@ -1070,7 +1070,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       showToast({
         title: 'Acceso en Cooldown',
         message: 'Debes esperar a que el temporizador finalice para reintentar.',
-        icon: '⏳',
+        icon: '<span class="micon" aria-hidden="true">hourglass_top</span> ',
         type: 'warning',
         duration: 2000
       });
@@ -1082,7 +1082,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       showToast({
         title: 'Contraseña Requerida',
         message: 'Por favor ingresa la contraseña maestra para descifrar.',
-        icon: '⚠️',
+        icon: '<span class="micon" aria-hidden="true">warning</span> ',
         type: 'warning',
         duration: 2000
       });
@@ -1091,7 +1091,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
 
     try {
       btnDecryptRevealed.disabled = true;
-      btnDecryptRevealed.innerHTML = '⏳ Descifrando y derivando PBKDF2...';
+      btnDecryptRevealed.innerHTML = '<span class="micon" aria-hidden="true">hourglass_top</span>  Descifrando y derivando PBKDF2...';
 
       const binaryStr = Array.from(extractedRawBytes).map(b => String.fromCharCode(b)).join('');
       const base64Data = btoa(binaryStr);
@@ -1121,7 +1121,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       showToast({
         title: '¡Descifrado Exitoso!',
         message: 'Contraseña válida. Intentos de seguridad restablecidos.',
-        icon: '🔓',
+        icon: '<span class="micon" aria-hidden="true">lock_open</span> ',
         type: 'success',
         duration: 2500
       });
@@ -1164,7 +1164,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       if (triggeredLockout) {
         startLockoutCountdown(currentState.lockoutUntil, currentState.penaltyStage);
         revealStatusAlert.className = 'alert-box alert-danger';
-        revealStatusAlert.innerHTML = `<strong>⚠️ Bloqueo de Seguridad Activado:</strong> Has alcanzado el límite de intentos erróneos. El sistema está bloqueado por <strong>${durationName}</strong> contra ataques de fuerza bruta.`;
+        revealStatusAlert.innerHTML = `<strong><span class="micon" aria-hidden="true">warning</span>  Bloqueo de Seguridad Activado:</strong> Has alcanzado el límite de intentos erróneos. El sistema está bloqueado por <strong>${durationName}</strong> contra ataques de fuerza bruta.`;
         showToast({
           title: 'Bloqueo Anti-Fuerza Bruta',
           message: `Límite alcanzado. Entrada bloqueada por ${durationName}.`,
@@ -1176,11 +1176,11 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
         updateLockoutUI();
         const remaining = 5 - currentState.failedAttempts;
         revealStatusAlert.className = 'alert-box alert-danger';
-        revealStatusAlert.innerHTML = `<strong>Fallo de Integridad / Clave Incorrecta:</strong> ${err.message}<br/><span style="color: #fca5a5; font-size: 0.85rem;">⚠️ Te quedan <strong>${remaining} de 5</strong> intentos antes del bloqueo temporal de 1 minuto.</span>`;
+        revealStatusAlert.innerHTML = `<strong>Fallo de Integridad / Clave Incorrecta:</strong> ${err.message}<br/><span style="color: #fca5a5; font-size: 0.875rem;"><span class="micon" aria-hidden="true">warning</span>  Te quedan <strong>${remaining} de 5</strong> intentos antes del bloqueo temporal de 1 minuto.</span>`;
         showToast({
           title: 'Contraseña Incorrecta',
           message: `Quedan ${remaining} de 5 intentos antes del bloqueo.`,
-          icon: '❌',
+          icon: '<span class="micon" aria-hidden="true">cancel</span> ',
           type: 'danger',
           duration: 2500
         });
@@ -1189,7 +1189,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       const finalState = getLockoutState();
       if (!finalState.lockoutUntil || finalState.lockoutUntil <= Date.now()) {
         btnDecryptRevealed.disabled = false;
-        btnDecryptRevealed.innerHTML = '🔑 Descifrar y Verificar Autenticidad (GCM Tag)';
+        btnDecryptRevealed.innerHTML = '<span class="micon" aria-hidden="true">vpn_key</span>  Descifrar y Verificar Autenticidad (GCM Tag)';
       }
     }
   });
