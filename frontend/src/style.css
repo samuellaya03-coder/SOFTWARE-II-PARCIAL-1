@@ -323,9 +323,9 @@ h1, h2, h3, h4 {
 }
 
 .icon-cyan {
-  background: rgba(0, 240, 255, 0.12);
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
+  background: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  border: 1px solid rgba(109, 166, 199, 0.35);
+  box-shadow: 0 0 12px rgba(109, 166, 199, 0.12);
 }
 
 .icon-purple {
@@ -370,7 +370,7 @@ h1, h2, h3, h4 {
 
 .tab-card.active .tab-card-title {
   color: #ffffff;
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+  text-shadow: 0 0 10px rgba(109, 166, 199, 0.4);
 }
 
 .tab-card-desc {
@@ -614,8 +614,8 @@ textarea.font-mono {
 
 .dropzone:hover, .dropzone.dragover {
   border-color: var(--accent-cyan);
-  background: rgba(0, 240, 255, 0.05);
-  box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1);
+  background: color-mix(in srgb, var(--accent-cyan) 6%, transparent);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--accent-cyan) 10%, transparent);
 }
 
 /* Progress bar */
@@ -634,7 +634,7 @@ textarea.font-mono {
 }
 
 .progress-normal {
-  background: linear-gradient(90deg, #10b981, #00f0ff);
+  background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan));
 }
 
 .progress-warning {
@@ -703,8 +703,8 @@ textarea.font-mono {
 }
 
 .alert-info {
-  background: rgba(0, 240, 255, 0.08);
-  border: 1px solid rgba(0, 240, 255, 0.25);
+  background: color-mix(in srgb, var(--accent-cyan) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 28%, transparent);
   color: #cffafe;
 }
 
@@ -1098,7 +1098,7 @@ textarea.font-mono {
    ========================================================================== */
 .crypto-visual-pipeline {
   background: linear-gradient(135deg, rgba(14, 21, 37, 0.95), rgba(9, 13, 24, 0.95));
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(109, 166, 199, 0.25);
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
@@ -1114,7 +1114,7 @@ textarea.font-mono {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00f0ff, #a855f7, #10b981);
+  background: var(--brand-gradient);
 }
 
 .pipeline-stepper {
@@ -1161,7 +1161,7 @@ textarea.font-mono {
   background: var(--accent-cyan);
   border-color: var(--accent-cyan);
   color: #0d121e;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 10px var(--accent-cyan);
 }
 
 .pipeline-step.completed .step-number {
@@ -1193,8 +1193,8 @@ textarea.font-mono {
 }
 
 .pipeline-actor-card.alice-active {
-  border-color: rgba(0, 240, 255, 0.5);
-  box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 16px rgba(109, 166, 199, 0.12);
 }
 
 .pipeline-actor-card.bob-active {
@@ -1228,7 +1228,7 @@ textarea.font-mono {
   left: -40%;
   width: 40%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, #00f0ff, #a855f7, transparent);
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-purple), transparent);
   border-radius: 2px;
   animation: transitPulse 2s infinite linear;
 }
@@ -1687,44 +1687,45 @@ textarea.font-mono {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.85rem;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 
 .sim-btn-play {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
+  background: var(--accent-emerald);
+  color: var(--btn-on-accent);
   border: none;
-  font-weight: 700;
-  box-shadow: 0 4px 14px -2px rgba(16, 185, 129, 0.4);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(28, 28, 24, 0.12);
 }
-.sim-btn-play:hover:not(:disabled) {
-  background: linear-gradient(135deg, #34d399, #10b981);
-  transform: translateY(-1px);
-}
+.sim-btn-play:hover:not(:disabled) { filter: brightness(1.08); }
 
 .sim-btn-pause {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #ffffff;
+  background: var(--accent-amber);
+  color: var(--btn-on-accent);
   border: none;
-  font-weight: 700;
-  box-shadow: 0 4px 14px -2px rgba(245, 158, 11, 0.4);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(28, 28, 24, 0.12);
 }
+.sim-btn-pause:hover:not(:disabled) { filter: brightness(1.08); }
 
 .sim-btn-step {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
-  color: #ffffff;
+  background: var(--accent-cyan);
+  color: var(--btn-on-accent);
   border: none;
-  font-weight: 700;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(28, 28, 24, 0.12);
 }
+.sim-btn-step:hover:not(:disabled) { filter: brightness(1.08); }
 
+/* Detener es una accion secundaria: se marca con el color, no con relleno */
 .sim-btn-stop {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: color-mix(in srgb, var(--accent-rose) 12%, transparent);
+  color: var(--accent-rose);
+  border: 1px solid color-mix(in srgb, var(--accent-rose) 35%, transparent);
+  font-weight: 600;
 }
 .sim-btn-stop:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: color-mix(in srgb, var(--accent-rose) 20%, transparent);
 }
 
 /* Badges Pulsantes */
@@ -1736,29 +1737,29 @@ textarea.font-mono {
 
 .sim-badge-pulsing-active {
   animation: simPulseAnim 1.2s infinite ease-in-out;
-  background: rgba(239, 68, 68, 0.2) !important;
-  color: #f87171 !important;
-  border: 1px solid rgba(239, 68, 68, 0.5) !important;
+  background: color-mix(in srgb, var(--accent-rose) 16%, transparent) !important;
+  color: var(--accent-rose) !important;
+  border: 1px solid color-mix(in srgb, var(--accent-rose) 45%, transparent) !important;
 }
 
 .sim-badge-pulsing-paused {
-  background: rgba(245, 158, 11, 0.2) !important;
-  color: #fbbf24 !important;
-  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  background: color-mix(in srgb, var(--accent-amber) 16%, transparent) !important;
+  color: var(--accent-amber) !important;
+  border: 1px solid color-mix(in srgb, var(--accent-amber) 40%, transparent) !important;
 }
 
 /* Live Byte Inspector (Terminal de Telemetría) */
 .telemetry-terminal-card {
-  background: #060b17;
-  border: 1px solid rgba(0, 240, 255, 0.35);
+  background: #14130f;
+  border: 1px solid rgba(109, 166, 199, 0.4);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.7), 0 0 15px -3px rgba(0, 240, 255, 0.15);
+  box-shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.7), 0 0 15px -3px rgba(109, 166, 199, 0.12);
   font-family: var(--font-mono);
 }
 
 .telemetry-terminal-header {
-  background: rgba(11, 16, 30, 0.95);
+  background: rgba(28, 28, 24, 0.96);
   padding: 0.45rem 0.85rem;
   display: flex;
   justify-content: space-between;
@@ -1774,7 +1775,7 @@ textarea.font-mono {
   font-size: 0.8rem;
   line-height: 1.5;
   color: #94a3b8;
-  background: #060b17;
+  background: #14130f;
   scroll-behavior: smooth;
 }
 
@@ -1782,7 +1783,7 @@ textarea.font-mono {
   width: 6px;
 }
 .telemetry-terminal-body::-webkit-scrollbar-thumb {
-  background: rgba(0, 240, 255, 0.3);
+  background: rgba(109, 166, 199, 0.35);
   border-radius: 3px;
 }
 
