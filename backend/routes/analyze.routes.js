@@ -6,7 +6,13 @@ import { analyzeRateLimiter } from '../middlewares/rateLimiter.js';
 const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 } // 25MB max
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max
+  // Sin filtro, cualquier binario se cargaba entero en memoria antes de que el
+  // decodificador PNG lo rechazara. Se corta antes, en la puerta.
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) return cb(null, true);
+    cb(Object.assign(new Error('Solo se aceptan imagenes.'), { code: 'TIPO_NO_PERMITIDO' }));
+  }
 });
 
 /**

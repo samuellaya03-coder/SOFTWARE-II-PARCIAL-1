@@ -1,4 +1,8 @@
 import crypto from 'crypto';
+import { promisify } from 'node:util';
+
+// La variante asincrona delega en la threadpool de libuv, fuera del hilo principal.
+const pbkdf2Async = promisify(crypto.pbkdf2);
 
 /**
  * SERVICIO CRIPTOGRÁFICO AVANZADO ("MODO DIFÍCIL")
@@ -39,7 +43,7 @@ export const CRYPTO_CONFIG = {
  * @param {Buffer} salt - Sal criptográfica de 16 bytes.
  * @returns {Buffer} Clave derivada de 32 bytes (256 bits).
  */
-export function deriveKey(password, salt) {
+export async function deriveKey(password, salt) {
   if (!password || typeof password !== 'string') {
     throw new Error('La contraseña debe ser una cadena no vacía.');
   }
@@ -47,7 +51,7 @@ export function deriveKey(password, salt) {
     throw new Error(`El salt debe ser un Buffer de exactamente ${CRYPTO_CONFIG.KDF.SALT_LENGTH} bytes.`);
   }
 
-  return crypto.pbkdf2Sync(
+  return pbkdf2Async(
     password,
     salt,
     CRYPTO_CONFIG.KDF.ITERATIONS,
@@ -62,7 +66,7 @@ export function deriveKey(password, salt) {
  * @param {string} password - Contraseña maestra.
  * @returns {{ packedBuffer: Buffer, saltHex: string, ivHex: string, tagHex: string, ciphertextHex: string }}
  */
-export function encryptAESGCM(plaintext, password) {
+export async function encryptAESGCM(plaintext, password) {
   const dataBuffer = Buffer.isBuffer(plaintext) ? plaintext : Buffer.from(plaintext, 'utf-8');
 
   // 1. Generación de Salt e IV con CSPRNG
@@ -70,7 +74,7 @@ export function encryptAESGCM(plaintext, password) {
   const iv = crypto.randomBytes(CRYPTO_CONFIG.CIPHER.IV_LENGTH);
 
   // 2. Derivación de clave segura
-  const key = deriveKey(password, salt);
+  const key = await deriveKey(password, salt);
 
   // 3. Inicialización del cifrador AES-256-GCM
   const cipher = crypto.createCipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, key, iv);
@@ -114,7 +118,7 @@ export const OPAQUE_DECRYPTION_ERROR = 'FALLO DE DESCIFRADO: Los datos son invá
  * @param {string} password - Contraseña maestra.
  * @returns {Buffer} Texto claro descifrado.
  */
-export function decryptAESGCM(packedData, password) {
+export async function decryptAESGCM(packedData, password) {
   try {
     let buffer;
     if (Buffer.isBuffer(packedData)) {
@@ -145,7 +149,7 @@ export function decryptAESGCM(packedData, password) {
     const ciphertext = buffer.subarray(offset);
 
     // Derivación de clave idéntica usando el Salt original
-    const key = deriveKey(password, salt);
+    const key = await deriveKey(password, salt);
 
     // Inicialización del descifrador
     const decipher = crypto.createDecipheriv(CRYPTO_CONFIG.CIPHER.ALGORITHM, key, iv);

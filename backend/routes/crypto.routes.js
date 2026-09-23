@@ -7,6 +7,7 @@ import {
   hybridDecrypt
 } from '../services/crypto.service.js';
 import { cryptoRateLimiter, rsaKeygenRateLimiter } from '../middlewares/rateLimiter.js';
+import { validateBody, schemas } from '../middlewares/validate.js';
 
 const router = Router();
 
@@ -14,7 +15,7 @@ const router = Router();
  * POST /api/crypto/encrypt
  * Cifra un texto o payload binario con AES-256-GCM y deriva la clave con PBKDF2-SHA512.
  */
-router.post('/encrypt', cryptoRateLimiter, (req, res) => {
+router.post('/encrypt', cryptoRateLimiter, validateBody(schemas.encrypt), async (req, res) => {
   try {
     const { plaintext, plaintextBase64, password } = req.body;
 
@@ -30,7 +31,7 @@ router.post('/encrypt', cryptoRateLimiter, (req, res) => {
       return res.status(400).json({ error: 'El campo "password" es requerido.' });
     }
 
-    const result = encryptAESGCM(dataToEncrypt, password);
+    const result = await encryptAESGCM(dataToEncrypt, password);
 
     res.status(200).json({
       success: true,
@@ -48,7 +49,7 @@ router.post('/encrypt', cryptoRateLimiter, (req, res) => {
  * POST /api/crypto/decrypt
  * Desempaqueta y descifra un flujo binario [Salt|IV|Tag|Ciphertext] verificando la autenticación GCM.
  */
-router.post('/decrypt', cryptoRateLimiter, (req, res) => {
+router.post('/decrypt', cryptoRateLimiter, validateBody(schemas.decrypt), async (req, res) => {
   try {
     const { packedData, password } = req.body;
 
@@ -59,7 +60,7 @@ router.post('/decrypt', cryptoRateLimiter, (req, res) => {
       return res.status(400).json({ error: 'El campo "password" es requerido.' });
     }
 
-    const result = decryptAESGCM(packedData, password);
+    const result = await decryptAESGCM(packedData, password);
 
     res.status(200).json({
       success: true,
@@ -96,7 +97,7 @@ router.get('/rsa/keygen', rsaKeygenRateLimiter, (req, res) => {
  * POST /api/crypto/rsa/hybrid-encrypt
  * Cifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
  */
-router.post('/rsa/hybrid-encrypt', cryptoRateLimiter, (req, res) => {
+router.post('/rsa/hybrid-encrypt', cryptoRateLimiter, validateBody(schemas.hybridEncrypt), (req, res) => {
   try {
     const { plaintext, publicKeyPem } = req.body;
     if (!plaintext || !publicKeyPem) {
@@ -120,7 +121,7 @@ router.post('/rsa/hybrid-encrypt', cryptoRateLimiter, (req, res) => {
  * POST /api/crypto/rsa/hybrid-decrypt
  * Descifrado híbrido con RSA-OAEP 4096 y AES-256-GCM.
  */
-router.post('/rsa/hybrid-decrypt', cryptoRateLimiter, (req, res) => {
+router.post('/rsa/hybrid-decrypt', cryptoRateLimiter, validateBody(schemas.hybridDecrypt), (req, res) => {
   try {
     const { encryptedKeyBase64, ivHex, tagHex, ciphertextBase64, privateKeyPem } = req.body;
     if (!encryptedKeyBase64 || !ivHex || !tagHex || !ciphertextBase64 || !privateKeyPem) {
