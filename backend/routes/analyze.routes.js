@@ -46,9 +46,19 @@ router.post('/image', analyzeRateLimiter, upload.single('image'), async (req, re
       data: analysisReport
     });
   } catch (error) {
+    // Un archivo que no es un PNG válido es un error del cliente, no del
+    // servidor: se responde 400 en lugar de 500 y sin detalle de la librería.
+    if (/firma|signature|decodificando|decode|Invalid/i.test(error.message)) {
+      return res.status(400).json({
+        success: false,
+        error: 'El archivo no tiene una firma PNG válida.'
+      });
+    }
+
+    console.error('[ANALYZE ERROR]', error);
     res.status(500).json({
       success: false,
-      error: `Error durante el estegoanálisis: ${error.message}`
+      error: 'Error durante el estegoanálisis.'
     });
   }
 });

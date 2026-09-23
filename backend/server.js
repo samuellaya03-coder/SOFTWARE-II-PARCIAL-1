@@ -117,6 +117,7 @@ app.use('/api/email', emailRoutes);
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ONLINE',
+    environment: process.env.NODE_ENV || 'development',
     system: 'Laboratorio Web de Criptografía y Esteganografía',
     mode: 'MODO DIFÍCIL - HIGH SECURITY',
     standards: {
@@ -130,6 +131,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // Manejador global de errores
+// Ruta desconocida: se responde JSON como el resto de la API, no el HTML por
+// defecto de Express.
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: 'Ruta no encontrada.' });
+});
+
 app.use((err, req, res, next) => {
   if (err.message && err.message.includes('CORS')) {
     return res.status(403).json({

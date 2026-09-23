@@ -78,9 +78,9 @@ router.post('/decrypt', cryptoRateLimiter, validateBody(schemas.decrypt), async 
  * GET /api/crypto/rsa/keygen
  * Genera un par de claves RSA de 4096 bits.
  */
-router.get('/rsa/keygen', rsaKeygenRateLimiter, (req, res) => {
+router.get('/rsa/keygen', rsaKeygenRateLimiter, async (req, res) => {
   try {
-    const keyPair = generateRSAKeyPair();
+    const keyPair = await generateRSAKeyPair();
     res.status(200).json({
       success: true,
       data: keyPair

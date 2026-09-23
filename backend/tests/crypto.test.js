@@ -1,0 +1,325 @@
+/**
+ * Validacion del servicio criptografico.
+ *
+ * Mas alla del viaje de ida y vuelta, se verifican dos cosas por CAMINOS
+ * INDEPENDIENTES del codigo bajo prueba:
+ *
+ *   - AES-256-GCM contra AES-256-CTR. La confidencialidad de GCM es CTR con un
+ *     bloque contador determinado: con IV de 96 bits, J0 = IV || 0x00000001 y el
+ *     flujo de clave empieza en inc32(J0) = IV || 0x00000002.
+ *
+ *   - PBKDF2-HMAC-SHA512 contra una reimplementacion directa de la recurrencia
+ *     de RFC 8018 sobre HMAC, con pocas iteraciones para que sea barata.
+ */
+
+import crypto from 'crypto';
+import { promisify } from 'node:util';
+import {
+  CRYPTO_CONFIG,
+  deriveKey,
+  encryptAESGCM,
+  decryptAESGCM,
+  generateRSAKeyPair,
+  encryptRSA,
+  decryptRSA,
+  hybridEncrypt,
+  hybridDecrypt
+} from '../services/crypto.service.js';
+import {
+  assertClose, assertEquals, assertRejects, assertThrows, assertTrue,
+  measureEventLoopBlocking, runSuite, section
+} from './harness.js';
+
+const tests = [];
+
+const PASSWORD = 'ClaveUltraSegura#2026!';
+const SECRET = 'Proyecto de Grado: Ciberseguridad Defendida';
+
+// Un cifrado y un par de claves reutilizados: cada derivacion cuesta ~200 ms por
+// las 600.000 iteraciones de PBKDF2, y generar RSA-4096 tampoco es gratis.
+const reference = await encryptAESGCM(SECRET, PASSWORD);
+const keyPair = await generateRSAKeyPair();
+
+section(tests, 'Empaquetado binario [Salt(16) | IV(12) | Tag(16) | Ciphertext]');
+
+tests.push(['Los offsets del paquete son exactos', () => {
+  const { SALT_LENGTH } = CRYPTO_CONFIG.KDF;
+  const { IV_LENGTH, TAG_LENGTH } = CRYPTO_CONFIG.CIPHER;
+
+  assertClose(SALT_LENGTH, 16, 0);
+  assertClose(IV_LENGTH, 12, 0);
+  assertClose(TAG_LENGTH, 16, 0);
+  assertClose(SALT_LENGTH + IV_LENGTH + TAG_LENGTH, 44, 0);
+  assertClose(reference.packedBuffer.length, 44 + Buffer.byteLength(SECRET, 'utf8'), 0);
+}]);
+
+tests.push(['Los campos hexadecimales coinciden con los tramos del búfer', () => {
+  const packed = reference.packedBuffer;
+  assertEquals(packed.subarray(0, 16).toString('hex'), reference.saltHex, 'salt');
+  assertEquals(packed.subarray(16, 28).toString('hex'), reference.ivHex, 'iv');
+  assertEquals(packed.subarray(28, 44).toString('hex'), reference.tagHex, 'tag');
+  assertEquals(packed.subarray(44).toString('hex'), reference.ciphertextHex, 'ciphertext');
+}]);
+
+tests.push(['El parametro de coste del KDF cumple la recomendacion de OWASP', () => {
+  assertTrue(
+    CRYPTO_CONFIG.KDF.ITERATIONS >= 210000,
+    `PBKDF2-SHA512 necesita al menos 210.000 iteraciones, hay ${CRYPTO_CONFIG.KDF.ITERATIONS}`
+  );
+  assertEquals(CRYPTO_CONFIG.KDF.ALGORITHM, 'sha512', 'hash del KDF');
+  assertClose(CRYPTO_CONFIG.KDF.KEY_LENGTH, 32, 0);
+}]);
+
+section(tests, 'Verificacion cruzada contra primitivas independientes');
+
+tests.push(['El texto cifrado de GCM coincide con AES-256-CTR desde IV || 0x00000002', () => {
+  const key = crypto.randomBytes(32);
+  const iv = crypto.randomBytes(12);
+  const plaintext = Buffer.from('Verificacion cruzada de la construccion GCM', 'utf8');
+
+  const gcm = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const gcmCiphertext = Buffer.concat([gcm.update(plaintext), gcm.final()]);
+
+  const counter = Buffer.concat([iv, Buffer.from([0, 0, 0, 2])]);
+  const ctr = crypto.createCipheriv('aes-256-ctr', key, counter);
+  const ctrCiphertext = Buffer.concat([ctr.update(plaintext), ctr.final()]);
+
+  assertEquals(gcmCiphertext.toString('hex'), ctrCiphertext.toString('hex'), 'ciphertext');
+}]);
+
+tests.push(['PBKDF2-SHA512 coincide con la recurrencia de RFC 8018 implementada a mano', async () => {
+  const password = 'contrasena de prueba';
+  const salt = Buffer.from('0123456789abcdef', 'utf8');
+  const iterations = 500;
+
+  // U_1 = HMAC(P, S || INT(i));  U_j = HMAC(P, U_{j-1});  T_i = U_1 xor ... xor U_c
+  let u = crypto.createHmac('sha512', password)
+    .update(Buffer.concat([salt, Buffer.from([0, 0, 0, 1])]))
+    .digest();
+  const accumulator = Buffer.from(u);
+
+  for (let j = 1; j < iterations; j++) {
+    u = crypto.createHmac('sha512', password).update(u).digest();
+    for (let b = 0; b < accumulator.length; b++) {
+      accumulator[b] ^= u[b];
+    }
+  }
+
+  const actual = await promisify(crypto.pbkdf2)(password, salt, iterations, 64, 'sha512');
+
+  assertEquals(actual.toString('hex'), accumulator.subarray(0, 64).toString('hex'), 'clave derivada');
+}]);
+
+section(tests, 'Derivacion de clave');
+
+tests.push(['La derivacion es determinista con el mismo salt', async () => {
+  const salt = crypto.randomBytes(16);
+  const [a, b] = await Promise.all([deriveKey(PASSWORD, salt), deriveKey(PASSWORD, salt)]);
+
+  assertEquals(a.toString('hex'), b.toString('hex'), 'clave');
+  assertClose(a.length, 32, 0);
+}]);
+
+tests.push(['Salts distintos producen claves distintas (anula tablas arcoiris)', async () => {
+  const [a, b] = await Promise.all([
+    deriveKey(PASSWORD, crypto.randomBytes(16)),
+    deriveKey(PASSWORD, crypto.randomBytes(16))
+  ]);
+  assertTrue(a.toString('hex') !== b.toString('hex'), 'dos salts dieron la misma clave');
+}]);
+
+tests.push(['Se rechaza un salt de longitud incorrecta', async () => {
+  await assertRejects(() => deriveKey(PASSWORD, crypto.randomBytes(8)), 'acepto un salt de 8 bytes');
+  await assertRejects(() => deriveKey(PASSWORD, 'no es un buffer'), 'acepto un salt que no es Buffer');
+}]);
+
+tests.push(['Se rechaza una contrasena vacia o no textual', async () => {
+  await assertRejects(() => deriveKey('', crypto.randomBytes(16)), 'acepto contrasena vacia');
+  await assertRejects(() => deriveKey(null, crypto.randomBytes(16)), 'acepto contrasena nula');
+}]);
+
+section(tests, 'Las operaciones costosas NO bloquean el event loop');
+
+tests.push(['Cuatro derivaciones concurrentes dejan avanzar el event loop', async () => {
+  // Con pbkdf2Sync el bucle quedaria ocupado hasta terminar todas las
+  // derivaciones, unos 800 ms. Con la variante asincrona el trabajo va a la
+  // threadpool de libuv y los temporizadores siguen disparandose a su hora.
+  const { maxGapMs, elapsedMs } = await measureEventLoopBlocking(
+    () => Promise.all(Array.from({ length: 4 }, () => deriveKey(PASSWORD, crypto.randomBytes(16))))
+  );
+
+  assertTrue(
+    maxGapMs < 25,
+    `el event loop quedo bloqueado ${maxGapMs.toFixed(1)} ms durante ${elapsedMs.toFixed(0)} ms de derivacion`
+  );
+}]);
+
+tests.push(['La generacion de claves RSA-4096 deja avanzar el event loop', async () => {
+  const { maxGapMs, elapsedMs } = await measureEventLoopBlocking(() => generateRSAKeyPair());
+
+  assertTrue(
+    maxGapMs < 25,
+    `el event loop quedo bloqueado ${maxGapMs.toFixed(1)} ms durante ${elapsedMs.toFixed(0)} ms de generacion`
+  );
+}]);
+
+section(tests, 'Cifrado y descifrado autenticado');
+
+tests.push(['Viaje de ida y vuelta desde el búfer empaquetado', async () => {
+  const result = await decryptAESGCM(reference.packedBuffer, PASSWORD);
+  assertEquals(result.plaintextUtf8, SECRET, 'texto claro');
+}]);
+
+tests.push(['Viaje de ida y vuelta desde Base64', async () => {
+  const result = await decryptAESGCM(reference.packedBase64, PASSWORD);
+  assertEquals(result.plaintextUtf8, SECRET, 'texto claro');
+}]);
+
+tests.push(['Viaje de ida y vuelta de un payload binario arbitrario', async () => {
+  const binary = crypto.randomBytes(1024);
+  const packed = await encryptAESGCM(binary, PASSWORD);
+  const result = await decryptAESGCM(packed.packedBuffer, PASSWORD);
+
+  assertEquals(result.plaintextBuffer.toString('hex'), binary.toString('hex'), 'payload');
+}]);
+
+tests.push(['El mismo mensaje nunca produce el mismo paquete', async () => {
+  const [a, b] = await Promise.all([
+    encryptAESGCM('mismo mensaje', PASSWORD),
+    encryptAESGCM('mismo mensaje', PASSWORD)
+  ]);
+
+  assertTrue(a.ivHex !== b.ivHex, 'dos cifrados compartieron IV');
+  assertTrue(a.saltHex !== b.saltHex, 'dos cifrados compartieron salt');
+  assertTrue(a.ciphertextHex !== b.ciphertextHex, 'el mismo mensaje dio el mismo criptograma');
+}]);
+
+section(tests, 'Deteccion de manipulacion por el Authentication Tag');
+
+const TAMPER_TARGETS = [
+  { label: 'ciphertext', offset: 44 },
+  { label: 'tag', offset: 28 },
+  { label: 'IV', offset: 16 },
+  { label: 'salt', offset: 0 }
+];
+
+for (const target of TAMPER_TARGETS) {
+  tests.push([`Alterar 1 bit del ${target.label} aborta el descifrado`, async () => {
+    const tampered = Buffer.from(reference.packedBuffer);
+    tampered[target.offset] ^= 0x01;
+
+    await assertRejects(
+      () => decryptAESGCM(tampered, PASSWORD),
+      `la manipulacion del ${target.label} paso desapercibida`
+    );
+  }]);
+}
+
+tests.push(['El fallo de descifrado es opaco: no distingue la causa', async () => {
+  // La propiedad que interesa no es que el mensaje nombre la integridad, sino
+  // justo lo contrario: que sea IDENTICO sea cual sea la causa. Un mensaje que
+  // distinga "clave incorrecta" de "paquete corrupto" es un oraculo que ayuda
+  // a un atacante a orientar sus intentos.
+  const porClave = await assertRejects(
+    () => decryptAESGCM(reference.packedBuffer, 'contrasena equivocada'),
+    'una contrasena equivocada consiguio descifrar'
+  );
+
+  const alterado = Buffer.from(reference.packedBuffer);
+  alterado[alterado.length - 1] ^= 1;
+  const porAlteracion = await assertRejects(
+    () => decryptAESGCM(alterado, PASSWORD),
+    'un paquete con un bit alterado consiguio descifrar'
+  );
+
+  assertEquals(
+    porClave.message,
+    porAlteracion.message,
+    'clave incorrecta y paquete alterado deben dar el mismo mensaje'
+  );
+}]);
+
+tests.push(['Un paquete mas corto que la cabecera se rechaza', async () => {
+  await assertRejects(() => decryptAESGCM(Buffer.alloc(43), PASSWORD), 'acepto un paquete de 43 bytes');
+}]);
+
+tests.push(['Se rechaza un tipo de dato invalido', async () => {
+  await assertRejects(() => decryptAESGCM(12345, PASSWORD), 'acepto un numero como paquete');
+}]);
+
+section(tests, 'RSA-OAEP 4096 y esquema hibrido');
+
+tests.push(['El par de claves tiene el formato PEM esperado y exponente 65537', () => {
+  assertTrue(keyPair.publicKey.includes('BEGIN PUBLIC KEY'), 'clave publica no es SPKI/PEM');
+  assertTrue(keyPair.privateKey.includes('BEGIN PRIVATE KEY'), 'clave privada no es PKCS#8/PEM');
+
+  const details = crypto.createPublicKey(keyPair.publicKey).asymmetricKeyDetails;
+  assertClose(details.modulusLength, 4096, 0);
+  assertClose(Number(details.publicExponent), 65537, 0);
+}]);
+
+tests.push(['Viaje de ida y vuelta con RSA-OAEP directo', () => {
+  const message = Buffer.from('clave de sesion efimera', 'utf8');
+  const opened = decryptRSA(encryptRSA(message, keyPair.publicKey), keyPair.privateKey);
+
+  assertEquals(opened.toString('utf8'), message.toString('utf8'), 'mensaje');
+}]);
+
+tests.push(['OAEP es aleatorizado: dos cifrados del mismo mensaje difieren', () => {
+  const a = encryptRSA('mismo mensaje', keyPair.publicKey);
+  const b = encryptRSA('mismo mensaje', keyPair.publicKey);
+  assertTrue(a.toString('hex') !== b.toString('hex'), 'OAEP produjo dos criptogramas identicos');
+}]);
+
+tests.push(['Viaje de ida y vuelta del esquema hibrido', () => {
+  const message = 'Transaccion bancaria confidencial aprobada #893712';
+  const sealed = hybridEncrypt(message, keyPair.publicKey);
+  const opened = hybridDecrypt(
+    sealed.encryptedKeyBase64, sealed.ivHex, sealed.tagHex, sealed.ciphertextBase64,
+    keyPair.privateKey
+  );
+
+  assertEquals(opened, message, 'mensaje');
+}]);
+
+tests.push(['El hibrido cifra datos mas grandes que el modulo RSA', () => {
+  // RSA-OAEP con SHA-256 sobre 4096 bits solo admite 446 bytes; el hibrido no
+  // tiene ese limite porque RSA solo protege la clave de sesion.
+  const bulk = crypto.randomBytes(100000).toString('base64');
+  const sealed = hybridEncrypt(bulk, keyPair.publicKey);
+  const opened = hybridDecrypt(
+    sealed.encryptedKeyBase64, sealed.ivHex, sealed.tagHex, sealed.ciphertextBase64,
+    keyPair.privateKey
+  );
+
+  assertEquals(opened, bulk, 'payload voluminoso');
+}]);
+
+tests.push(['Manipular el criptograma hibrido aborta el descifrado', () => {
+  const sealed = hybridEncrypt('mensaje protegido', keyPair.publicKey);
+  const corrupted = Buffer.from(sealed.ciphertextBase64, 'base64');
+  corrupted[0] ^= 0xff;
+
+  assertThrows(
+    () => hybridDecrypt(
+      sealed.encryptedKeyBase64, sealed.ivHex, sealed.tagHex,
+      corrupted.toString('base64'), keyPair.privateKey
+    ),
+    'la manipulacion del criptograma hibrido paso desapercibida'
+  );
+}]);
+
+tests.push(['Una clave privada ajena no puede abrir el sobre hibrido', async () => {
+  const sealed = hybridEncrypt('mensaje protegido', keyPair.publicKey);
+  const intruder = await generateRSAKeyPair();
+
+  assertThrows(
+    () => hybridDecrypt(
+      sealed.encryptedKeyBase64, sealed.ivHex, sealed.tagHex, sealed.ciphertextBase64,
+      intruder.privateKey
+    ),
+    'una clave privada ajena consiguio descifrar'
+  );
+}]);
+
+await runSuite('SERVICIO CRIPTOGRAFICO (crypto.service.js)', tests);

@@ -3,6 +3,8 @@ import { promisify } from 'node:util';
 
 // La variante asincrona delega en la threadpool de libuv, fuera del hilo principal.
 const pbkdf2Async = promisify(crypto.pbkdf2);
+// Generar RSA-4096 cuesta cientos de milisegundos: tambien fuera del hilo principal.
+const generateKeyPairAsync = promisify(crypto.generateKeyPair);
 
 /**
  * SERVICIO CRIPTOGRÁFICO AVANZADO ("MODO DIFÍCIL")
@@ -176,8 +178,8 @@ export async function decryptAESGCM(packedData, password) {
  * Genera un par de claves asimétricas RSA de 4096 bits en formato PEM.
  * @returns {{ publicKey: string, privateKey: string }}
  */
-export function generateRSAKeyPair() {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+export async function generateRSAKeyPair() {
+  const { publicKey, privateKey } = await generateKeyPairAsync('rsa', {
     modulusLength: CRYPTO_CONFIG.RSA.MODULUS_LENGTH,
     publicKeyEncoding: {
       type: 'spki',
