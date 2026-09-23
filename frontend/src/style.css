@@ -125,20 +125,48 @@ body {
 .app-container {
   max-width: 1360px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 0 1.5rem 2.5rem;
 }
 
 /* App Header & Theme Toggle */
+/* Cabecera: barra fija translucida, como en el diseno */
 .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 1px 8px rgba(74, 90, 102, 0.06);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.app-header-inner {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  min-height: 5rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+}
+
+/* Banda de navegacion: fondo tintado a todo el ancho bajo la cabecera */
+.nav-band {
+  width: 100%;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 1.5rem 0;
   margin-bottom: 2rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border-color);
-  transition: border-color 0.25s ease;
+}
+
+.nav-band .tabs-nav {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
 .brand-avatar {
@@ -258,7 +286,7 @@ h1, h2, h3, h4 {
   background: transparent;
   padding: 0;
   border: none;
-  margin-bottom: 2.25rem;
+  margin-bottom: 0;
 }
 
 @media (max-width: 1080px) {
