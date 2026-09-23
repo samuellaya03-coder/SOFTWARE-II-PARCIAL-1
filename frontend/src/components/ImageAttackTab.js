@@ -46,7 +46,7 @@ export function renderImageAttackTab(container, initialData = null) {
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Soporta PNG, JPEG, WebP o BMP para someter a mutación de bits</p>
           </div>
 
-          <div style="background: rgba(0,0,0,0.3); padding: 1.25rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.75rem;">
+          <div style="background: var(--bg-inset-strong); padding: 1.25rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.75rem;">
             <div style="display: flex; justify-content: space-between;">
               <span style="color: var(--text-muted);">Imagen Cargada:</span>
               <span id="carrier-status-tag" class="font-mono text-white">Ninguna imagen cargada</span>
@@ -90,7 +90,7 @@ export function renderImageAttackTab(container, initialData = null) {
             </div>
           </div>
 
-          <div style="background: rgba(0,0,0,0.25); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
+          <div style="background: var(--bg-inset); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
             <!-- Controles de Bit e Intensidad -->
             <div class="grid-3" style="gap: 1rem; align-items: center;">
               <div>
@@ -313,28 +313,28 @@ export function renderImageAttackTab(container, initialData = null) {
           <div class="grid-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
             
             <!-- KPI 1: PSNR -->
-            <div style="background: rgba(0,0,0,0.3); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
               <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Fidelidad Visual (PSNR)</div>
               <div id="kpi-attack-psnr" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">99.99 dB</div>
               <div id="kpi-attack-psnr-desc" style="font-size: 0.75rem; color: var(--text-secondary);">Idéntica a la original</div>
             </div>
 
             <!-- KPI 2: Píxeles Modificados -->
-            <div style="background: rgba(0,0,0,0.3); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-rose);">
+            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-rose);">
               <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Píxeles Alterados</div>
               <div id="kpi-attack-modified-pixels" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: #f87171; margin: 0.2rem 0;">0 (0.00%)</div>
               <div id="kpi-attack-pixels-desc" style="font-size: 0.75rem; color: var(--text-secondary);">0 / 0 px</div>
             </div>
 
             <!-- KPI 3: Error Cuadrático Medio (MSE) -->
-            <div style="background: rgba(0,0,0,0.3); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
               <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Error Cuadrático (MSE)</div>
               <div id="kpi-attack-mse" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">0.00</div>
               <div id="kpi-attack-mse-desc" style="font-size: 0.75rem; color: var(--text-secondary);">Sin distorsión cromática</div>
             </div>
 
             <!-- KPI 4: Severidad del Daño de Bits -->
-            <div style="background: rgba(0,0,0,0.3); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+            <div style="background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
               <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Severidad del Canal</div>
               <div id="kpi-attack-severity" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">CANAL LIMPIO</div>
               <div id="kpi-attack-severity-desc" style="font-size: 0.75rem; color: var(--text-secondary);">0 bits atacados</div>

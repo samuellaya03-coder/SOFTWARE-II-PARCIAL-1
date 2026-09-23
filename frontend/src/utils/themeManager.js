@@ -1,7 +1,7 @@
 /**
  * GESTOR DE TEMAS (DARK / LIGHT MODE)
- * Permite alternar fluidamente entre el nuevo Modo Oscuro (Titanio & Índigo Eléctrico)
- * y el Modo Claro (Slate Minimalista & Vidrio Glaseado).
+ * Alterna entre el Modo Claro (paleta base del rediseno) y su derivada oscura.
+ * El modo claro es el predeterminado; el oscuro se deriva de la misma paleta.
  */
 
 const STORAGE_KEY = 'cyberlab_theme';
@@ -13,10 +13,10 @@ export class ThemeManager {
       return saved;
     }
     // Si el usuario tiene preferencia del sistema
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
     }
-    return 'dark'; // Predeterminado
+    return 'light'; // Predeterminado
   }
 
   static applyTheme(theme) {

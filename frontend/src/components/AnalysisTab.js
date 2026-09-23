@@ -162,28 +162,28 @@ export function renderAnalysisTab(container, initialData = null) {
 
             <div class="grid-2" style="gap: 1rem;">
               <!-- KPI 1: Bits Modificados -->
-              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cantidad de Bits Modificados</div>
                 <div id="kpi-bitplane-total-bits" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-total-bytes" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
 
               <!-- KPI 2: Ocupación de Capacidad -->
-              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Ocupación de Capacidad Portadora</div>
                 <div id="kpi-bitplane-capacity-pct" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-purple); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-capacity-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
 
               <!-- KPI 3: Coordenadas Espaciales -->
-              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Extensión Espacial en Matriz</div>
                 <div id="kpi-bitplane-coords" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-coords-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
               </div>
 
               <!-- KPI 4: Balance de Bits Cifrados -->
-              <div style="background: rgba(0,0,0,0.3); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
+              <div style="background: var(--bg-inset-strong); padding: 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Equilibrio de Bits (Criptoanálisis)</div>
                 <div id="kpi-bitplane-entropy-balance" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-amber); margin: 0.2rem 0;">-</div>
                 <div id="kpi-bitplane-entropy-desc" style="font-size: 0.75rem; color: var(--text-secondary);">-</div>
@@ -423,15 +423,15 @@ export function renderAnalysisTab(container, initialData = null) {
     // 2. Entropía de Shannon
     const ent = report.shannonEntropy;
     entropyMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #f87171;">Entropía LSB (Canal R):</span>
         <span style="color: #ffffff;">${ent.redLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #4ade80;">Entropía LSB (Canal G):</span>
         <span style="color: #ffffff;">${ent.greenLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #60a5fa;">Entropía LSB (Canal B):</span>
         <span style="color: #ffffff;">${ent.blueLSB} bits/símbolo</span>
       </div>
@@ -447,15 +447,15 @@ export function renderAnalysisTab(container, initialData = null) {
     // 3. Chi-Cuadrado PoVs
     const chi = report.chiSquarePoV;
     chiMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #f87171;">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
         <span style="color: #ffffff;">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #4ade80;">χ² Canal Verde (df=${chi.green.degreesOfFreedom}):</span>
         <span style="color: #ffffff;">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 0.4rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #60a5fa;">χ² Canal Azul (df=${chi.blue.degreesOfFreedom}):</span>
         <span style="color: #ffffff;">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
       </div>
@@ -610,7 +610,7 @@ export function renderAnalysisTab(container, initialData = null) {
 
     const labels = Array.from({ length: 256 }, (_, i) => i);
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.05)';
+    const gridColor = isLight ? 'var(--bg-inset)' : 'rgba(255, 255, 255, 0.05)';
     const titleColor = isLight ? '#475569' : '#94a3b8';
     const ticksColor = isLight ? '#64748b' : '#64748b';
 

@@ -341,7 +341,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
     safe = safe.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
     // Código en línea `code`
-    safe = safe.replace(/`(.*?)`/g, '<code style="background: rgba(0,0,0,0.4); padding: 0.15rem 0.35rem; border-radius: 4px; color: #67e8f9; font-family: var(--font-mono); font-size: 0.85em;">$1</code>');
+    safe = safe.replace(/`(.*?)`/g, '<code style="background: var(--bg-inset-strong); padding: 0.15rem 0.35rem; border-radius: 4px; color: #67e8f9; font-family: var(--font-mono); font-size: 0.85em;">$1</code>');
 
     // Viñetas * item o - item
     safe = safe.replace(/^\s*[\*\-]\s+(.*$)/gim, '<li style="margin-left: 1.2rem; margin-bottom: 0.25rem;">$1</li>');

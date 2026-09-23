@@ -47,7 +47,7 @@ export function renderCryptoTab(container) {
           </button>
 
           <!-- Desglose de Componentes Binarios -->
-          <div id="crypto-structure-box" style="display: none; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.6;">
+          <div id="crypto-structure-box" style="display: none; background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.6;">
             <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">
               Estructura Binaria Empaquetada: <span class="font-mono" style="color: var(--accent-cyan);">[ Salt (16B) | IV (12B) | Tag (16B) | Ciphertext ]</span>
             </p>
@@ -333,7 +333,7 @@ export function renderCryptoTab(container) {
               </button>
 
               <!-- Paquete Generado por Alice -->
-              <div id="alice-output-box" style="display: none; background: rgba(0,0,0,0.45); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.2); font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.6;">
+              <div id="alice-output-box" style="display: none; background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.2); font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.6;">
                 <div style="color: var(--accent-cyan); font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
                   <span>📦</span> SOBRE DIGITAL TRANSMITIDO POR ALICE:
                 </div>
@@ -369,7 +369,7 @@ export function renderCryptoTab(container) {
               </p>
 
               <!-- ELEMENTO 1: DOCUMENTO / SOBRE CIFRADO -->
-              <div style="background: rgba(0,0,0,0.25); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              <div style="background: var(--bg-inset); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 0.75rem; font-weight: 700; color: #d8b4fe;">1. 📦 Documento Cifrado (.json):</span>
                   <span id="bob-envelope-source-badge" class="badge badge-purple" style="font-size: 0.65rem;">En Espera</span>
@@ -383,7 +383,7 @@ export function renderCryptoTab(container) {
               </div>
 
               <!-- ELEMENTO 2: CLAVE PRIVADA DE BOB -->
-              <div style="background: rgba(0,0,0,0.25); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              <div style="background: var(--bg-inset); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 0.75rem; font-weight: 700; color: #d8b4fe;">2. 🗝️ Clave Privada de Bob (.pem):</span>
                   <span id="bob-privkey-source-badge" class="badge badge-purple" style="font-size: 0.65rem;">En Espera</span>
@@ -411,7 +411,7 @@ export function renderCryptoTab(container) {
               </button>
 
               <!-- Resultado del Descifrado de Bob -->
-              <div id="bob-output-box" style="display: none; background: rgba(0,0,0,0.45); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3); font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.6;">
+              <div id="bob-output-box" style="display: none; background: var(--bg-inset-strong); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3); font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.6;">
                 <div style="color: var(--accent-emerald); font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
                   <span>✅</span> DESENCRIPTADO Y VERIFICADO POR BOB:
                 </div>

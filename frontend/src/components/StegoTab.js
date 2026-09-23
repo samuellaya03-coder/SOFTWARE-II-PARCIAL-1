@@ -46,7 +46,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Soporta PNG, JPEG, JPG, WebP, BMP (Se convertirá a PNG automáticamente sin pérdida)</p>
             </div>
 
-            <div id="carrier-info" style="display: none; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+            <div id="carrier-info" style="display: none; background: var(--bg-inset); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                 <span style="color: var(--text-muted);">Resolución:</span>
                 <span id="carrier-res" class="font-mono text-white">-</span>
@@ -144,7 +144,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               </div>
 
               <!-- Miniatura si el archivo secreto es una imagen -->
-              <div id="selected-secret-img-preview" style="display: none; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 0.5rem; max-height: 140px; overflow: hidden;">
+              <div id="selected-secret-img-preview" style="display: none; justify-content: center; background: var(--bg-inset-strong); border-radius: 6px; padding: 0.5rem; max-height: 140px; overflow: hidden;">
                 <img id="selected-secret-img" style="max-height: 120px; border-radius: 4px; object-fit: contain;" alt="Vista previa de imagen secreta" />
               </div>
             </div>
@@ -189,7 +189,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
                 </div>
               </div>
 
-              <div id="stego-stats-details" class="font-mono" style="font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; line-height: 1.6;">
+              <div id="stego-stats-details" class="font-mono" style="font-size: 0.85rem; background: var(--bg-inset-strong); padding: 1rem; border-radius: 8px; line-height: 1.6;">
                 <!-- Se llena dinámicamente -->
               </div>
 
@@ -242,7 +242,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
             </div>
 
             <!-- Si el payload extraído es un paquete cifrado AES-GCM -->
-            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: rgba(0,0,0,0.35); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.85rem;">
+            <div id="reveal-crypto-decrypt-box" class="card" style="display: none; background: var(--bg-inset-strong); border-color: rgba(168, 85, 247, 0.4); flex-direction: column; gap: 0.85rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <span class="badge badge-purple">AES-256-GCM Detectado</span>
@@ -291,7 +291,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               </div>
 
               <!-- Vista previa si el archivo secreto es imagen -->
-              <div id="revealed-image-preview-box" style="display: none; justify-content: center; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 0.75rem; max-height: 240px; overflow: hidden;">
+              <div id="revealed-image-preview-box" style="display: none; justify-content: center; background: var(--bg-inset-strong); border-radius: 6px; padding: 0.75rem; max-height: 240px; overflow: hidden;">
                 <img id="revealed-secret-image" style="max-height: 220px; border-radius: 4px; object-fit: contain;" alt="Imagen secreta revelada" />
               </div>
 

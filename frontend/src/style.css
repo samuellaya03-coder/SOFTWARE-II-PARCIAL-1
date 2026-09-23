@@ -1,74 +1,81 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-:root, [data-theme="dark"] {
-  /* ========================================================
-     MODO OSCURO: TITANIO OBSIDIANA & ÍNDIGO ELÉCTRICO
-     ======================================================== */
-  --bg-primary: #070a13;
-  --bg-secondary: #0d121f;
-  --bg-card: rgba(15, 23, 42, 0.78);
-  --bg-card-hover: rgba(26, 38, 66, 0.88);
-  --bg-input: #0b111e;
-  --bg-preview: #050811;
-  --bg-glass: rgba(15, 23, 42, 0.65);
-  --border-color: rgba(99, 102, 241, 0.22);
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-glow: rgba(99, 102, 241, 0.45);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  
-  /* Paleta Exclusiva: Índigo Cuántico, Seafoam Luminous & Coral Neón */
-  --accent-primary: #6366f1;
-  --accent-cyan: #06b6d4;
-  --accent-emerald: #10b981;
-  --accent-purple: #8b5cf6;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+/* ============================================================
+   MODO CLARO — Paleta base del rediseño (Stitch)
+   Neutros calidos sobre crema, azul petroleo como color de marca.
+   ============================================================ */
+:root, [data-theme="light"] {
+  --bg-primary: #fdf9f2;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f7f3ed;
+  --bg-input: #f7f3ed;
+  --bg-preview: #f2ede7;
+  --bg-inset: #f7f3ed;
+  --bg-inset-strong: #ece8e1;
+  --bg-glass: rgba(253, 249, 242, 0.9);
+  --border-color: #c0c7ce;
+  --border-subtle: #e6e2dc;
+  --border-glow: rgba(38, 100, 131, 0.28);
+  --text-primary: #1c1c18;
+  --text-secondary: #40484d;
+  --text-muted: #4a626d;
 
-  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
-  --brand-glow: rgba(99, 102, 241, 0.45);
-  --card-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.55);
-  --grid-line: rgba(255, 255, 255, 0.02);
-  --glow-radial-1: rgba(99, 102, 241, 0.08);
-  --glow-radial-2: rgba(139, 92, 246, 0.08);
-  
+  /* Acentos: tonos profundos que mantienen contraste sobre crema */
+  --accent-primary: #266483;
+  --accent-cyan: #0f6d8c;
+  --accent-emerald: #1c6b41;
+  --accent-purple: #5a4fa3;
+  --accent-amber: #8a5d00;
+  --accent-rose: #ba1a1a;
+
+  --brand-gradient: linear-gradient(135deg, #c9e6ff 0%, #6da6c7 50%, #306384 100%);
+  --brand-glow: rgba(38, 100, 131, 0.25);
+  --card-shadow: 0 1px 3px rgba(74, 90, 102, 0.05), 0 4px 14px -6px rgba(74, 90, 102, 0.08);
+  --grid-line: rgba(28, 28, 24, 0.028);
+  --glow-radial-1: rgba(38, 100, 131, 0.05);
+  --glow-radial-2: rgba(109, 166, 199, 0.05);
+
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-[data-theme="light"] {
-  /* ========================================================
-     MODO CLARO: SLATE CRISTALINO & VIDRIO GLASEADO
-     ======================================================== */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.94);
-  --bg-card-hover: #ffffff;
-  --bg-input: #ffffff;
-  --bg-preview: #f1f5f9;
-  --bg-glass: rgba(255, 255, 255, 0.85);
-  --border-color: rgba(203, 213, 225, 0.85);
-  --border-subtle: rgba(226, 232, 240, 0.9);
-  --border-glow: rgba(79, 70, 229, 0.25);
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  
-  /* Contrastes optimizados para fondo blanco */
-  --accent-primary: #4f46e5;
-  --accent-cyan: #0284c7;
-  --accent-emerald: #059669;
-  --accent-purple: #7c3aed;
-  --accent-amber: #d97706;
-  --accent-rose: #e11d48;
+/* ============================================================
+   MODO OSCURO — Derivado de la misma paleta
+   Se invierte la escala de neutros calidos y se usan los tonos
+   claros del propio sistema para los acentos, como haria M3.
+   ============================================================ */
+[data-theme="dark"] {
+  --bg-primary: #14130f;
+  --bg-secondary: #1c1c18;
+  --bg-card: #23221d;
+  --bg-card-hover: #2c2b25;
+  --bg-input: #1e1d19;
+  --bg-preview: #0e0d0b;
+  --bg-inset: rgba(0, 0, 0, 0.25);
+  --bg-inset-strong: rgba(0, 0, 0, 0.4);
+  --bg-glass: rgba(28, 28, 24, 0.9);
+  --border-color: #3d3b35;
+  --border-subtle: #2c2b25;
+  --border-glow: rgba(149, 206, 240, 0.35);
+  --text-primary: #f5f0ea;
+  --text-secondary: #d3cec6;
+  --text-muted: #a8a49c;
 
-  --brand-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0284c7 100%);
-  --brand-glow: rgba(79, 70, 229, 0.25);
-  --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --grid-line: rgba(15, 23, 42, 0.035);
-  --glow-radial-1: rgba(99, 102, 241, 0.05);
-  --glow-radial-2: rgba(6, 182, 212, 0.05);
+  /* Acentos: variantes claras del sistema, legibles sobre neutro oscuro */
+  --accent-primary: #95cef0;
+  --accent-cyan: #7fd4ec;
+  --accent-emerald: #6ee7b7;
+  --accent-purple: #b1a8f0;
+  --accent-amber: #fbbf24;
+  --accent-rose: #ffb4ab;
+
+  --brand-gradient: linear-gradient(135deg, #95cef0 0%, #6da6c7 50%, #306384 100%);
+  --brand-glow: rgba(149, 206, 240, 0.32);
+  --card-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.55);
+  --grid-line: rgba(245, 240, 234, 0.025);
+  --glow-radial-1: rgba(149, 206, 240, 0.06);
+  --glow-radial-2: rgba(109, 166, 199, 0.05);
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -1489,22 +1496,26 @@ textarea.font-mono {
 /* ==========================================================================
    REFINAMIENTOS ESPECÍFICOS PARA MODO CLARO (LIGHT THEME ENHANCEMENTS)
    ========================================================================== */
+/* ============================================================
+   Ajustes del MODO CLARO por componente.
+   Todo se expresa con variables: si cambia la paleta, esto la sigue.
+   ============================================================ */
 [data-theme="light"] .tab-card {
-  background: #ffffff;
-  border-color: rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  box-shadow: var(--card-shadow);
 }
 
 [data-theme="light"] .tab-card:hover {
-  background: #ffffff;
+  background: var(--bg-card);
   border-color: var(--accent-primary);
-  box-shadow: 0 10px 24px -4px rgba(79, 70, 229, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 10px 24px -4px var(--brand-glow), 0 2px 6px rgba(28, 28, 24, 0.04);
 }
 
 [data-theme="light"] .tab-card.active {
-  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  background: var(--bg-card);
   border-color: var(--accent-primary);
-  box-shadow: 0 8px 25px -4px rgba(79, 70, 229, 0.16);
+  box-shadow: 0 0 0 2px var(--accent-primary), 0 8px 22px -6px var(--brand-glow);
 }
 
 [data-theme="light"] .tab-card.active .tab-card-title {
@@ -1513,117 +1524,110 @@ textarea.font-mono {
 }
 
 [data-theme="light"] .card {
-  background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(226, 232, 240, 0.9);
-  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.03);
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  box-shadow: var(--card-shadow);
 }
 
 [data-theme="light"] .card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--border-color);
 }
 
 [data-theme="light"] .image-preview-box {
-  background: #f1f5f9;
-  border-color: rgba(203, 213, 225, 0.85);
+  background: var(--bg-preview);
+  border-color: var(--border-color);
 }
 
 [data-theme="light"] .dropzone {
-  background: rgba(248, 250, 252, 0.8);
-  border-color: rgba(148, 163, 184, 0.6);
+  background: var(--bg-input);
+  border-color: var(--border-color);
 }
 
 [data-theme="light"] .dropzone:hover,
 [data-theme="light"] .dropzone.dragover {
-  background: rgba(238, 242, 255, 0.8);
+  background: var(--bg-card-hover);
   border-color: var(--accent-primary);
-  box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.08);
+  box-shadow: inset 0 0 20px var(--glow-radial-1);
 }
 
+/* Alertas: tintes suaves de cada acento sobre la superficie crema */
 [data-theme="light"] .alert-info {
-  background: rgba(224, 242, 254, 0.8);
-  border: 1px solid rgba(186, 230, 253, 0.9);
-  color: #0369a1;
+  background: rgba(15, 109, 140, 0.08);
+  border: 1px solid rgba(15, 109, 140, 0.22);
+  color: var(--accent-cyan);
 }
 
 [data-theme="light"] .alert-success {
-  background: rgba(220, 252, 231, 0.8);
-  border: 1px solid rgba(187, 247, 208, 0.9);
-  color: #15803d;
+  background: rgba(28, 107, 65, 0.08);
+  border: 1px solid rgba(28, 107, 65, 0.22);
+  color: var(--accent-emerald);
 }
 
 [data-theme="light"] .alert-warning {
-  background: rgba(254, 243, 199, 0.8);
-  border: 1px solid rgba(253, 230, 138, 0.9);
-  color: #b45309;
+  background: rgba(138, 93, 0, 0.09);
+  border: 1px solid rgba(138, 93, 0, 0.24);
+  color: var(--accent-amber);
 }
 
 [data-theme="light"] .alert-danger {
-  background: rgba(254, 226, 226, 0.8);
-  border: 1px solid rgba(254, 202, 202, 0.9);
-  color: #b91c1c;
+  background: rgba(186, 26, 26, 0.08);
+  border: 1px solid rgba(186, 26, 26, 0.22);
+  color: var(--accent-rose);
 }
 
 [data-theme="light"] pre,
 [data-theme="light"] code {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: rgba(203, 213, 225, 0.8);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
 [data-theme="light"] .cybertutor-drawer {
-  background: #ffffff;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15), 0 0 30px rgba(99, 102, 241, 0.12);
+  background: var(--bg-card);
+  box-shadow: 0 20px 45px rgba(28, 28, 24, 0.14), 0 0 30px var(--brand-glow);
 }
 
 [data-theme="light"] .cybertutor-msg-ai .cybertutor-msg-bubble {
-  background: #f1f5f9;
-  border-color: rgba(226, 232, 240, 0.9);
-  color: #0f172a;
+  background: var(--bg-input);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .cybertutor-msg-user .cybertutor-msg-bubble {
-  background: var(--brand-gradient);
-  color: #ffffff;
+  background: var(--accent-primary);
+  color: var(--bg-secondary);
 }
 
 [data-theme="light"] .cybertutor-pill {
-  background: #f8fafc;
-  border-color: rgba(203, 213, 225, 0.9);
-  color: #334155;
+  background: var(--bg-input);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 [data-theme="light"] .cybertutor-pill:hover {
   background: var(--accent-primary);
-  color: #ffffff;
+  color: var(--bg-secondary);
   border-color: var(--accent-primary);
 }
 
 [data-theme="light"] .crypto-toast {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: rgba(203, 213, 225, 0.85);
-  box-shadow: 0 14px 35px -5px rgba(15, 23, 42, 0.15);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  box-shadow: 0 14px 35px -5px rgba(28, 28, 24, 0.15);
 }
 
-[data-theme="light"] .crypto-toast-danger {
-  border-color: rgba(239, 68, 68, 0.4);
-}
-[data-theme="light"] .crypto-toast-danger .crypto-toast-title { color: #dc2626; }
+[data-theme="light"] .crypto-toast-danger { border-color: rgba(186, 26, 26, 0.4); }
+[data-theme="light"] .crypto-toast-danger .crypto-toast-title { color: var(--accent-rose); }
 
-[data-theme="light"] .crypto-toast-warning {
-  border-color: rgba(245, 158, 11, 0.4);
-}
-[data-theme="light"] .crypto-toast-warning .crypto-toast-title { color: #d97706; }
+[data-theme="light"] .crypto-toast-warning { border-color: rgba(138, 93, 0, 0.4); }
+[data-theme="light"] .crypto-toast-warning .crypto-toast-title { color: var(--accent-amber); }
 
-[data-theme="light"] .crypto-toast-success {
-  border-color: rgba(16, 185, 129, 0.4);
-}
-[data-theme="light"] .crypto-toast-success .crypto-toast-title { color: #059669; }
+[data-theme="light"] .crypto-toast-success { border-color: rgba(28, 107, 65, 0.4); }
+[data-theme="light"] .crypto-toast-success .crypto-toast-title { color: var(--accent-emerald); }
 
-[data-theme="light"] .crypto-toast-info {
-  border-color: rgba(6, 182, 212, 0.4);
-}
-[data-theme="light"] .crypto-toast-info .crypto-toast-title { color: #0284c7; }
+[data-theme="light"] .crypto-toast-info { border-color: rgba(15, 109, 140, 0.4); }
+[data-theme="light"] .crypto-toast-info .crypto-toast-title { color: var(--accent-cyan); }
 
 /* Dropzones & Drag States */
 .dropzone {
@@ -1812,7 +1816,7 @@ textarea.font-mono {
 
 [data-theme="light"] .telemetry-terminal-card {
   background: #0b1329;
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(38, 100, 131, 0.45);
 }
 
 
