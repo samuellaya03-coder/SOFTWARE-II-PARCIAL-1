@@ -419,7 +419,7 @@ h1, h2, h3, h4 {
 }
 
 .tab-card.active .tab-card-title {
-  color: #ffffff;
+  color: var(--text-primary);
   text-shadow: 0 0 10px rgba(109, 166, 199, 0.4);
 }
 
@@ -670,7 +670,7 @@ textarea.font-mono {
 
 /* Progress bar */
 .progress-container {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-subtle);
   border-radius: 9999px;
   height: 10px;
   overflow: hidden;
@@ -688,11 +688,11 @@ textarea.font-mono {
 }
 
 .progress-warning {
-  background: linear-gradient(90deg, #f59e0b, #f97316);
+  background: linear-gradient(90deg, var(--accent-amber), var(--accent-amber));
 }
 
 .progress-danger {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
+  background: linear-gradient(90deg, var(--accent-rose), var(--accent-rose));
 }
 
 /* Grid System */
@@ -755,25 +755,25 @@ textarea.font-mono {
 .alert-info {
   background: color-mix(in srgb, var(--accent-cyan) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent-cyan) 28%, transparent);
-  color: #cffafe;
+  color: var(--accent-cyan);
 }
 
 .alert-success {
   background: rgba(16, 185, 129, 0.08);
   border: 1px solid rgba(16, 185, 129, 0.25);
-  color: #d1fae5;
+  color: var(--accent-emerald);
 }
 
 .alert-warning {
   background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.25);
-  color: #fef3c7;
+  color: var(--accent-amber);
 }
 
 .alert-danger {
   background: rgba(244, 63, 94, 0.08);
   border: 1px solid rgba(244, 63, 94, 0.25);
-  color: #ffe4e6;
+  color: var(--accent-rose);
 }
 
 /* ============================================================
@@ -790,7 +790,7 @@ textarea.font-mono {
   gap: 0.65rem;
   padding: 0.75rem 1.25rem 0.75rem 0.9rem;
   background: var(--brand-gradient);
-  color: #ffffff;
+  color: var(--text-primary);
   border: 2px solid var(--border-glow);
   border-radius: 9999px;
   font-weight: 700;
@@ -957,7 +957,7 @@ textarea.font-mono {
 
 .cybertutor-pill:hover {
   background: var(--accent-primary);
-  color: #ffffff;
+  color: var(--text-primary);
   border-color: var(--accent-primary);
   transform: translateY(-1px);
 }
@@ -1006,7 +1006,7 @@ textarea.font-mono {
 .cybertutor-msg-user .cybertutor-msg-bubble {
   background: var(--brand-gradient);
   border: 1px solid var(--border-glow);
-  color: #ffffff;
+  color: var(--text-primary);
   border-bottom-right-radius: 3px;
   box-shadow: 0 4px 14px var(--border-glow);
 }
@@ -1093,7 +1093,7 @@ textarea.font-mono {
 
 .cybertutor-send-btn {
   background: var(--brand-gradient);
-  color: #ffffff;
+  color: var(--text-primary);
   border: none;
   border-radius: 8px;
   width: 40px;
@@ -1119,7 +1119,7 @@ textarea.font-mono {
 .cybertutor-warning-banner {
   background: rgba(239, 68, 68, 0.16);
   border: 1px solid rgba(239, 68, 68, 0.45);
-  color: #fca5a5;
+  color: var(--accent-rose);
   padding: 0.45rem 0.8rem;
   font-size: 0.75rem;
   border-radius: 8px;
@@ -1132,7 +1132,7 @@ textarea.font-mono {
 }
 
 .cybertutor-input-area.has-profanity input {
-  border-color: #ef4444 !important;
+  border-color: var(--accent-rose) !important;
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
 }
 
@@ -1187,7 +1187,7 @@ textarea.font-mono {
 }
 
 .pipeline-step.active {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .pipeline-step.completed {
@@ -1198,7 +1198,7 @@ textarea.font-mono {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-subtle);
   border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
@@ -1236,7 +1236,7 @@ textarea.font-mono {
 
 .pipeline-actor-card {
   background: rgba(18, 26, 43, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 1rem;
   transition: all 0.3s ease;
@@ -1265,7 +1265,7 @@ textarea.font-mono {
 .transit-track {
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-subtle);
   border-radius: 2px;
   position: relative;
   margin: 0.75rem 0;
@@ -1300,7 +1300,7 @@ textarea.font-mono {
 
 .digital-envelope-visual.glow {
   background: rgba(168, 85, 247, 0.25);
-  border-color: #a855f7;
+  border-color: var(--accent-purple);
   box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
   transform: scale(1.03);
 }
@@ -1347,7 +1347,7 @@ textarea.font-mono {
   display: flex;
   align-items: flex-start;
   gap: 0.85rem;
-  color: #ffffff;
+  color: var(--text-primary);
   animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transition: all 0.3s ease;
 }
@@ -1370,7 +1370,7 @@ textarea.font-mono {
 .crypto-toast-title {
   font-weight: 700;
   font-size: 0.875rem;
-  color: #fca5a5;
+  color: var(--accent-rose);
   margin-bottom: 0.25rem;
   display: flex;
   align-items: center;
@@ -1388,7 +1388,7 @@ textarea.font-mono {
   bottom: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, #f43f5e, #fb7185);
+  background: linear-gradient(90deg, var(--accent-rose), var(--accent-rose));
   width: 100%;
   animation: toast-progress 2s linear forwards;
 }
@@ -1419,28 +1419,28 @@ textarea.font-mono {
   border-color: rgba(239, 68, 68, 0.5);
   box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(239, 68, 68, 0.3);
 }
-.crypto-toast-danger .crypto-toast-title { color: #fca5a5; }
-.crypto-toast-danger .crypto-toast-progress { background: linear-gradient(90deg, #ef4444, #f87171); }
+.crypto-toast-danger .crypto-toast-title { color: var(--accent-rose); }
+.crypto-toast-danger .crypto-toast-progress { background: linear-gradient(90deg, var(--accent-rose), var(--accent-rose)); }
 
 .crypto-toast-warning {
   border-color: rgba(245, 158, 11, 0.5);
   box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(245, 158, 11, 0.3);
 }
-.crypto-toast-warning .crypto-toast-title { color: #fcd34d; }
-.crypto-toast-warning .crypto-toast-progress { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.crypto-toast-warning .crypto-toast-title { color: var(--accent-amber); }
+.crypto-toast-warning .crypto-toast-progress { background: linear-gradient(90deg, var(--accent-amber), var(--accent-amber)); }
 
 .crypto-toast-success {
   border-color: rgba(16, 185, 129, 0.5);
   box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(16, 185, 129, 0.3);
 }
-.crypto-toast-success .crypto-toast-title { color: #6ee7b7; }
-.crypto-toast-success .crypto-toast-progress { background: linear-gradient(90deg, #10b981, #34d399); }
+.crypto-toast-success .crypto-toast-title { color: var(--accent-emerald); }
+.crypto-toast-success .crypto-toast-progress { background: linear-gradient(90deg, var(--accent-emerald), var(--accent-emerald)); }
 
 .crypto-toast-info {
   border-color: var(--accent-cyan);
   box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.8), 0 0 25px -5px var(--brand-glow);
 }
-.crypto-toast-info .crypto-toast-title { color: #67e8f9; }
+.crypto-toast-info .crypto-toast-title { color: var(--accent-cyan); }
 .crypto-toast-info .crypto-toast-progress { background: var(--accent-cyan); }
 
 @keyframes toast-progress {
@@ -1814,7 +1814,7 @@ textarea.font-mono {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.75rem;
 }
 
@@ -1824,7 +1824,7 @@ textarea.font-mono {
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
   line-height: 1.5;
-  color: #94a3b8;
+  color: var(--text-muted);
   background: #14130f;
   scroll-behavior: smooth;
 }
@@ -1841,7 +1841,7 @@ textarea.font-mono {
   display: flex;
   flex-direction: column;
   padding: 0.55rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.75rem;
   line-height: 1.45;
   transition: background 0.15s ease;
@@ -1856,7 +1856,7 @@ textarea.font-mono {
 }
 
 .telemetry-coord {
-  color: #38bdf8;
+  color: var(--accent-cyan);
   font-weight: 600;
 }
 
@@ -1866,23 +1866,269 @@ textarea.font-mono {
   border-radius: 3px;
   font-size: 0.6875rem;
 }
-.telemetry-channel-r { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.telemetry-channel-g { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.telemetry-channel-b { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.telemetry-channel-r { background: rgba(239, 68, 68, 0.2); color: var(--accent-rose); }
+.telemetry-channel-g { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); }
+.telemetry-channel-b { background: rgba(59, 130, 246, 0.2); color: var(--accent-cyan); }
 
 .telemetry-values {
-  color: #cbd5e1;
+  color: var(--text-secondary);
 }
 
 .telemetry-delta {
   font-weight: 700;
 }
-.telemetry-delta-msb { color: #f43f5e; }
-.telemetry-delta-lsb { color: #10b981; }
+.telemetry-delta-msb { color: var(--accent-rose); }
+.telemetry-delta-lsb { color: var(--accent-emerald); }
 
 [data-theme="light"] .telemetry-terminal-card {
   background: #0b1329;
   border-color: rgba(38, 100, 131, 0.45);
 }
+
+/* ==========================================================================
+   Módulo 1: Simulador Láser de Inyección y Microscopio Bit a Bit
+   ========================================================================== */
+
+/* 1. Contenedor del Visor Láser */
+.stego-laser-viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #050811;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(0, 240, 255, 0.05);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 260px;
+}
+
+.stego-laser-viewport canvas,
+.stego-laser-viewport img {
+  display: block;
+  max-width: 100%;
+  max-height: 380px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+/* Haz Láser Neón */
+.stego-laser-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.2) 15%, var(--accent-cyan) 50%, var(--accent-emerald) 85%, transparent 100%);
+  box-shadow: 
+    0 0 15px var(--accent-cyan),
+    0 0 30px var(--accent-emerald),
+    0 0 45px rgba(0, 240, 255, 0.8);
+  pointer-events: none;
+  z-index: 20;
+  transition: top 0.04s linear;
+}
+
+.stego-laser-beam::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.15) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Área inyectada revelada bajo el haz */
+.stego-scanned-shading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 240, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* HUD de Telemetría Láser */
+.stego-laser-hud {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(6, 11, 25, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  z-index: 30;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.stego-laser-hud-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.stego-laser-hud-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Barra de Control de la Simulación */
+.stego-sim-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(6, 11, 25, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* 2. Microscopio Bit a Bit */
+.pixel-microscope-panel {
+  margin-top: 1.5rem;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.microscope-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.microscope-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-mono);
+}
+
+.microscope-tab-btn:hover {
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.microscope-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(16, 185, 129, 0.25));
+  color: var(--text-primary);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+/* Tarjeta del Byte Muestreado */
+.byte-sample-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.byte-sample-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Grilla de Bits y Canales de Color */
+.byte-channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.channel-bit-card {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+
+.channel-bit-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.04);
+}
+
+.bit-pill {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.bit-pill-0 {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.bit-pill-1 {
+  background: rgba(0, 240, 255, 0.25);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+.binary-repr {
+  letter-spacing: 0.08em;
+}
+
+.binary-repr .lsb-highlight {
+  font-weight: 800;
+  color: var(--accent-cyan);
+  text-decoration: underline;
+}
+
+.delta-badge {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+}
+.delta-zero { background: var(--border-subtle); color: var(--text-muted); }
+.delta-plus { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); }
+.delta-minus { background: rgba(244, 63, 94, 0.2); color: var(--accent-rose); }
+
+.swatch-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: inline-block;
+  vertical-align: middle;
+}
+
 
 

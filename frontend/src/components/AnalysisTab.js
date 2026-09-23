@@ -191,7 +191,7 @@ export function renderAnalysisTab(container, initialData = null) {
             </div>
 
             <!-- Fila de Detalles Técnicos Adicionales -->
-            <div id="bitplane-additional-details" style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 4px; font-size: 0.75rem; color: #e2e8f0; line-height: 1.5;">
+            <div id="bitplane-additional-details" style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 4px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;">
               <!-- Detalles adicionales -->
             </div>
           </div>
@@ -237,7 +237,7 @@ export function renderAnalysisTab(container, initialData = null) {
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
             <h4 style="font-size: 1.125rem;">Distribución Espectral de Frecuencias (Histograma RGB de 256 Bins)</h4>
             <div style="display: flex; gap: 0.5rem;">
-              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Canal Rojo (R)</span>
+              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-rose); border: 1px solid rgba(239, 68, 68, 0.3);">Canal Rojo (R)</span>
               <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);">Canal Verde (G)</span>
               <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">Canal Azul (B)</span>
             </div>
@@ -424,16 +424,16 @@ export function renderAnalysisTab(container, initialData = null) {
     const ent = report.shannonEntropy;
     entropyMetricsList.innerHTML = `
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
-        <span style="color: #f87171;">Entropía LSB (Canal R):</span>
-        <span style="color: #ffffff;">${ent.redLSB} bits/símbolo</span>
+        <span style="color: var(--accent-rose);">Entropía LSB (Canal R):</span>
+        <span style="color: var(--text-primary);">${ent.redLSB} bits/símbolo</span>
       </div>
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #4ade80;">Entropía LSB (Canal G):</span>
-        <span style="color: #ffffff;">${ent.greenLSB} bits/símbolo</span>
+        <span style="color: var(--text-primary);">${ent.greenLSB} bits/símbolo</span>
       </div>
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #60a5fa;">Entropía LSB (Canal B):</span>
-        <span style="color: #ffffff;">${ent.blueLSB} bits/símbolo</span>
+        <span style="color: var(--text-primary);">${ent.blueLSB} bits/símbolo</span>
       </div>
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; font-weight: bold;">
         <span style="color: var(--accent-cyan);">Entropía Global LSB:</span>
@@ -448,16 +448,16 @@ export function renderAnalysisTab(container, initialData = null) {
     const chi = report.chiSquarePoV;
     chiMetricsList.innerHTML = `
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
-        <span style="color: #f87171;">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
-        <span style="color: #ffffff;">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
+        <span style="color: var(--accent-rose);">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
+        <span style="color: var(--text-primary);">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
       </div>
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #4ade80;">χ² Canal Verde (df=${chi.green.degreesOfFreedom}):</span>
-        <span style="color: #ffffff;">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
+        <span style="color: var(--text-primary);">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
       </div>
       <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-inset); border-radius: 4px;">
         <span style="color: #60a5fa;">χ² Canal Azul (df=${chi.blue.degreesOfFreedom}):</span>
-        <span style="color: #ffffff;">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
+        <span style="color: var(--text-primary);">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
       </div>
       <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.4;">
         Pares analizados por canal: <strong>${chi.red.pairsAnalyzed} PoVs</strong>. La uniformidad forzada entre valores contiguos (2k y 2k+1) delata inyección secuencial o aleatoria LSB.
@@ -508,16 +508,27 @@ export function renderAnalysisTab(container, initialData = null) {
 
     // 1. Actualizar KPI: Cantidad de Bits Modificados
     if (s.hasValidHeader && bitIndex === 0) {
-      kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
-      kpiBitplaneTotalBytes.innerText = `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`;
+      if (s.isTruncated) {
+        kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits (100% Portadora)`;
+        kpiBitplaneTotalBytes.innerText = `(Cabecera declara ${s.declaredPayloadBytes.toLocaleString()}B, pero la imagen actual solo alberga ${s.payloadBytes.toLocaleString()}B máx - Truncado)`;
 
-      // 2. Actualizar KPI: Ocupación de Capacidad
-      kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
-      kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
+        kpiBitplaneCapacityPct.innerText = `100.00% (Excedida)`;
+        kpiBitplaneCapacityDesc.innerText = `El payload declarado (${(s.declaredPayloadBytes / 1024).toFixed(1)} KB) supera la resolución de la portadora`;
 
-      // 3. Actualizar KPI: Extensión y Coordenadas
-      kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()}`;
-      kpiBitplaneCoordsDesc.innerText = `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen`;
+        kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()} (Matriz Completa)`;
+        kpiBitplaneCoordsDesc.innerText = `La inyección satura del 100% de la imagen (de fila 0 a fila ${s.endRow})`;
+      } else {
+        kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
+        kpiBitplaneTotalBytes.innerText = `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`;
+
+        // 2. Actualizar KPI: Ocupación de Capacidad
+        kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
+        kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
+
+        // 3. Actualizar KPI: Extensión y Coordenadas
+        kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()}`;
+        kpiBitplaneCoordsDesc.innerText = `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen`;
+      }
 
       // 4. Actualizar KPI: Balance de Bits Cifrados
       kpiBitplaneEntropyBalance.innerText = `${s.sampleRatio1}% / ${s.sampleRatio0}%`;
@@ -549,11 +560,20 @@ export function renderAnalysisTab(container, initialData = null) {
     }
 
     // Fila de Información Técnica Adicional
+    const headerStatusHtml = s.hasValidHeader 
+      ? (s.isTruncated 
+          ? '<span style="color:var(--accent-amber); font-weight: 700;"><span class="micon" aria-hidden="true">warning</span>  Cabecera Detectada pero Portadora Truncada / Redimensionada</span>' 
+          : '<span style="color:var(--accent-emerald); font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>')
+      : (s.isBitAttack 
+          ? '<span style="color:var(--accent-rose); font-weight: 600;"><span class="micon" aria-hidden="true">warning</span>  Ataque / Manipulación de Bits Detectada</span>' 
+          : (bitIndex === 0 ? '<span style="color:var(--accent-amber); font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:var(--accent-cyan); font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`));
+
     bitplaneAdditionalDetails.innerHTML = `
       <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
-        <div><strong>Protocolo / Modo:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : (s.isBitAttack ? '<span style="color:#f43f5e; font-weight: 600;"><span class="micon" aria-hidden="true">warning</span>  Ataque / Manipulación de Bits Detectada</span>' : (bitIndex === 0 ? '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:#00f0ff; font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`))}</div>
-        <div><strong>Canal Alfa (Transparencia):</strong> <span style="color:#00f0ff; font-weight: 600;">A = 255 (100% Intacto, sin fuga de opacidad)</span></div>
-        <div><strong>Modo Visual Activo:</strong> <span style="color:#a855f7; font-weight: 600;">${viewMode.toUpperCase()} • Paleta ${colorTheme.toUpperCase()} • Marcador ${shapeMode.toUpperCase()}</span></div>
+        <div><strong>Protocolo / Modo:</strong> ${headerStatusHtml}</div>
+        <div><strong>Canal Alfa (Transparencia):</strong> <span style="color:var(--accent-cyan); font-weight: 600;">A = 255 (100% Intacto, sin fuga de opacidad)</span></div>
+        <div><strong>Modo Visual Activo:</strong> <span style="color:var(--accent-purple); font-weight: 600;">${viewMode.toUpperCase()} • Paleta ${colorTheme.toUpperCase()} • Marcador ${shapeMode.toUpperCase()}</span></div>
+        ${s.isTruncated ? `<div style="color: var(--accent-amber); font-size: 0.75rem;"><span class="micon" aria-hidden="true">bolt</span>  <em>El archivo original requiere una imagen de al menos ${Math.ceil((s.declaredPayloadBytes + 4) * 8 / 3 / 1000)}k píxeles para extraerse íntegro.</em></div>` : ''}
       </div>
     `;
   }
@@ -611,7 +631,7 @@ export function renderAnalysisTab(container, initialData = null) {
     const labels = Array.from({ length: 256 }, (_, i) => i);
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const gridColor = isLight ? 'var(--bg-inset)' : 'rgba(255, 255, 255, 0.05)';
-    const titleColor = isLight ? '#475569' : '#94a3b8';
+    const titleColor = isLight ? '#475569' : 'var(--text-muted)';
     const ticksColor = isLight ? '#64748b' : '#64748b';
 
     const ctx = chartCanvas.getContext('2d');
@@ -675,7 +695,7 @@ export function renderAnalysisTab(container, initialData = null) {
           tooltip: {
             backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.96)',
             titleColor: isLight ? '#4f46e5' : '#6366f1',
-            bodyColor: isLight ? '#0f172a' : '#f1f5f9',
+            bodyColor: isLight ? 'var(--text-primary)' : '#f1f5f9',
             borderColor: isLight ? 'rgba(79, 70, 229, 0.3)' : 'rgba(99, 102, 241, 0.3)',
             borderWidth: 1
           }

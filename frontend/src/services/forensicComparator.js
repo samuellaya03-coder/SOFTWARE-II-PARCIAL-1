@@ -282,16 +282,20 @@ export class ForensicComparator {
     let endInjectedPixel = -1;
     let isBitAttack = false;
     let attackedBitsCount = 0;
+    let isTruncated = false;
+    let declaredPayloadBytes = 0;
 
     // Verificar si se pasó el reporte del backend
     const rep = options.forensicReport;
     if (rep && rep.payloadDetection) {
       if (rep.payloadDetection.detectedHeaderType && rep.payloadDetection.detectedPayloadLength > 0) {
         hasValidHeader = true;
+        isTruncated = !!rep.payloadDetection.isTruncated;
+        declaredPayloadBytes = rep.payloadDetection.declaredPayloadLength || rep.payloadDetection.detectedPayloadLength;
         payloadBytes = rep.payloadDetection.detectedPayloadLength;
         totalInjectedBytes = 4 + payloadBytes;
-        totalInjectedBits = totalInjectedBytes * 8;
-        endInjectedPixel = Math.ceil(totalInjectedBits / 3) - 1;
+        totalInjectedBits = isTruncated ? totalChannels : totalInjectedBytes * 8;
+        endInjectedPixel = isTruncated ? (totalPixels - 1) : Math.min(totalPixels - 1, Math.ceil(totalInjectedBits / 3) - 1);
       } else if (rep.payloadDetection.isBitAttackDetected) {
         isBitAttack = true;
         attackedBitsCount = rep.payloadDetection.totalAlteredBits || 
@@ -305,12 +309,44 @@ export class ForensicComparator {
                      (headerBytes[0] === 0x53 && headerBytes[1] === 0x54 && headerBytes[2] === 0x47 && headerBytes[3] === 0x31);
       const isReasonableLength = rawLen32 > 0 && rawLen32 <= maxCapacityBytes;
 
-      if (isSTG1 || (isReasonableLength && rawLen32 >= 44)) {
+      let isAesCipherHeader = false;
+      if (rawLen32 >= 44 && rawLen32 < 100000000) {
+        // Chequear entropía de los primeros 44 bytes tras cabecera (Salt, IV, Tag)
+        let ones = 0;
+        let cByte = 0;
+        let bOff = 7;
+        let byteCount = 0;
+        for (let i = 0; i < data.length && byteCount < 48; i += 4) {
+          for (let c = 0; c < 3 && byteCount < 48; c++) {
+            const bit = data[i + c] & 1;
+            cByte = (cByte << 1) | bit;
+            bOff--;
+            if (bOff < 0) {
+              if (byteCount >= 4) {
+                for (let k = 0; k < 8; k++) {
+                  if ((cByte >> k) & 1) ones++;
+                }
+              }
+              byteCount++;
+              cByte = 0;
+              bOff = 7;
+            }
+          }
+        }
+        const ratio = byteCount >= 48 ? (ones / (44 * 8)) : 0;
+        if (ratio >= 0.35 && ratio <= 0.65) {
+          isAesCipherHeader = true;
+        }
+      }
+
+      if (isSTG1 || isReasonableLength || isAesCipherHeader) {
         hasValidHeader = true;
-        payloadBytes = rawLen32;
+        isTruncated = rawLen32 > maxCapacityBytes;
+        declaredPayloadBytes = rawLen32;
+        payloadBytes = isTruncated ? maxCapacityBytes : rawLen32;
         totalInjectedBytes = 4 + payloadBytes;
-        totalInjectedBits = totalInjectedBytes * 8;
-        endInjectedPixel = Math.ceil(totalInjectedBits / 3) - 1;
+        totalInjectedBits = isTruncated ? totalChannels : totalInjectedBytes * 8;
+        endInjectedPixel = isTruncated ? (totalPixels - 1) : Math.min(totalPixels - 1, Math.ceil(totalInjectedBits / 3) - 1);
       }
     }
 
@@ -561,6 +597,8 @@ export class ForensicComparator {
         viewMode,
         dimensions: { width, height, totalPixels, totalChannels },
         hasValidHeader,
+        isTruncated: !!isTruncated,
+        declaredPayloadBytes: declaredPayloadBytes || payloadBytes,
         isBitAttack,
         attackedBitsCount,
         payloadBytes: hasValidHeader ? payloadBytes : 0,
