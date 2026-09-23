@@ -127,7 +127,8 @@ export class StegoEngine {
     ctx.drawImage(imageElement, 0, 0);
 
     const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data; // Uint8ClampedArray: [R, G, B, A, R, G, B, A, ...]
+    const data = imageData.data;
+    const originalData = new Uint8ClampedArray(data);
 
     // 3. Crear el buffer con la Cabecera de 32 bits (Big Endian) + Payload
     const totalBuffer = new Uint8Array(4 + payloadLength);
@@ -139,12 +140,29 @@ export class StegoEngine {
     // Copiar payload
     totalBuffer.set(payloadBytes, 4);
 
+    const totalInjectedBits = totalBuffer.length * 8;
+    const endPixel = Math.min(width * height - 1, Math.ceil(totalInjectedBits / 3) - 1);
+    const endRow = Math.floor(endPixel / width);
+
+    // Estructuras para el Microscopio de Píxeles Bit a Bit
+    const channelNames = ['R', 'G', 'B'];
+    const inspectionSamples = {
+      header: [],
+      payloadStart: [],
+      boundary: []
+    };
+
+    let currentSampleByte = null;
+
     // 4. Inyección bit a bit en los LSB de los canales R, G, B
     let bufferByteIndex = 0;
     let bitOffset = 7; // Desde MSB (bit 7) a LSB (bit 0) de cada byte del payload
     let modifiedChannels = 0;
+    let flippedBitsCount = 0;
 
     for (let i = 0; i < data.length; i += 4) {
+      const pIdx = Math.floor(i / 4);
+
       // Canales R (i), G (i+1), B (i+2). El canal Alfa (i+3) se mantiene intacto.
       for (let channelOffset = 0; channelOffset < 3; channelOffset++) {
         if (bufferByteIndex >= totalBuffer.length) {
@@ -154,10 +172,57 @@ export class StegoEngine {
         const currentByte = totalBuffer[bufferByteIndex];
         const bit = (currentByte >>> bitOffset) & 1;
 
+        // Recolección de muestras para el Microscopio
+        const isHeaderByte = bufferByteIndex < 4;
+        const isPayloadStartByte = bufferByteIndex >= 4 && bufferByteIndex < 10;
+        const isBoundaryByte = bufferByteIndex >= (totalBuffer.length - 2);
+
+        if (bitOffset === 7) {
+          let charRep = `0x${currentByte.toString(16).padStart(2, '0').toUpperCase()}`;
+          if (bufferByteIndex >= 4 && currentByte >= 32 && currentByte <= 126) {
+            charRep = `'${String.fromCharCode(currentByte)}' (${charRep})`;
+          }
+          currentSampleByte = {
+            byteIndex: bufferByteIndex,
+            byteVal: currentByte,
+            byteChar: charRep,
+            binary: currentByte.toString(2).padStart(8, '0'),
+            category: isHeaderByte ? 'header' : (isBoundaryByte ? 'boundary' : 'payloadStart'),
+            bits: []
+          };
+
+          if (isHeaderByte) inspectionSamples.header.push(currentSampleByte);
+          else if (isPayloadStartByte) inspectionSamples.payloadStart.push(currentSampleByte);
+          else if (isBoundaryByte) inspectionSamples.boundary.push(currentSampleByte);
+        }
+
         const pixelIndex = i + channelOffset;
-        // Aplicar máscara: poner a 0 el bit menos significativo y colocar el bit del payload
-        data[pixelIndex] = (data[pixelIndex] & 0xFE) | bit;
+        const origByte = originalData[pixelIndex];
+        const newByte = (origByte & 0xFE) | bit;
+
+        data[pixelIndex] = newByte;
         modifiedChannels++;
+        if (origByte !== newByte) {
+          flippedBitsCount++;
+        }
+
+        if (currentSampleByte && (isHeaderByte || isPayloadStartByte || isBoundaryByte)) {
+          currentSampleByte.bits.push({
+            bitIndex: bitOffset,
+            injectedBit: bit,
+            channel: channelNames[channelOffset],
+            pixelIndex: pIdx,
+            x: pIdx % width,
+            y: Math.floor(pIdx / width),
+            origByte,
+            newByte,
+            delta: newByte - origByte,
+            origBin: origByte.toString(2).padStart(8, '0'),
+            newBin: newByte.toString(2).padStart(8, '0'),
+            origColor: `rgb(${originalData[i]}, ${originalData[i+1]}, ${originalData[i+2]})`,
+            newColor: `rgb(${data[i]}, ${data[i+1]}, ${data[i+2]})`
+          });
+        }
 
         bitOffset--;
         if (bitOffset < 0) {
@@ -174,17 +239,39 @@ export class StegoEngine {
     // 5. Volcar los píxeles modificados de vuelta al canvas
     ctx.putImageData(imageData, 0, 0);
 
+    // 6. Cálculo Pericial de PSNR y MSE
+    let sumSqErr = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const dr = data[i] - originalData[i];
+      const dg = data[i+1] - originalData[i+1];
+      const db = data[i+2] - originalData[i+2];
+      sumSqErr += (dr * dr) + (dg * dg) + (db * db);
+    }
+    const mse = sumSqErr / (width * height * 3);
+    const psnr = mse > 0 ? Number((10 * Math.log10((255 * 255) / mse)).toFixed(2)) : 99.9;
+
+    const originalImageData = new ImageData(new Uint8ClampedArray(originalData), width, height);
+
     return {
       canvas,
+      originalImageData,
+      stegoImageData: imageData,
       stats: {
         width,
         height,
         payloadBytes: payloadLength,
         headerBytes: 4,
         totalInjectedBytes: totalBuffer.length,
+        totalInjectedBits,
+        endPixel,
+        endRow,
         modifiedChannels,
+        flippedBitsCount,
         capacityMaxBytes: capacity.maxBytes,
-        capacityUsedPercentage: Number(((payloadLength / capacity.maxBytes) * 100).toFixed(2))
+        capacityUsedPercentage: Number(((payloadLength / capacity.maxBytes) * 100).toFixed(2)),
+        psnr,
+        mse: Number(mse.toFixed(6)),
+        samples: inspectionSamples
       }
     };
   }
@@ -255,9 +342,12 @@ export class StegoEngine {
     ) >>> 0;
 
     // Validación de coherencia
-    if (payloadLength === 0 || payloadLength > capacity.maxBytes) {
+    if (payloadLength === 0) {
+      throw new Error('No se detectó ningún mensaje oculto en la imagen (longitud 0).');
+    }
+    if (payloadLength > capacity.maxBytes) {
       throw new Error(
-        `Cabecera LSB no válida o imagen sin mensaje oculto. Longitud leída: ${payloadLength} bytes (Capacidad máx: ${capacity.maxBytes} bytes).`
+        `Payload truncado: La cabecera indica un archivo de ${payloadLength.toLocaleString()} bytes (~${(payloadLength / 1024).toFixed(1)} KB), pero la imagen actual solo tiene capacidad para ${capacity.maxBytes.toLocaleString()} bytes (~${(capacity.maxBytes / 1024).toFixed(1)} KB). La imagen fue recortada o redimensionada al ser transferida, perdiendo parte de sus píxeles.`
       );
     }
 

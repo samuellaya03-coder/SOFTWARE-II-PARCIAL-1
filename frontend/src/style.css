@@ -1815,4 +1815,250 @@ textarea.font-mono {
   border-color: rgba(99, 102, 241, 0.35);
 }
 
+/* ==========================================================================
+   Módulo 1: Simulador Láser de Inyección y Microscopio Bit a Bit
+   ========================================================================== */
+
+/* 1. Contenedor del Visor Láser */
+.stego-laser-viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #050811;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(0, 240, 255, 0.05);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 260px;
+}
+
+.stego-laser-viewport canvas,
+.stego-laser-viewport img {
+  display: block;
+  max-width: 100%;
+  max-height: 380px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+/* Haz Láser Neón */
+.stego-laser-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.2) 15%, #00f0ff 50%, #10b981 85%, transparent 100%);
+  box-shadow: 
+    0 0 15px #00f0ff,
+    0 0 30px #10b981,
+    0 0 45px rgba(0, 240, 255, 0.8);
+  pointer-events: none;
+  z-index: 20;
+  transition: top 0.04s linear;
+}
+
+.stego-laser-beam::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.15) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Área inyectada revelada bajo el haz */
+.stego-scanned-shading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 240, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* HUD de Telemetría Láser */
+.stego-laser-hud {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(6, 11, 25, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  z-index: 30;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.stego-laser-hud-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.stego-laser-hud-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Barra de Control de la Simulación */
+.stego-sim-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(6, 11, 25, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* 2. Microscopio Bit a Bit */
+.pixel-microscope-panel {
+  margin-top: 1.5rem;
+  background: rgba(8, 14, 28, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.microscope-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.microscope-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-mono);
+}
+
+.microscope-tab-btn:hover {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.microscope-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(16, 185, 129, 0.25));
+  color: #ffffff;
+  border-color: #00f0ff;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+/* Tarjeta del Byte Muestreado */
+.byte-sample-card {
+  background: #070d1e;
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.byte-sample-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Grilla de Bits y Canales de Color */
+.byte-channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.channel-bit-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+
+.channel-bit-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.04);
+}
+
+.bit-pill {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.bit-pill-0 {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.bit-pill-1 {
+  background: rgba(0, 240, 255, 0.25);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+.binary-repr {
+  letter-spacing: 0.08em;
+}
+
+.binary-repr .lsb-highlight {
+  font-weight: 800;
+  color: #00f0ff;
+  text-decoration: underline;
+}
+
+.delta-badge {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+}
+.delta-zero { background: rgba(255, 255, 255, 0.1); color: #94a3b8; }
+.delta-plus { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.delta-minus { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+.swatch-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+
 

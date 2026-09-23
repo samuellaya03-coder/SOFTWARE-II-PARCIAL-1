@@ -169,44 +169,127 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
           </div>
         </div>
 
-        <!-- Resultados de la Inyección LSB -->
+        <!-- Resultados de la Inyección LSB con Simulador Láser y Microscopio -->
         <div id="stego-result-container" class="card card-glow-emerald" style="display: none; margin-top: 1.5rem;">
-          <h3 style="color: var(--accent-emerald); font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            ✅ Inyección LSB Finalizada Exitosamente
-          </h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="color: var(--accent-emerald); font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+              <span>✅</span> Inyección LSB Finalizada Exitosamente
+            </h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span id="stego-psnr-badge" class="badge badge-emerald">PSNR: -- dB</span>
+              <span id="stego-protocol-badge" class="badge badge-cyan">Big-Endian 32-bit</span>
+            </div>
+          </div>
 
-          <div class="grid-2" style="align-items: center;">
-            <div>
-              <div class="image-preview-box">
-                <canvas id="stego-output-canvas"></canvas>
+          <!-- PARTE 1: VISOR CON ESCÁNER LÁSER Y TELEMETRÍA EN VIVO -->
+          <div style="margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h4 style="font-size: 0.95rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+                <span>⚡</span> Escáner Láser de Inyección en Tiempo Real
+              </h4>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Mapeo secuencial en canales R, G, B</span>
+            </div>
+
+            <!-- Viewport con Láser -->
+            <div id="stego-laser-container" class="stego-laser-viewport">
+              <canvas id="stego-output-canvas"></canvas>
+              
+              <!-- Línea del haz láser -->
+              <div id="stego-laser-beam" class="stego-laser-beam" style="display: none; top: 0%;"></div>
+              
+              <!-- Área sombreada recorrida -->
+              <div id="stego-scanned-shading" class="stego-scanned-shading" style="display: none; height: 0%;"></div>
+
+              <!-- HUD de Telemetría Flotante -->
+              <div id="stego-laser-hud" class="stego-laser-hud">
+                <div class="stego-laser-hud-row">
+                  <span style="color: var(--text-muted);">Bits Inyectados:</span>
+                  <span id="hud-bits-counter" style="color: #00f0ff; font-weight: 700;">0 / 0</span>
+                </div>
+                <div class="stego-laser-hud-row">
+                  <span style="color: var(--text-muted);">Píxel Actual:</span>
+                  <span id="hud-pixel-counter" style="color: #10b981; font-weight: 700;">#0</span>
+                </div>
+                <div class="stego-laser-hud-row">
+                  <span style="color: var(--text-muted);">Fila Alcanzada:</span>
+                  <span id="hud-row-counter" style="color: #cbd5e1;">Fila 0</span>
+                </div>
+                <div class="stego-laser-hud-row">
+                  <span style="color: var(--text-muted);">Fidelidad PSNR:</span>
+                  <span id="hud-psnr-counter" style="color: #38bdf8;">-- dB</span>
+                </div>
               </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-              <div class="alert-box alert-success">
-                <div>
-                  <strong>Protocolo STG1 de 32 bits aplicado:</strong> El payload incluye cabecera de longitud Big-Endian con contenedor estructurado, inyectado bit a bit en los LSBs de los canales R, G y B.
+            <!-- Controles de la Simulación Láser -->
+            <div class="stego-sim-controls-bar">
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" id="btn-replay-laser" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                  🔄 Repetir Escáner Láser
+                </button>
+                <div style="display: flex; gap: 0.25rem; align-items: center; margin-left: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Velocidad:</span>
+                  <button type="button" id="btn-speed-slow" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">1x Lento</button>
+                  <button type="button" id="btn-speed-fast" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">3x Rápido</button>
                 </div>
               </div>
-
-              <div id="stego-stats-details" class="font-mono" style="font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; line-height: 1.6;">
-                <!-- Se llena dinámicamente -->
+              <div id="stego-scan-status-label" style="font-size: 0.8rem; color: var(--accent-emerald); font-family: var(--font-mono); font-weight: 600;">
+                ✓ Inyección Completada
               </div>
+            </div>
+          </div>
 
-              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button id="btn-download-stego" class="btn btn-emerald" style="flex: 1; min-width: 180px;">
-                  💾 Descargar PNG
-                </button>
-                <button id="btn-email-stego" class="btn btn-primary" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none;">
-                  📧 Enviar por Correo
-                </button>
-                <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1; min-width: 180px;">
-                  🔬 Enviar a Estegoanálisis
-                </button>
-                <button id="btn-send-to-attack" class="btn btn-rose" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #a855f7, #f43f5e); border: none;">
-                  💥 Atacar en Tiempo Real
-                </button>
+          <!-- PARTE 2: MICROSCOPIO INTERACTIVO BIT A BIT (ANTES VS DESPUÉS) -->
+          <div class="pixel-microscope-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h4 style="font-size: 1.05rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                  <span>🔬</span> Microscopio Interactivo de Inyección Bit a Bit
+                </h4>
+                <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">
+                  Inspección pericial de la descomposición binaria del secreto en los canales R, G y B (Demostración de variación óptica imperceptible Δ = ±1).
+                </p>
               </div>
+            </div>
+
+            <!-- Pestañas de Muestras Didácticas -->
+            <div class="microscope-tabs">
+              <button type="button" id="tab-sample-header" class="microscope-tab-btn">
+                📦 Muestra 1: Cabecera 32-bit (Longitud)
+              </button>
+              <button type="button" id="tab-sample-payload" class="microscope-tab-btn active">
+                📝 Muestra 2: Primeros Bytes del Secreto
+              </button>
+              <button type="button" id="tab-sample-boundary" class="microscope-tab-btn">
+                🏁 Muestra 3: Frontera de Inyección
+              </button>
+            </div>
+
+            <!-- Contenedor dinámico de las tarjetas del Microscopio -->
+            <div id="microscope-samples-container">
+              <!-- Renderizado dinámico de bytes y canales -->
+            </div>
+          </div>
+
+          <!-- PARTE 3: DETALLES TÉCNICOS Y BOTONES DE ACCIÓN -->
+          <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div id="stego-stats-details" class="font-mono" style="font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; line-height: 1.6;">
+              <!-- Se llena dinámicamente -->
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button id="btn-download-stego" class="btn btn-emerald" style="flex: 1; min-width: 180px;">
+                💾 Descargar PNG
+              </button>
+              <button id="btn-email-stego" class="btn btn-primary" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none;">
+                📧 Enviar por Correo
+              </button>
+              <button id="btn-send-to-analysis" class="btn btn-secondary" style="flex: 1; min-width: 180px;">
+                🔬 Enviar a Estegoanálisis
+              </button>
+              <button id="btn-send-to-attack" class="btn btn-rose" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #a855f7, #f43f5e); border: none;">
+                💥 Atacar en Tiempo Real
+              </button>
             </div>
           </div>
         </div>
@@ -363,6 +446,25 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
   const resultContainer = container.querySelector('#stego-result-container');
   const outputCanvas = container.querySelector('#stego-output-canvas');
   const stegoStatsDetails = container.querySelector('#stego-stats-details');
+  const stegoPsnrBadge = container.querySelector('#stego-psnr-badge');
+  const stegoProtocolBadge = container.querySelector('#stego-protocol-badge');
+  const stegoLaserContainer = container.querySelector('#stego-laser-container');
+  const stegoLaserBeam = container.querySelector('#stego-laser-beam');
+  const stegoScannedShading = container.querySelector('#stego-scanned-shading');
+  const hudBitsCounter = container.querySelector('#hud-bits-counter');
+  const hudPixelCounter = container.querySelector('#hud-pixel-counter');
+  const hudRowCounter = container.querySelector('#hud-row-counter');
+  const hudPsnrCounter = container.querySelector('#hud-psnr-counter');
+  const btnReplayLaser = container.querySelector('#btn-replay-laser');
+  const btnSpeedSlow = container.querySelector('#btn-speed-slow');
+  const btnSpeedFast = container.querySelector('#btn-speed-fast');
+  const stegoScanStatusLabel = container.querySelector('#stego-scan-status-label');
+
+  const tabSampleHeader = container.querySelector('#tab-sample-header');
+  const tabSamplePayload = container.querySelector('#tab-sample-payload');
+  const tabSampleBoundary = container.querySelector('#tab-sample-boundary');
+  const microscopeSamplesContainer = container.querySelector('#microscope-samples-container');
+
   const btnDownloadStego = container.querySelector('#btn-download-stego');
   const btnEmailStego = container.querySelector('#btn-email-stego');
   const btnSendToAnalysis = container.querySelector('#btn-send-to-analysis');
@@ -409,6 +511,10 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
   let selectedSecretFile = null;
   let selectedSecretFileBytes = null;
   let lastExtractedUnpacked = null;
+  let lastInjectedStats = null;
+  let laserSpeedMultiplier = 3;
+  let activeMicroscopeCategory = 'payloadStart';
+  let laserAnimationTimer = null;
 
   function formatBytes(bytes) {
     if (!bytes || bytes === 0) return '0 B';
@@ -688,6 +794,7 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       lastInjectedIsAes = isAes;
       lastInjectedPassword = isAes ? stegoPassword.value : '';
       lastInjectedPlaintext = activeSecretType === 'text' ? stegoMessage.value : (selectedSecretFile ? selectedSecretFile.name : '');
+      lastInjectedStats = stats;
 
       // Mostrar en el canvas del resultado
       outputCanvas.width = canvas.width;
@@ -695,21 +802,40 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       const ctx = outputCanvas.getContext('2d');
       ctx.drawImage(canvas, 0, 0);
 
+      // Actualizar Badges de Calidad y Protocolo
+      if (stegoPsnrBadge) {
+        stegoPsnrBadge.innerText = `PSNR: ${stats.psnr} dB (${stats.psnr > 50 ? 'Invisibilidad Perfecta' : 'Excelente'})`;
+      }
+      if (stegoProtocolBadge) {
+        stegoProtocolBadge.innerText = isAes ? 'AES-256-GCM + PBKDF2' : 'Protocolo STG1 Big-Endian 32-bit';
+      }
+
       const typeDesc = activeSecretType === 'text' 
         ? 'Mensaje de Texto' 
         : `Archivo: "${selectedSecretFile.name}" (${formatBytes(selectedSecretFile.size)})`;
 
       stegoStatsDetails.innerHTML = `
-        <div>• <strong>Tipo de Secreto:</strong> ${typeDesc}</div>
-        <div>• <strong>Dimensiones de Imagen:</strong> ${stats.width} × ${stats.height} px</div>
-        <div>• <strong>Tamaño del Payload Inyectado:</strong> ${stats.payloadBytes.toLocaleString()} bytes</div>
-        <div>• <strong>Canales RGB Alterados:</strong> ${stats.modifiedChannels.toLocaleString()} bits</div>
-        <div>• <strong>Capacidad Utilizada:</strong> ${stats.capacityUsedPercentage}% de ${stats.capacityMaxBytes.toLocaleString()} bytes</div>
-        <div>• <strong>Seguridad:</strong> ${isAes ? 'AES-256-GCM + PBKDF2-SHA512' : 'Esteganografía Pura LSB'}</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.5rem;">
+          <div>• <strong>Tipo de Secreto:</strong> ${typeDesc}</div>
+          <div>• <strong>Dimensiones de Imagen:</strong> ${stats.width} × ${stats.height} px</div>
+          <div>• <strong>Payload Inyectado:</strong> ${stats.payloadBytes.toLocaleString()} bytes (${stats.totalInjectedBits.toLocaleString()} bits totales)</div>
+          <div>• <strong>Canales RGB Alterados:</strong> ${stats.modifiedChannels.toLocaleString()} bits (${stats.flippedBitsCount.toLocaleString()} bits mutaron)</div>
+          <div>• <strong>Capacidad Utilizada:</strong> ${stats.capacityUsedPercentage}% de ${stats.capacityMaxBytes.toLocaleString()} bytes</div>
+          <div>• <strong>Métrica Óptica PSNR:</strong> <span style="color:#10b981; font-weight:700;">${stats.psnr} dB</span> (MSE: ${stats.mse})</div>
+          <div>• <strong>Canal Alfa (Transparencia):</strong> <span style="color:#00f0ff; font-weight:700;">A = 255 (100% Intacto)</span></div>
+          <div>• <strong>Seguridad Criptográfica:</strong> ${isAes ? 'AES-256-GCM + PBKDF2 (600k iter)' : 'Esteganografía Pura LSB'}</div>
+        </div>
       `;
 
       resultContainer.style.display = 'block';
       resultContainer.scrollIntoView({ behavior: 'smooth' });
+
+      // Iniciar la Simulación del Escáner Láser
+      runLaserScanSimulation(stats, laserSpeedMultiplier);
+
+      // Renderizar el Microscopio Bit a Bit
+      renderMicroscopeSamples(activeMicroscopeCategory);
+
     } catch (err) {
       alert(`Error en inyección LSB: ${err.message}`);
     } finally {
@@ -717,6 +843,203 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
       btnInjectData.innerHTML = '⚡ Ejecutar Inyección LSB en Canvas';
     }
   });
+
+  // --- Simulación de Escáner Láser de Inyección ---
+  function runLaserScanSimulation(stats, speedMultiplier = 3) {
+    if (!stats) return;
+    if (laserAnimationTimer) {
+      cancelAnimationFrame(laserAnimationTimer);
+      laserAnimationTimer = null;
+    }
+
+    if (!stegoLaserBeam || !stegoScannedShading) return;
+
+    stegoLaserBeam.style.display = 'block';
+    stegoScannedShading.style.display = 'block';
+    if (stegoScanStatusLabel) {
+      stegoScanStatusLabel.innerText = '⚡ Inyectando bits en canales R, G, B...';
+      stegoScanStatusLabel.style.color = '#00f0ff';
+    }
+
+    // Porcentaje que cubre en altura la zona inyectada
+    const targetHeightPct = Math.max(12, Math.min(100, ((stats.endRow + 1) / stats.height) * 100));
+    const duration = Math.max(700, 2400 / speedMultiplier);
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // Easing cuadrático suave
+      const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+      const currentPct = eased * targetHeightPct;
+      stegoLaserBeam.style.top = `${currentPct}%`;
+      stegoScannedShading.style.height = `${currentPct}%`;
+
+      const currentBits = Math.floor(eased * stats.totalInjectedBits);
+      const currentPixel = Math.floor(eased * stats.endPixel);
+      const currentRow = Math.floor(eased * stats.endRow);
+
+      if (hudBitsCounter) hudBitsCounter.innerText = `${currentBits.toLocaleString()} / ${stats.totalInjectedBits.toLocaleString()}`;
+      if (hudPixelCounter) hudPixelCounter.innerText = `#${currentPixel.toLocaleString()}`;
+      if (hudRowCounter) hudRowCounter.innerText = `Fila ${currentRow} de ${stats.height}`;
+      if (hudPsnrCounter) hudPsnrCounter.innerText = `${stats.psnr} dB`;
+
+      if (progress < 1) {
+        laserAnimationTimer = requestAnimationFrame(step);
+      } else {
+        stegoLaserBeam.style.top = `${targetHeightPct}%`;
+        stegoScannedShading.style.height = `${targetHeightPct}%`;
+        if (hudBitsCounter) hudBitsCounter.innerText = `${stats.totalInjectedBits.toLocaleString()} / ${stats.totalInjectedBits.toLocaleString()} bits`;
+        if (hudPixelCounter) hudPixelCounter.innerText = `#${stats.endPixel.toLocaleString()} (Fila ${stats.endRow})`;
+        if (hudRowCounter) hudRowCounter.innerText = `Fila ${stats.endRow} (Inyección completa)`;
+        if (hudPsnrCounter) hudPsnrCounter.innerText = `${stats.psnr} dB`;
+        if (stegoScanStatusLabel) {
+          stegoScanStatusLabel.innerText = `✓ Inyección Completada (Fila 0 a #${stats.endRow})`;
+          stegoScanStatusLabel.style.color = '#10b981';
+        }
+      }
+    }
+
+    laserAnimationTimer = requestAnimationFrame(step);
+  }
+
+  // --- Renderizado del Microscopio Bit a Bit (Antes vs Después) ---
+  function renderMicroscopeSamples(category) {
+    activeMicroscopeCategory = category;
+
+    if (tabSampleHeader) tabSampleHeader.classList.toggle('active', category === 'header');
+    if (tabSamplePayload) tabSamplePayload.classList.toggle('active', category === 'payloadStart');
+    if (tabSampleBoundary) tabSampleBoundary.classList.toggle('active', category === 'boundary');
+
+    if (!microscopeSamplesContainer) return;
+
+    if (!lastInjectedStats || !lastInjectedStats.samples) {
+      microscopeSamplesContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">No hay muestras disponibles. Ejecuta una inyección primero.</div>';
+      return;
+    }
+
+    const sampleList = lastInjectedStats.samples[category] || [];
+    if (sampleList.length === 0) {
+      microscopeSamplesContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">No hay bytes registrados en esta categoría de muestra.</div>';
+      return;
+    }
+
+    let html = '';
+    sampleList.forEach((b) => {
+      let catLabel = b.category === 'header' 
+        ? '<span class="badge badge-cyan" style="font-size: 0.72rem;">Cabecera 32-bit (Longitud)</span>' 
+        : (b.category === 'boundary' 
+          ? '<span class="badge badge-rose" style="font-size: 0.72rem;">Frontera Final de Inyección</span>' 
+          : '<span class="badge badge-emerald" style="font-size: 0.72rem;">Payload Secreto Útil</span>');
+
+      html += `
+        <div class="byte-sample-card">
+          <div class="byte-sample-header">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.1rem;">📦</span>
+              <div>
+                <strong style="color: #ffffff; font-size: 0.9rem;">Byte #${b.byteIndex}: ${b.byteChar}</strong>
+                <span style="color: var(--text-muted); font-size: 0.78rem; margin-left: 0.5rem;">(Valor Decimal: ${b.byteVal})</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              ${catLabel}
+              <span style="background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); color: #00f0ff; padding: 0.15rem 0.45rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700;">
+                Binario: ${b.binary}
+              </span>
+            </div>
+          </div>
+
+          <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.6rem;">
+            Descomposición de los 8 bits en los canales de color (R → G → B):
+          </div>
+
+          <div class="byte-channels-grid">
+      `;
+
+      b.bits.forEach((bit) => {
+        const chColor = bit.channel === 'R' ? '#f87171' : (bit.channel === 'G' ? '#34d399' : '#60a5fa');
+        const chName = bit.channel === 'R' ? 'Rojo' : (bit.channel === 'G' ? 'Verde' : 'Azul');
+        const deltaClass = bit.delta === 0 ? 'delta-zero' : (bit.delta > 0 ? 'delta-plus' : 'delta-minus');
+        const deltaText = bit.delta > 0 ? `+${bit.delta}` : `${bit.delta}`;
+
+        html += `
+          <div class="channel-bit-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: ${chColor}; font-weight: 700;">Canal ${chName} (${bit.channel})</span>
+              <span style="color: var(--text-muted); font-size: 0.72rem;">Píxel #${bit.pixelIndex} [x:${bit.x}, y:${bit.y}]</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span style="color: var(--text-secondary); font-size: 0.74rem;">Bit ${bit.bitIndex} a Inyectar:</span>
+              <span class="bit-pill ${bit.injectedBit === 1 ? 'bit-pill-1' : 'bit-pill-0'}">Bit = ${bit.injectedBit}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <span style="color: var(--text-muted); font-size: 0.72rem;">Original:</span>
+              <span style="color: #cbd5e1;">${bit.origByte} (<span class="binary-repr">${bit.origBin.slice(0, 7)}<span class="lsb-highlight">${bit.origBin[7]}</span></span>)</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+              <span style="color: var(--accent-cyan); font-size: 0.72rem;">Estego:</span>
+              <span style="color: #ffffff; font-weight: 600;">${bit.newByte} (<span class="binary-repr">${bit.newBin.slice(0, 7)}<span class="lsb-highlight">${bit.newBin[7]}</span></span>)</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.4rem;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span class="swatch-box" style="background: ${bit.origColor};" title="Color Original"></span>
+                <span style="color: var(--text-muted); font-size: 0.7rem;">→</span>
+                <span class="swatch-box" style="background: ${bit.newColor};" title="Color Estego"></span>
+                <span style="font-size: 0.68rem; color: var(--text-muted);">Invariable al ojo</span>
+              </div>
+              <span class="delta-badge ${deltaClass}">Δ = ${deltaText}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    });
+
+    microscopeSamplesContainer.innerHTML = html;
+  }
+
+  // Controles de Simulación Láser y Tabs de Microscopio
+  if (btnReplayLaser) {
+    btnReplayLaser.addEventListener('click', () => {
+      runLaserScanSimulation(lastInjectedStats, laserSpeedMultiplier);
+    });
+  }
+
+  if (btnSpeedSlow && btnSpeedFast) {
+    btnSpeedSlow.addEventListener('click', () => {
+      laserSpeedMultiplier = 1;
+      btnSpeedSlow.className = 'btn btn-primary';
+      btnSpeedFast.className = 'btn btn-secondary';
+      runLaserScanSimulation(lastInjectedStats, 1);
+    });
+
+    btnSpeedFast.addEventListener('click', () => {
+      laserSpeedMultiplier = 3;
+      btnSpeedFast.className = 'btn btn-primary';
+      btnSpeedSlow.className = 'btn btn-secondary';
+      runLaserScanSimulation(lastInjectedStats, 3);
+    });
+  }
+
+  if (tabSampleHeader) {
+    tabSampleHeader.addEventListener('click', () => renderMicroscopeSamples('header'));
+  }
+  if (tabSamplePayload) {
+    tabSamplePayload.addEventListener('click', () => renderMicroscopeSamples('payloadStart'));
+  }
+  if (tabSampleBoundary) {
+    tabSampleBoundary.addEventListener('click', () => renderMicroscopeSamples('boundary'));
+  }
 
   // --- Descargar Imagen Stego como PNG sin pérdida ---
   btnDownloadStego.addEventListener('click', async () => {

@@ -508,16 +508,27 @@ export function renderAnalysisTab(container, initialData = null) {
 
     // 1. Actualizar KPI: Cantidad de Bits Modificados
     if (s.hasValidHeader && bitIndex === 0) {
-      kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
-      kpiBitplaneTotalBytes.innerText = `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`;
+      if (s.isTruncated) {
+        kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits (100% Portadora)`;
+        kpiBitplaneTotalBytes.innerText = `(Cabecera declara ${s.declaredPayloadBytes.toLocaleString()}B, pero la imagen actual solo alberga ${s.payloadBytes.toLocaleString()}B máx - Truncado)`;
 
-      // 2. Actualizar KPI: Ocupación de Capacidad
-      kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
-      kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
+        kpiBitplaneCapacityPct.innerText = `100.00% (Excedida)`;
+        kpiBitplaneCapacityDesc.innerText = `El payload declarado (${(s.declaredPayloadBytes / 1024).toFixed(1)} KB) supera la resolución de la portadora`;
 
-      // 3. Actualizar KPI: Extensión y Coordenadas
-      kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()}`;
-      kpiBitplaneCoordsDesc.innerText = `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen`;
+        kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()} (Matriz Completa)`;
+        kpiBitplaneCoordsDesc.innerText = `La inyección satura del 100% de la imagen (de fila 0 a fila ${s.endRow})`;
+      } else {
+        kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
+        kpiBitplaneTotalBytes.innerText = `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`;
+
+        // 2. Actualizar KPI: Ocupación de Capacidad
+        kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
+        kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
+
+        // 3. Actualizar KPI: Extensión y Coordenadas
+        kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()}`;
+        kpiBitplaneCoordsDesc.innerText = `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen`;
+      }
 
       // 4. Actualizar KPI: Balance de Bits Cifrados
       kpiBitplaneEntropyBalance.innerText = `${s.sampleRatio1}% / ${s.sampleRatio0}%`;
@@ -549,11 +560,20 @@ export function renderAnalysisTab(container, initialData = null) {
     }
 
     // Fila de Información Técnica Adicional
+    const headerStatusHtml = s.hasValidHeader 
+      ? (s.isTruncated 
+          ? '<span style="color:#f59e0b; font-weight: 700;">⚠️ Cabecera Detectada pero Portadora Truncada / Redimensionada</span>' 
+          : '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>')
+      : (s.isBitAttack 
+          ? '<span style="color:#f43f5e; font-weight: 600;">⚠️ Ataque / Manipulación de Bits Detectada</span>' 
+          : (bitIndex === 0 ? '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:#00f0ff; font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`));
+
     bitplaneAdditionalDetails.innerHTML = `
       <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
-        <div><strong>Protocolo / Modo:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : (s.isBitAttack ? '<span style="color:#f43f5e; font-weight: 600;">⚠️ Ataque / Manipulación de Bits Detectada</span>' : (bitIndex === 0 ? '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:#00f0ff; font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`))}</div>
+        <div><strong>Protocolo / Modo:</strong> ${headerStatusHtml}</div>
         <div><strong>Canal Alfa (Transparencia):</strong> <span style="color:#00f0ff; font-weight: 600;">A = 255 (100% Intacto, sin fuga de opacidad)</span></div>
         <div><strong>Modo Visual Activo:</strong> <span style="color:#a855f7; font-weight: 600;">${viewMode.toUpperCase()} • Paleta ${colorTheme.toUpperCase()} • Marcador ${shapeMode.toUpperCase()}</span></div>
+        ${s.isTruncated ? `<div style="color: #fbbf24; font-size: 0.75rem;">⚡ <em>El archivo original requiere una imagen de al menos ${Math.ceil((s.declaredPayloadBytes + 4) * 8 / 3 / 1000)}k píxeles para extraerse íntegro.</em></div>` : ''}
       </div>
     `;
   }

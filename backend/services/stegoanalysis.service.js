@@ -305,19 +305,29 @@ export function analyzeImagePixels(data, width, height) {
   const maxCapacity = Math.floor((totalPixels * 3) / 8) - 4;
 
   // A) Contenedor STG1 en bytes 4..7 (Estándar StegoEngine para Texto y Archivo)
+  let isTruncated = false;
+  let declaredPayloadLength = 0;
+
   if (sampleBytes[4] === 0x53 && sampleBytes[5] === 0x54 && sampleBytes[6] === 0x47 && sampleBytes[7] === 0x31) {
-    detectedHeaderType = 'STG1_CONTAINER';
-    detectedPayloadLength = len32 > 0 && len32 <= maxCapacity ? len32 : 0;
+    if (len32 > 0 && len32 <= maxCapacity) {
+      detectedHeaderType = 'STG1_CONTAINER';
+      detectedPayloadLength = len32;
+    } else if (len32 > maxCapacity && len32 < 100000000) {
+      detectedHeaderType = 'STG1_CONTAINER_TRUNCATED';
+      detectedPayloadLength = maxCapacity;
+      isTruncated = true;
+      declaredPayloadLength = len32;
+    }
   }
   // B) Contenedor STG1 directo en bytes 0..3
   else if (sampleBytes[0] === 0x53 && sampleBytes[1] === 0x54 && sampleBytes[2] === 0x47 && sampleBytes[3] === 0x31) {
     detectedHeaderType = 'STG1_CONTAINER';
-    detectedPayloadLength = len32;
+    detectedPayloadLength = len32 > 0 && len32 <= maxCapacity ? len32 : maxCapacity;
   }
   // C) Paquete Criptográfico AES-256-GCM: [ Salt(16B) | IV(12B) | Tag(16B) | Ciphertext ]
   // En este modo len32 >= 44 bytes y los primeros 44 bytes son pseudoaleatorios CSPRNG
-  else if (len32 >= 44 && len32 <= maxCapacity) {
-    const checkBytes = Math.min(len32, 44);
+  else if (len32 >= 44 && len32 < 100000000) {
+    const checkBytes = 44;
     let onesCount = 0;
     const totalBits = checkBytes * 8;
     for (let b = 4; b < 4 + checkBytes; b++) {
@@ -329,8 +339,15 @@ export function analyzeImagePixels(data, width, height) {
     const onesRatio = onesCount / totalBits;
     // La entropía y balance de bits de Salt, IV y Tag es uniforme (alrededor de 50%)
     if (onesRatio >= 0.35 && onesRatio <= 0.65) {
-      detectedHeaderType = 'AES_GCM_PACKAGE';
-      detectedPayloadLength = len32;
+      if (len32 <= maxCapacity) {
+        detectedHeaderType = 'AES_GCM_PACKAGE';
+        detectedPayloadLength = len32;
+      } else {
+        detectedHeaderType = 'AES_GCM_PACKAGE_TRUNCATED';
+        detectedPayloadLength = maxCapacity;
+        isTruncated = true;
+        declaredPayloadLength = len32;
+      }
     }
   }
   // D) Texto plano clásico (len32 válido seguido de caracteres ASCII imprimibles)
@@ -402,7 +419,11 @@ export function analyzeImagePixels(data, width, height) {
   let verdictStatus = 'IMAGEN_LIMPIA';
   let verdictSummary = '';
 
-  if (detectedHeaderType === 'STG1_CONTAINER') {
+  if (detectedHeaderType === 'AES_GCM_PACKAGE_TRUNCATED' || detectedHeaderType === 'STG1_CONTAINER_TRUNCATED') {
+    finalConfidence = 99.9;
+    verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
+    verdictSummary = `⚠️ ALERTA FORENSE CRÍTICA: Se detectó una cabecera esteganográfica válida ${detectedHeaderType.includes('AES') ? 'cifrada con AES-256-GCM' : 'en contenedor STG1'}. La longitud declarada en la cabecera es de ${declaredPayloadLength.toLocaleString()} bytes (~${(declaredPayloadLength / 1024).toFixed(1)} KB), pero la resolución actual de la imagen (${width}×${height} px) solo puede albergar un máximo de ${maxCapacity.toLocaleString()} bytes (~${(maxCapacity / 1024).toFixed(1)} KB). La imagen portadora fue redimensionada, recortada o proviene de un archivo mayor: el 100% de la capacidad de la imagen (${(maxCapacity * 8).toLocaleString()} bits) está saturada con datos inyectados pero el archivo secreto está truncado.`;
+  } else if (detectedHeaderType === 'STG1_CONTAINER') {
     finalConfidence = 99.8;
     verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
     verdictSummary = `Firma esteganográfica confirmada: Se detectó el contenedor STG1 en los planos LSB (longitud del payload: ${detectedPayloadLength.toLocaleString()} bytes).`;
@@ -484,6 +505,8 @@ export function analyzeImagePixels(data, width, height) {
     payloadDetection: {
       detectedHeaderType,
       detectedPayloadLength,
+      declaredPayloadLength: declaredPayloadLength || detectedPayloadLength,
+      isTruncated: !!isTruncated,
       isBitAttackDetected,
       msbGlitchSpikes,
       isolatedBitflipSpikes,
