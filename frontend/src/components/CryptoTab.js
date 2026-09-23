@@ -165,25 +165,35 @@ export function renderCryptoTab(container) {
         <!-- Par de Claves RSA con Botones de Copiar -->
         <div class="grid-2">
           <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.25rem;">
               <label style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
                 Clave Pública (Public Key PEM - SPKI):
               </label>
-              <button id="btn-copy-pub" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem; border-color: rgba(0, 240, 255, 0.3); color: var(--accent-cyan);" title="Copiar clave pública al portapapeles">
-                📋 Copiar
-              </button>
+              <div style="display: flex; gap: 0.35rem;">
+                <button id="btn-copy-pub" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem; border-color: rgba(0, 240, 255, 0.3); color: var(--accent-cyan);" title="Copiar clave pública al portapapeles">
+                  📋 Copiar
+                </button>
+                <button id="btn-download-pub-pem" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem;" title="Descargar clave pública en formato .pem">
+                  💾 Descargar .pem
+                </button>
+              </div>
             </div>
             <textarea id="rsa-public-key" rows="6" readonly class="font-mono" style="font-size: 0.75rem;" placeholder="Haz clic en 'Generar Par de Claves RSA-4096'..."></textarea>
           </div>
 
           <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.25rem;">
               <label style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
                 Clave Privada (Private Key PEM - PKCS#8):
               </label>
-              <button id="btn-copy-priv" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem; border-color: rgba(168, 85, 247, 0.3); color: #d8b4fe;" title="Copiar clave privada al portapapeles">
-                📋 Copiar
-              </button>
+              <div style="display: flex; gap: 0.35rem;">
+                <button id="btn-copy-priv" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem; border-color: rgba(168, 85, 247, 0.3); color: #d8b4fe;" title="Copiar clave privada al portapapeles">
+                  📋 Copiar
+                </button>
+                <button id="btn-download-priv-pem" class="btn btn-secondary" style="padding: 0.2rem 0.65rem; font-size: 0.75rem;" title="Descargar clave privada en formato .pem">
+                  💾 Descargar .pem
+                </button>
+              </div>
             </div>
             <textarea id="rsa-private-key" rows="6" readonly class="font-mono" style="font-size: 0.75rem;" placeholder="Haz clic en 'Generar Par de Claves RSA-4096'..."></textarea>
           </div>
@@ -293,11 +303,29 @@ export function renderCryptoTab(container) {
                 Alice redacta el mensaje confidencial. <strong>No necesita la clave privada</strong>. El sistema genera una clave efímera AES de 256 bits, cifra el mensaje y protege la clave dentro del sobre digital RSA-OAEP.
               </p>
 
-              <div>
+              <!-- Selector de Tipo de Contenido para Alice -->
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <button type="button" id="btn-alice-mode-text" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">📝 Mensaje de Texto</button>
+                <button type="button" id="btn-alice-mode-file" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">🖼️ Imagen / Archivo</button>
+              </div>
+
+              <div id="alice-text-wrap">
                 <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">
                   Mensaje Confidencial de Alice:
                 </label>
                 <textarea id="hybrid-message-input" rows="2" style="font-size: 0.85rem;">Transacción bancaria confidencial aprobada #893712</textarea>
+              </div>
+
+              <div id="alice-file-wrap" style="display: none;">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">
+                  Imagen o Archivo Confidencial a Proteger:
+                </label>
+                <input type="file" id="alice-file-input" accept="image/*, application/pdf, .txt, .json" style="display: none;" />
+                <div id="alice-file-dropzone" class="dropzone" style="padding: 0.85rem; font-size: 0.8rem; cursor: pointer; text-align: center;">
+                  <span style="font-size: 1.5rem;">📂</span>
+                  <div id="alice-file-name" style="font-weight: 600; color: var(--text-primary); margin-top: 0.2rem;">Arrastra o haz clic para cargar imagen/archivo</div>
+                  <div id="alice-file-size" style="font-size: 0.72rem; color: var(--text-muted);">-</div>
+                </div>
               </div>
 
               <button id="btn-alice-encrypt" class="btn btn-primary" style="width: 100%;" disabled>
@@ -316,9 +344,14 @@ export function renderCryptoTab(container) {
                 <div style="margin-top: 0.5rem; color: #a7f3d0; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.4rem;">
                   📡 Paquete en tránsito listo para ser entregado a Bob.
                 </div>
-                <button id="btn-email-hybrid-envelope" class="btn btn-primary" style="width: 100%; margin-top: 0.65rem; font-size: 0.8rem; padding: 0.45rem 0.75rem; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-                  📧 Enviar Sobre Digital a Bob por Correo
-                </button>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.65rem;">
+                  <button id="btn-email-hybrid-envelope" class="btn btn-primary" style="flex: 1; font-size: 0.8rem; padding: 0.45rem 0.75rem; background: linear-gradient(135deg, #0284c7, #38bdf8); border: none; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                    📧 Enviar Sobre a Bob por Correo
+                  </button>
+                  <button id="btn-download-hybrid-envelope" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.45rem 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" title="Descargar archivo JSON del sobre">
+                    💾 Descargar .JSON
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -332,8 +365,46 @@ export function renderCryptoTab(container) {
               </div>
 
               <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45; margin: 0;">
-                Bob recibe el paquete de la red. Utiliza su <strong>Clave Privada secreta de 4096 bits</strong> para abrir el sobre digital, recuperar la clave simétrica efímera de 256 bits y validar la autenticidad con el AuthTag.
+                Para abrir el sobre se requieren <strong>2 elementos obligatorios</strong>: el <strong>documento cifrado (.json)</strong> recibido por correo y la <strong>clave privada (.pem)</strong> de Bob.
               </p>
+
+              <!-- ELEMENTO 1: DOCUMENTO / SOBRE CIFRADO -->
+              <div style="background: rgba(0,0,0,0.25); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.75rem; font-weight: 700; color: #d8b4fe;">1. 📦 Documento Cifrado (.json):</span>
+                  <span id="bob-envelope-source-badge" class="badge badge-purple" style="font-size: 0.65rem;">En Espera</span>
+                </div>
+                
+                <input type="file" id="bob-envelope-file-input" accept=".json, application/json" style="display: none;" />
+                <div id="bob-dropzone" style="cursor: pointer; text-align: center; padding: 0.6rem 0.5rem; border-radius: 6px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); font-size: 0.75rem; transition: all 0.2s ease;">
+                  <span>📎 <strong>Arrastra el sobre .json del correo</strong> o haz clic</span>
+                  <div id="bob-loaded-envelope-info" style="font-size: 0.7rem; color: #c4b5fd; margin-top: 0.2rem; display: none;"></div>
+                </div>
+              </div>
+
+              <!-- ELEMENTO 2: CLAVE PRIVADA DE BOB -->
+              <div style="background: rgba(0,0,0,0.25); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.75rem; font-weight: 700; color: #d8b4fe;">2. 🗝️ Clave Privada de Bob (.pem):</span>
+                  <span id="bob-privkey-source-badge" class="badge badge-purple" style="font-size: 0.65rem;">En Espera</span>
+                </div>
+
+                <div style="display: flex; gap: 0.4rem;">
+                  <input type="file" id="bob-privkey-file-input" accept=".pem, .key, .txt" style="display: none;" />
+                  <button type="button" id="btn-bob-upload-priv-file" class="btn btn-secondary" style="flex: 1; font-size: 0.72rem; padding: 0.35rem 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+                    📁 Cargar Archivo .pem
+                  </button>
+                  <button type="button" id="btn-bob-use-generated-priv" class="btn btn-secondary" style="flex: 1; font-size: 0.72rem; padding: 0.35rem 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+                    ⚡ Usar Clave Generada
+                  </button>
+                </div>
+
+                <div id="bob-loaded-privkey-info" style="font-size: 0.7rem; color: #a7f3d0; margin-top: 0.15rem; display: none;">
+                  ✅ Clave privada RSA-4096 cargada y lista.
+                </div>
+
+                <textarea id="bob-private-key-input" rows="2" placeholder="-----BEGIN PRIVATE KEY----- ... (o carga tu archivo .pem con el botón de arriba)" style="font-size: 0.73rem; font-family: var(--font-mono); margin-top: 0.2rem;"></textarea>
+              </div>
 
               <button id="btn-bob-decrypt" class="btn btn-emerald" style="width: 100%;" disabled>
                 🔓 Abrir Sobre Digital y Descifrar (Bob)
@@ -346,9 +417,19 @@ export function renderCryptoTab(container) {
                 </div>
                 <div>• <strong>Clave de Sesión AES Recuperada:</strong> <span id="bob-dec-key" style="color: #a7f3d0; word-break: break-all;">-</span></div>
                 <div>• <strong>Validación AuthTag (GHASH):</strong> <span style="color: var(--accent-emerald); font-weight: bold;">AUTÉNTICO (128 bits OK)</span></div>
+                
                 <div style="margin-top: 0.45rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.45rem;">
-                  <span style="color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Texto Plano Final Recuperado:</span>
-                  <div id="bob-plaintext" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.45rem 0.75rem; border-radius: 4px; color: var(--text-primary); font-weight: 700; font-size: 0.88rem;"></div>
+                  <span style="color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Carga Útil Recuperada:</span>
+                  <div id="bob-plaintext" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.45rem 0.75rem; border-radius: 4px; color: var(--text-primary); font-weight: 700; font-size: 0.88rem; word-break: break-all;"></div>
+                  
+                  <!-- Contenedor para Imagen/Archivo recuperado si aplica -->
+                  <div id="bob-recovered-file-box" style="display: none; margin-top: 0.5rem; text-align: center;">
+                    <img id="bob-recovered-img" src="" alt="Imagen Secreta Descifrada" style="max-height: 180px; max-width: 100%; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.4); margin-bottom: 0.4rem;" />
+                    <br/>
+                    <a id="bob-download-recovered-btn" class="btn btn-emerald" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; text-decoration: none;" download="archivo_descifrado_bob">
+                      📥 Descargar Archivo Secreto
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -388,21 +469,47 @@ export function renderCryptoTab(container) {
   const rsaPublicKey = container.querySelector('#rsa-public-key');
   const rsaPrivateKey = container.querySelector('#rsa-private-key');
   const btnCopyPub = container.querySelector('#btn-copy-pub');
+  const btnDownloadPubPem = container.querySelector('#btn-download-pub-pem');
   const btnCopyPriv = container.querySelector('#btn-copy-priv');
+  const btnDownloadPrivPem = container.querySelector('#btn-download-priv-pem');
 
   const hybridMessageInput = container.querySelector('#hybrid-message-input');
+  const btnAliceModeText = container.querySelector('#btn-alice-mode-text');
+  const btnAliceModeFile = container.querySelector('#btn-alice-mode-file');
+  const aliceTextWrap = container.querySelector('#alice-text-wrap');
+  const aliceFileWrap = container.querySelector('#alice-file-wrap');
+  const aliceFileInput = container.querySelector('#alice-file-input');
+  const aliceFileDropzone = container.querySelector('#alice-file-dropzone');
+  const aliceFileName = container.querySelector('#alice-file-name');
+  const aliceFileSize = container.querySelector('#alice-file-size');
+
   const btnAliceEncrypt = container.querySelector('#btn-alice-encrypt');
   const btnEmailHybridEnvelope = container.querySelector('#btn-email-hybrid-envelope');
+  const btnDownloadHybridEnvelope = container.querySelector('#btn-download-hybrid-envelope');
   const aliceOutputBox = container.querySelector('#alice-output-box');
   const aliceEncKey = container.querySelector('#alice-enc-key');
   const aliceIv = container.querySelector('#alice-iv');
   const aliceTag = container.querySelector('#alice-tag');
   const aliceCipher = container.querySelector('#alice-cipher');
 
+  const bobEnvelopeSourceBadge = container.querySelector('#bob-envelope-source-badge');
+  const bobEnvelopeFileInput = container.querySelector('#bob-envelope-file-input');
+  const bobDropzone = container.querySelector('#bob-dropzone');
+  const bobLoadedEnvelopeInfo = container.querySelector('#bob-loaded-envelope-info');
+  const bobPrivkeySourceBadge = container.querySelector('#bob-privkey-source-badge');
+  const bobPrivkeyFileInput = container.querySelector('#bob-privkey-file-input');
+  const btnBobUploadPrivFile = container.querySelector('#btn-bob-upload-priv-file');
+  const btnBobUseGeneratedPriv = container.querySelector('#btn-bob-use-generated-priv');
+  const bobLoadedPrivkeyInfo = container.querySelector('#bob-loaded-privkey-info');
+  const bobPrivateKeyInput = container.querySelector('#bob-private-key-input');
+
   const btnBobDecrypt = container.querySelector('#btn-bob-decrypt');
   const bobOutputBox = container.querySelector('#bob-output-box');
   const bobDecKey = container.querySelector('#bob-dec-key');
   const bobPlaintext = container.querySelector('#bob-plaintext');
+  const bobRecoveredFileBox = container.querySelector('#bob-recovered-file-box');
+  const bobRecoveredImg = container.querySelector('#bob-recovered-img');
+  const bobDownloadRecoveredBtn = container.querySelector('#bob-download-recovered-btn');
 
   // Diagram Elements (Infografía Visual Dinámica)
   const step1Indicator = container.querySelector('#step-1-indicator');
@@ -417,6 +524,8 @@ export function renderCryptoTab(container) {
   const diagramEnvelopeStatus = container.querySelector('#diagram-envelope-status');
 
   let currentHybridPayload = null;
+  let aliceActiveMode = 'text'; // 'text' | 'file'
+  let aliceSelectedFile = null; // { name, size, type, dataUrl }
 
   // --- Sistema de Notificaciones Toast Modernas (Auto-cierre en 2s) ---
   const showToast = ({ title, message, icon = '💥', type = 'danger', duration = 2000 }) => {
@@ -856,6 +965,29 @@ export function renderCryptoTab(container) {
   setupCopyButton(btnCopyPub, rsaPublicKey, '📋 Copiar');
   setupCopyButton(btnCopyPriv, rsaPrivateKey, '📋 Copiar');
 
+  // --- Botones de Descargar Claves PEM en Archivo ---
+  const setupDownloadPemButton = (btn, textarea, filename) => {
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const pem = textarea.value.trim();
+      if (!pem) {
+        showToast({ title: 'Sin Clave', message: 'Primero genera el par de claves RSA.', icon: '⚠️', type: 'warning', duration: 2000 });
+        return;
+      }
+      const blob = new Blob([pem], { type: 'application/x-pem-file' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast({ title: 'Clave Guardada', message: `Archivo ${filename} descargado.`, icon: '💾', type: 'success', duration: 1800 });
+    });
+  };
+
+  setupDownloadPemButton(btnDownloadPubPem, rsaPublicKey, 'clave_publica_bob.pem');
+  setupDownloadPemButton(btnDownloadPrivPem, rsaPrivateKey, 'clave_privada_bob.pem');
+
   // --- Generación de Par RSA-4096 ---
   btnGenRsa.addEventListener('click', async () => {
     try {
@@ -890,10 +1022,85 @@ export function renderCryptoTab(container) {
     }
   });
 
+  // --- LADO EMISOR (ALICE): Alternar Modo Texto / Archivo ---
+  if (btnAliceModeText && btnAliceModeFile) {
+    btnAliceModeText.addEventListener('click', () => {
+      aliceActiveMode = 'text';
+      btnAliceModeText.style.borderColor = 'var(--accent-cyan)';
+      btnAliceModeText.style.color = 'var(--accent-cyan)';
+      btnAliceModeFile.style.borderColor = 'var(--border-color)';
+      btnAliceModeFile.style.color = 'var(--text-secondary)';
+      aliceTextWrap.style.display = 'block';
+      aliceFileWrap.style.display = 'none';
+    });
+
+    btnAliceModeFile.addEventListener('click', () => {
+      aliceActiveMode = 'file';
+      btnAliceModeFile.style.borderColor = 'var(--accent-cyan)';
+      btnAliceModeFile.style.color = 'var(--accent-cyan)';
+      btnAliceModeText.style.borderColor = 'var(--border-color)';
+      btnAliceModeText.style.color = 'var(--text-secondary)';
+      aliceTextWrap.style.display = 'none';
+      aliceFileWrap.style.display = 'block';
+    });
+  }
+
+  // Carga de Archivo/Imagen en Alice
+  if (aliceFileDropzone && aliceFileInput) {
+    aliceFileDropzone.addEventListener('click', () => aliceFileInput.click());
+
+    const handleAliceFile = (file) => {
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showToast({
+          title: 'Archivo Demasiado Grande',
+          message: 'Para el sobre digital RSA/AES el límite recomendado es 2 MB.',
+          icon: '⚠️',
+          type: 'warning',
+          duration: 2500
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        aliceSelectedFile = {
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          dataUrl: e.target.result
+        };
+        aliceFileName.textContent = `📄 ${file.name}`;
+        aliceFileSize.textContent = `${(file.size / 1024).toFixed(1)} KB • ${file.type || 'Archivo binario'}`;
+        showToast({
+          title: 'Archivo Cargado',
+          message: `${file.name} listo para empaquetar en el sobre digital.`,
+          icon: '📎',
+          type: 'success',
+          duration: 1800
+        });
+      };
+      reader.readAsDataURL(file);
+    };
+
+    aliceFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) handleAliceFile(e.target.files[0]);
+    });
+
+    aliceFileDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      aliceFileDropzone.classList.add('drag-active');
+    });
+    aliceFileDropzone.addEventListener('dragleave', () => aliceFileDropzone.classList.remove('drag-active'));
+    aliceFileDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      aliceFileDropzone.classList.remove('drag-active');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) handleAliceFile(e.dataTransfer.files[0]);
+    });
+  }
+
   // --- LADO EMISOR (ALICE): Cifrado Híbrido con Clave Pública ---
   btnAliceEncrypt.addEventListener('click', async () => {
     try {
-      const plaintext = hybridMessageInput.value;
       const pubKey = rsaPublicKey.value;
 
       if (!pubKey) {
@@ -907,11 +1114,44 @@ export function renderCryptoTab(container) {
         return;
       }
 
+      let plaintextToEncrypt = '';
+      if (aliceActiveMode === 'text') {
+        plaintextToEncrypt = hybridMessageInput.value.trim();
+        if (!plaintextToEncrypt) {
+          showToast({
+            title: 'Mensaje Requerido',
+            message: 'Escribe un mensaje confidencial para empaquetar.',
+            icon: '⚠️',
+            type: 'warning',
+            duration: 2000
+          });
+          return;
+        }
+      } else {
+        if (!aliceSelectedFile) {
+          showToast({
+            title: 'Archivo Requerido',
+            message: 'Selecciona o arrastra una imagen/archivo confidencial.',
+            icon: '⚠️',
+            type: 'warning',
+            duration: 2000
+          });
+          return;
+        }
+        plaintextToEncrypt = JSON.stringify({
+          __isCyberlabFile: true,
+          name: aliceSelectedFile.name,
+          size: aliceSelectedFile.size,
+          type: aliceSelectedFile.type,
+          dataUrl: aliceSelectedFile.dataUrl
+        });
+      }
+
       btnAliceEncrypt.disabled = true;
       btnAliceEncrypt.innerHTML = '⏳ Alice cifrando datos con AES y clave con RSA-OAEP...';
 
-      // Alice cifra el mensaje usando la Clave Pública de Bob
-      const hybridPayload = await ApiService.hybridEncrypt(plaintext, pubKey);
+      // Alice cifra el mensaje o archivo usando la Clave Pública de Bob
+      const hybridPayload = await ApiService.hybridEncrypt(plaintextToEncrypt, pubKey);
       currentHybridPayload = hybridPayload;
 
       // Mostrar componentes generados en el lado emisor
@@ -932,9 +1172,18 @@ export function renderCryptoTab(container) {
       diagramEnvelopeStatus.textContent = '📡 Clave AES envuelta con RSA-OAEP en tránsito hacia Bob.';
       diagramEnvelopeStatus.style.color = '#a7f3d0';
 
+      // Actualizar estado en Bob
+      bobEnvelopeSourceBadge.textContent = 'Sobre en Memoria';
+      bobEnvelopeSourceBadge.className = 'badge badge-cyan';
+      bobLoadedEnvelopeInfo.style.display = 'block';
+      bobLoadedEnvelopeInfo.textContent = '⚡ Sobre digital en memoria listo para descifrar.';
+
       // Habilitar a Bob para que reciba y descifre
       btnBobDecrypt.disabled = false;
       bobOutputBox.style.display = 'none';
+      if (bobPrivateKeyInput && !bobPrivateKeyInput.value && rsaPrivateKey.value) {
+        bobPrivateKeyInput.value = rsaPrivateKey.value;
+      }
     } catch (err) {
       showToast({
         title: 'Error en Cifrado de Alice',
@@ -948,6 +1197,37 @@ export function renderCryptoTab(container) {
       btnAliceEncrypt.innerHTML = '🔒 Cifrar y Empaquetar Sobre Digital (Alice)';
     }
   });
+
+  // --- Descargar Archivo .JSON del Sobre Digital ---
+  if (btnDownloadHybridEnvelope) {
+    btnDownloadHybridEnvelope.addEventListener('click', () => {
+      if (!currentHybridPayload) {
+        showToast({
+          title: 'Sobre no Disponible',
+          message: 'Primero debes cifrar el sobre digital.',
+          icon: '⚠️',
+          type: 'warning',
+          duration: 2000
+        });
+        return;
+      }
+      const jsonStr = JSON.stringify(currentHybridPayload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sobre_digital_alice_bob_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast({
+        title: 'Sobre Descargado',
+        message: 'Archivo JSON guardado en tu equipo.',
+        icon: '💾',
+        type: 'success',
+        duration: 1800
+      });
+    });
+  }
 
   // --- Despachar Sobre Digital Híbrido a Bob por Correo ---
   if (btnEmailHybridEnvelope) {
@@ -968,9 +1248,151 @@ export function renderCryptoTab(container) {
         mimeType: 'application/json',
         getAttachmentBase64: () => btoa(unescape(encodeURIComponent(jsonStr))),
         defaultSubject: '📦 Sobre Digital Blindado (RSA-OAEP 4096 + AES-GCM)',
-        defaultNote: 'Hola Bob, te envío el sobre digital generado por Alice. Contiene la clave simétrica efímera de 256 bits protegida con tu clave pública RSA-4096 y el mensaje cifrado con AES-GCM.',
+        defaultNote: 'Hola Bob, te envío el sobre digital generado por Alice. Contiene la clave simétrica efímera de 256 bits protegida con tu clave pública RSA-4096 y el mensaje/archivo cifrado con AES-GCM.',
         showToast
       });
+    });
+  }
+
+  // --- LADO RECEPTOR (BOB): Carga de Archivo .JSON Recibido por Correo ---
+  if (bobDropzone && bobEnvelopeFileInput) {
+    bobDropzone.addEventListener('click', () => bobEnvelopeFileInput.click());
+
+    const handleLoadedEnvelope = (file) => {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed.encryptedKeyBase64 || !parsed.ivHex || !parsed.tagHex || !parsed.ciphertextBase64) {
+            throw new Error('El archivo JSON no tiene la estructura de un sobre digital válido (faltan encryptedKeyBase64, ivHex, tagHex o ciphertextBase64).');
+          }
+          currentHybridPayload = parsed;
+          bobEnvelopeSourceBadge.textContent = 'Archivo del Correo Cargado';
+          bobEnvelopeSourceBadge.className = 'badge badge-emerald';
+          bobLoadedEnvelopeInfo.style.display = 'block';
+          bobLoadedEnvelopeInfo.textContent = `📥 ${file.name} (${(file.size / 1024).toFixed(1)} KB) listo para abrir.`;
+          btnBobDecrypt.disabled = false;
+          
+          if (bobPrivateKeyInput && !bobPrivateKeyInput.value && rsaPrivateKey.value) {
+            bobPrivateKeyInput.value = rsaPrivateKey.value;
+          }
+
+          step2Indicator.classList.add('completed');
+          step3Indicator.classList.add('active');
+          diagramEnvelopeStatus.textContent = `📥 Sobre ${file.name} cargado por Bob. Listo para descifrar.`;
+          diagramEnvelopeStatus.style.color = 'var(--accent-emerald)';
+
+          showToast({
+            title: 'Sobre Cargado con Éxito',
+            message: `Archivo ${file.name} validado. Procede a descifrarlo.`,
+            icon: '✅',
+            type: 'success',
+            duration: 2000
+          });
+        } catch (err) {
+          showToast({
+            title: 'Formato de Sobre Inválido',
+            message: err.message,
+            icon: '❌',
+            type: 'danger',
+            duration: 3000
+          });
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    bobEnvelopeFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) handleLoadedEnvelope(e.target.files[0]);
+    });
+
+    bobDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      bobDropzone.style.borderColor = 'var(--accent-emerald)';
+    });
+    bobDropzone.addEventListener('dragleave', () => {
+      bobDropzone.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+    });
+    bobDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      bobDropzone.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) handleLoadedEnvelope(e.dataTransfer.files[0]);
+    });
+  }
+
+  // --- Carga de Archivo .pem de Clave Privada en Bob ---
+  if (btnBobUploadPrivFile && bobPrivkeyFileInput) {
+    btnBobUploadPrivFile.addEventListener('click', () => bobPrivkeyFileInput.click());
+
+    bobPrivkeyFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const content = evt.target.result;
+          if (!content.includes('PRIVATE KEY')) {
+            showToast({
+              title: 'Formato no Reconocido',
+              message: 'El archivo debe contener un bloque -----BEGIN PRIVATE KEY-----.',
+              icon: '⚠️',
+              type: 'warning',
+              duration: 2500
+            });
+          }
+          bobPrivateKeyInput.value = content;
+          bobPrivkeySourceBadge.textContent = 'Archivo .pem Cargado';
+          bobPrivkeySourceBadge.className = 'badge badge-emerald';
+          bobLoadedPrivkeyInfo.style.display = 'block';
+          bobLoadedPrivkeyInfo.textContent = `🗝️ ${file.name} cargada como clave privada activa.`;
+          
+          if (currentHybridPayload) {
+            btnBobDecrypt.disabled = false;
+          }
+
+          showToast({
+            title: 'Clave Privada Cargada',
+            message: `Archivo ${file.name} listo para descifrar.`,
+            icon: '🗝️',
+            type: 'success',
+            duration: 2000
+          });
+        };
+        reader.readAsText(file);
+      }
+    });
+  }
+
+  // Botón para autorrellenar con la clave privada generada arriba
+  if (btnBobUseGeneratedPriv) {
+    btnBobUseGeneratedPriv.addEventListener('click', () => {
+      if (rsaPrivateKey && rsaPrivateKey.value) {
+        bobPrivateKeyInput.value = rsaPrivateKey.value;
+        bobPrivkeySourceBadge.textContent = 'Clave en Memoria';
+        bobPrivkeySourceBadge.className = 'badge badge-cyan';
+        bobLoadedPrivkeyInfo.style.display = 'block';
+        bobLoadedPrivkeyInfo.textContent = '⚡ Clave privada generada en memoria asignada a Bob.';
+        
+        if (currentHybridPayload) {
+          btnBobDecrypt.disabled = false;
+        }
+
+        showToast({
+          title: 'Clave Asignada',
+          message: 'Clave privada copiada al panel de Bob.',
+          icon: '🗝️',
+          type: 'success',
+          duration: 1500
+        });
+      } else {
+        showToast({
+          title: 'Sin Clave Generada',
+          message: 'Primero debes generar el par de claves RSA en el Paso 1.',
+          icon: '⚠️',
+          type: 'warning',
+          duration: 2000
+        });
+      }
     });
   }
 
@@ -979,18 +1401,18 @@ export function renderCryptoTab(container) {
     if (!currentHybridPayload) {
       showToast({
         title: 'Sobre no Disponible',
-        message: 'Alice primero debe cifrar y transmitir el paquete.',
+        message: 'Alice primero debe cifrar el paquete o debes cargar el archivo JSON del correo.',
         icon: '⚠️',
         type: 'warning',
         duration: 2000
       });
       return;
     }
-    const privKey = rsaPrivateKey.value;
+    const privKey = (bobPrivateKeyInput && bobPrivateKeyInput.value.trim()) || rsaPrivateKey.value.trim();
     if (!privKey) {
       showToast({
         title: 'Clave Requerida',
-        message: 'Se requiere la clave privada de Bob.',
+        message: 'Se requiere la clave privada de Bob para abrir el sobre digital.',
         icon: '⚠️',
         type: 'warning',
         duration: 2000
@@ -1006,7 +1428,38 @@ export function renderCryptoTab(container) {
       const decrypted = await ApiService.hybridDecrypt(currentHybridPayload, privKey);
 
       bobDecKey.textContent = '256 bits recuperados con éxito vía RSA-OAEP';
-      bobPlaintext.textContent = decrypted.plaintext;
+      
+      // Comprobar si el contenido es un archivo/imagen o texto plano
+      let isFilePayload = false;
+      try {
+        if (typeof decrypted.plaintext === 'string' && decrypted.plaintext.startsWith('{"__isCyberlabFile":true')) {
+          const parsedFile = JSON.parse(decrypted.plaintext);
+          isFilePayload = true;
+          bobPlaintext.textContent = `📄 [Archivo Confidencial Recuperado: ${parsedFile.name} (${(parsedFile.size / 1024).toFixed(1)} KB)]`;
+          
+          if (bobRecoveredFileBox && bobRecoveredImg && bobDownloadRecoveredBtn) {
+            bobRecoveredFileBox.style.display = 'block';
+            bobDownloadRecoveredBtn.href = parsedFile.dataUrl;
+            bobDownloadRecoveredBtn.download = parsedFile.name;
+            bobDownloadRecoveredBtn.textContent = `📥 Descargar ${parsedFile.name}`;
+
+            if (parsedFile.dataUrl.startsWith('data:image/')) {
+              bobRecoveredImg.src = parsedFile.dataUrl;
+              bobRecoveredImg.style.display = 'inline-block';
+            } else {
+              bobRecoveredImg.style.display = 'none';
+            }
+          }
+        }
+      } catch (e) {
+        isFilePayload = false;
+      }
+
+      if (!isFilePayload) {
+        bobPlaintext.textContent = decrypted.plaintext;
+        if (bobRecoveredFileBox) bobRecoveredFileBox.style.display = 'none';
+      }
+
       bobOutputBox.style.display = 'block';
 
       // Actualizar Diagrama Visual
@@ -1018,6 +1471,14 @@ export function renderCryptoTab(container) {
       diagramEnvelopeTitle.textContent = '¡Sobre Abierto y Verificado!';
       diagramEnvelopeStatus.textContent = '✅ Llave Privada abrió el candado. Plaintext intacto.';
       diagramEnvelopeStatus.style.color = 'var(--accent-emerald)';
+
+      showToast({
+        title: 'Descifrado Exitoso',
+        message: 'Bob ha abierto el sobre digital y verificado el AuthTag GHASH.',
+        icon: '🎉',
+        type: 'success',
+        duration: 2500
+      });
     } catch (err) {
       showToast({
         title: 'Error en Descifrado de Bob',

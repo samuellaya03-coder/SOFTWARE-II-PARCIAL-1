@@ -179,7 +179,8 @@ export class ForensicComparator {
    * 4. Marcadores de figuras (Puntos con glow, Cruces periciales, Cajas delimitadoras).
    */
   static extractBitPlane(source, options = {}) {
-    const bitIndex = options.bitIndex !== undefined ? options.bitIndex : 0;
+    const bitIndex = options.bitIndex !== undefined ? parseInt(options.bitIndex, 10) : 0;
+    const bitMask = 1 << bitIndex;
     const channel = options.channel || 'all';
     const colorTheme = options.colorTheme || 'neon';
     const shapeMode = options.shapeMode || 'dots';
@@ -227,14 +228,34 @@ export class ForensicComparator {
 
     const palette = palettes[colorTheme] || palettes.neon;
 
-    // 1. Detección Pericial de Cabecera Big-Endian de 32 bits
-    let headerBytes = new Uint8Array(4);
+    // 1. Estadísticas completas del plano de bits en toda la imagen
+    let totalPlaneBits = 0;
+    let totalOnesInPlane = 0;
+    let totalZerosInPlane = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+      if (channel === 'all' || channel === 'red') {
+        totalPlaneBits++;
+        if ((data[i] & bitMask) !== 0) totalOnesInPlane++; else totalZerosInPlane++;
+      }
+      if (channel === 'all' || channel === 'green') {
+        totalPlaneBits++;
+        if ((data[i + 1] & bitMask) !== 0) totalOnesInPlane++; else totalZerosInPlane++;
+      }
+      if (channel === 'all' || channel === 'blue') {
+        totalPlaneBits++;
+        if ((data[i + 2] & bitMask) !== 0) totalOnesInPlane++; else totalZerosInPlane++;
+      }
+    }
+
+    // 2. Detección Pericial de Cabecera Big-Endian de 32 bits
+    let headerBytes = new Uint8Array(8);
     let headerByteIndex = 0;
     let currentByte = 0;
     let bitOffset = 7;
 
-    for (let i = 0; i < data.length && headerByteIndex < 4; i += 4) {
-      for (let c = 0; c < 3 && headerByteIndex < 4; c++) {
+    for (let i = 0; i < data.length && headerByteIndex < 8; i += 4) {
+      for (let c = 0; c < 3 && headerByteIndex < 8; c++) {
         const bit = data[i + c] & 1;
         currentByte = (currentByte << 1) | bit;
         bitOffset--;
@@ -247,7 +268,7 @@ export class ForensicComparator {
       }
     }
 
-    const payloadLength = (
+    const rawLen32 = (
       (headerBytes[0] << 24) |
       (headerBytes[1] << 16) |
       (headerBytes[2] << 8) |
@@ -259,31 +280,60 @@ export class ForensicComparator {
     let totalInjectedBits = 0;
     let totalInjectedBytes = 0;
     let endInjectedPixel = -1;
+    let isBitAttack = false;
+    let attackedBitsCount = 0;
 
-    if (payloadLength > 0 && payloadLength <= maxCapacityBytes) {
-      hasValidHeader = true;
-      payloadBytes = payloadLength;
-      totalInjectedBytes = 4 + payloadBytes;
-      totalInjectedBits = totalInjectedBytes * 8;
-      endInjectedPixel = Math.ceil(totalInjectedBits / 3) - 1;
+    // Verificar si se pasó el reporte del backend
+    const rep = options.forensicReport;
+    if (rep && rep.payloadDetection) {
+      if (rep.payloadDetection.detectedHeaderType && rep.payloadDetection.detectedPayloadLength > 0) {
+        hasValidHeader = true;
+        payloadBytes = rep.payloadDetection.detectedPayloadLength;
+        totalInjectedBytes = 4 + payloadBytes;
+        totalInjectedBits = totalInjectedBytes * 8;
+        endInjectedPixel = Math.ceil(totalInjectedBits / 3) - 1;
+      } else if (rep.payloadDetection.isBitAttackDetected) {
+        isBitAttack = true;
+        attackedBitsCount = rep.payloadDetection.totalAlteredBits || 
+          ((rep.payloadDetection.msbGlitchSpikes || 0) + (rep.payloadDetection.isolatedBitflipSpikes || 0));
+      }
     }
 
-    // Extracción de la secuencia de bits de la zona inyectada respetando el canal seleccionado
-    const targetBitsCount = hasValidHeader ? totalInjectedBits : Math.min(totalChannels, 1200);
+    // Verificación de respaldo local de cabecera si no se pasó reporte o si es esteganografía estándar
+    if (!hasValidHeader && !isBitAttack && bitIndex === 0) {
+      const isSTG1 = (headerBytes[4] === 0x53 && headerBytes[5] === 0x54 && headerBytes[6] === 0x47 && headerBytes[7] === 0x31) ||
+                     (headerBytes[0] === 0x53 && headerBytes[1] === 0x54 && headerBytes[2] === 0x47 && headerBytes[3] === 0x31);
+      const isReasonableLength = rawLen32 > 0 && rawLen32 <= maxCapacityBytes;
+
+      if (isSTG1 || (isReasonableLength && rawLen32 >= 44)) {
+        hasValidHeader = true;
+        payloadBytes = rawLen32;
+        totalInjectedBytes = 4 + payloadBytes;
+        totalInjectedBits = totalInjectedBytes * 8;
+        endInjectedPixel = Math.ceil(totalInjectedBits / 3) - 1;
+      }
+    }
+
+    // Muestra para el Microscopio Digital (Capped a 1200 celdas por rendimiento visual de Canvas)
+    const maxMicroscopeCells = 1200;
+    const microscopeSampleLimit = (hasValidHeader && bitIndex === 0) 
+      ? Math.min(totalInjectedBits, maxMicroscopeCells) 
+      : Math.min(totalChannels, maxMicroscopeCells);
+
     const injectedBitsSequence = [];
-    let payload1Count = 0;
-    let payload0Count = 0;
+    let sample1Count = 0;
+    let sample0Count = 0;
 
     let bCounter = 0;
-    for (let i = 0; i < data.length && bCounter < targetBitsCount; i += 4) {
-      for (let c = 0; c < 3 && bCounter < targetBitsCount; c++) {
+    for (let i = 0; i < data.length && bCounter < microscopeSampleLimit; i += 4) {
+      for (let c = 0; c < 3 && bCounter < microscopeSampleLimit; c++) {
         if (channel === 'red' && c !== 0) continue;
         if (channel === 'green' && c !== 1) continue;
         if (channel === 'blue' && c !== 2) continue;
 
-        const bit = data[i + c] & 1;
+        const bit = (data[i + c] & bitMask) !== 0 ? 1 : 0;
         injectedBitsSequence.push(bit);
-        if (bit === 1) payload1Count++; else payload0Count++;
+        if (bit === 1) sample1Count++; else sample0Count++;
         bCounter++;
       }
     }
@@ -301,42 +351,37 @@ export class ForensicComparator {
       const rows = Math.ceil(injectedBitsSequence.length / cols);
 
       canvas.width = cols * cellSize;
-      canvas.height = rows * cellSize + 36; // Encabezado de coordenadas
-
+      canvas.height = rows * cellSize;
       const ctx = canvas.getContext('2d');
+
+      // Fondo base de alta tecnología pericial
       ctx.fillStyle = '#060a12';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Encabezado del Microscopio
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, 28);
-      ctx.fillStyle = palette.accent;
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText(
-        `🔬 MICROSCOPIO DIGITAL 18X — ${channel.toUpperCase()} (${injectedBitsSequence.length.toLocaleString()} BITS)`,
-        10,
-        18
-      );
+      // Rejilla de fondo
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let col = 0; col <= cols; col++) {
+        ctx.beginPath();
+        ctx.moveTo(col * cellSize, 0);
+        ctx.lineTo(col * cellSize, canvas.height);
+        ctx.stroke();
+      }
+      for (let row = 0; row <= rows; row++) {
+        ctx.beginPath();
+        ctx.moveTo(0, row * cellSize);
+        ctx.lineTo(canvas.width, row * cellSize);
+        ctx.stroke();
+      }
 
-      // Renderizar cada celda de bit
-      const offsetY = 32;
+      // Dibujar cada celda según el shapeMode
       for (let idx = 0; idx < injectedBitsSequence.length; idx++) {
+        const bit = injectedBitsSequence[idx];
         const col = idx % cols;
         const row = Math.floor(idx / cols);
         const x = col * cellSize;
-        const y = offsetY + row * cellSize;
-        const bit = injectedBitsSequence[idx];
+        const y = row * cellSize;
 
-        // Fondo de la celda
-        ctx.fillStyle = bit === 1 ? `rgb(${palette.one.join(',')})` : `rgb(${palette.zero.join(',')})`;
-        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-
-        // Borde sutil de cuadrícula
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(x, y, cellSize, cellSize);
-
-        // Renderizado de figuras / formas
         if (shapeMode === 'dots') {
           if (bit === 1) {
             // Punto Neón con Resplandor (Bit 1)
@@ -389,8 +434,8 @@ export class ForensicComparator {
 
     } else if (viewMode === 'highlight') {
       // -------------------------------------------------------------
-      // VISTA RESALTADOR GLOBAL: MUESTRA DÓNDE ESTÁ LA ZONA INYECTADA
-      // Atenúa los píxeles intactos y enciende la zona con bounding box
+      // VISTA RESALTADOR GLOBAL: SOPORTE PARA TODOS LOS PLANOS DE BITS (0 A 7)
+      // Muestra dónde están activos los bits del plano seleccionado o la zona inyectada
       // -------------------------------------------------------------
       canvas.width = width;
       canvas.height = height;
@@ -398,55 +443,83 @@ export class ForensicComparator {
       const imgData = ctx.createImageData(width, height);
       const px = imgData.data;
 
-      const limitPixel = endInjectedPixel >= 0 ? endInjectedPixel : Math.min(totalPixels, 600);
+      const isSequentialStego = hasValidHeader && bitIndex === 0;
+      const limitPixel = isSequentialStego ? endInjectedPixel : totalPixels;
 
       for (let p = 0; p < totalPixels; p++) {
         const i = p * 4;
-        const isModified = p <= limitPixel;
 
-        if (isModified) {
-          // Zona inyectada: color neón brillante respetando canal
-          let bitVal = 0;
-          if (channel === 'red') bitVal = data[i] & 1;
-          else if (channel === 'green') bitVal = data[i + 1] & 1;
-          else if (channel === 'blue') bitVal = data[i + 2] & 1;
-          else bitVal = (data[i] & 1) | (data[i + 1] & 1) | (data[i + 2] & 1);
+        let bitVal = 0;
+        if (channel === 'red') bitVal = (data[i] & bitMask) !== 0 ? 1 : 0;
+        else if (channel === 'green') bitVal = (data[i + 1] & bitMask) !== 0 ? 1 : 0;
+        else if (channel === 'blue') bitVal = (data[i + 2] & bitMask) !== 0 ? 1 : 0;
+        else bitVal = ((data[i] & bitMask) || (data[i + 1] & bitMask) || (data[i + 2] & bitMask)) ? 1 : 0;
 
-          const col = bitVal ? palette.one : palette.zero;
-          px[i] = col[0];
-          px[i + 1] = col[1];
-          px[i + 2] = col[2];
-          px[i + 3] = 255;
+        if (isSequentialStego) {
+          const isModified = p <= limitPixel;
+          if (isModified) {
+            const col = bitVal ? palette.one : palette.zero;
+            px[i] = col[0];
+            px[i + 1] = col[1];
+            px[i + 2] = col[2];
+            px[i + 3] = 255;
+          } else {
+            // Zona intacta atenuada para contextualizar
+            px[i] = Math.floor(data[i] * 0.15);
+            px[i + 1] = Math.floor(data[i + 1] * 0.15);
+            px[i + 2] = Math.floor(data[i + 2] * 0.15);
+            px[i + 3] = 255;
+          }
         } else {
-          // Zona intacta: atenuada al 15% (oscura para resaltar la zona de inyección)
-          px[i] = Math.floor(data[i] * 0.15);
-          px[i + 1] = Math.floor(data[i + 1] * 0.15);
-          px[i + 2] = Math.floor(data[i + 2] * 0.15);
-          px[i + 3] = 255;
+          // Resaltado pericial del plano de bits seleccionado (ej. Bit 7 Glitches o Bit 0 a 6):
+          // Enciende los bits activos (1) con el color de la paleta neón, y atenúa los (0)
+          if (bitVal === 1) {
+            px[i] = palette.one[0];
+            px[i + 1] = palette.one[1];
+            px[i + 2] = palette.one[2];
+            px[i + 3] = 255;
+          } else {
+            px[i] = Math.floor(data[i] * 0.16);
+            px[i + 1] = Math.floor(data[i + 1] * 0.16);
+            px[i + 2] = Math.floor(data[i + 2] * 0.16);
+            px[i + 3] = 255;
+          }
         }
       }
 
       ctx.putImageData(imgData, 0, 0);
 
-      // Dibujar Bounding Box Neón con mira telescópica sobre la zona inyectada
-      const endY = Math.max(16, Math.floor(limitPixel / width) + 4);
-      ctx.strokeStyle = palette.accent;
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = palette.accent;
-      ctx.shadowBlur = 8;
-      ctx.strokeRect(2, 2, width - 4, endY);
-      ctx.shadowBlur = 0;
+      // Bounding Box o banner superior explicativo pericial
+      if (isSequentialStego) {
+        const endY = Math.max(16, Math.floor(limitPixel / width) + 4);
+        ctx.strokeStyle = palette.accent;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = palette.accent;
+        ctx.shadowBlur = 8;
+        ctx.strokeRect(2, 2, width - 4, endY);
+        ctx.shadowBlur = 0;
 
-      // Etiqueta flotante pericial
-      ctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
-      ctx.fillRect(8, 8, 280, 24);
-      ctx.strokeStyle = palette.accent;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(8, 8, 280, 24);
+        ctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
+        ctx.fillRect(8, 8, 300, 24);
+        ctx.strokeStyle = palette.accent;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, 8, 300, 24);
 
-      ctx.fillStyle = palette.accent;
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText(`🚩 ZONA INYECTADA: ${targetBitsCount.toLocaleString()} BITS (${Math.floor(targetBitsCount/8)} B)`, 14, 24);
+        ctx.fillStyle = palette.accent;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`🚩 ZONA ESTEGANOGRÁFICA: ${targetBitsCount.toLocaleString()} BITS`, 14, 24);
+      } else {
+        ctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
+        ctx.fillRect(8, 8, 360, 24);
+        ctx.strokeStyle = palette.accent;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, 8, 360, 24);
+
+        ctx.fillStyle = palette.accent;
+        ctx.font = 'bold 11px monospace';
+        const bitName = bitIndex === 0 ? 'BIT 0 (LSB - ESTEGANOGRAFÍA)' : (bitIndex === 7 ? 'BIT 7 (MSB - GLITCHES)' : `BIT ${bitIndex}`);
+        ctx.fillText(`🔬 RESALTADOR FORENSE: PLANO ${bitName}`, 14, 24);
+      }
 
     } else {
       // -------------------------------------------------------------
@@ -476,7 +549,7 @@ export class ForensicComparator {
       ctx.putImageData(imgData, 0, 0);
     }
 
-    const payloadTotal = payload1Count + payload0Count;
+    const sampleTotal = sample1Count + sample0Count;
 
     return {
       canvas,
@@ -488,16 +561,24 @@ export class ForensicComparator {
         viewMode,
         dimensions: { width, height, totalPixels, totalChannels },
         hasValidHeader,
-        payloadBytes: hasValidHeader ? payloadBytes : Math.floor(targetBitsCount / 8),
-        totalInjectedBits: targetBitsCount,
-        totalInjectedBytes: Math.floor(targetBitsCount / 8),
-        capacityUsedPct: Number(((targetBitsCount / (maxCapacityBytes * 8)) * 100).toFixed(3)),
+        isBitAttack,
+        attackedBitsCount,
+        payloadBytes: hasValidHeader ? payloadBytes : 0,
+        totalInjectedBits: hasValidHeader ? totalInjectedBits : (isBitAttack ? attackedBitsCount : 0),
+        totalInjectedBytes: hasValidHeader ? totalInjectedBytes : (isBitAttack ? Math.ceil(attackedBitsCount / 8) : 0),
+        capacityUsedPct: hasValidHeader ? Number(((totalInjectedBytes / maxCapacityBytes) * 100).toFixed(3)) : 0,
         startPixel: 0,
-        endPixel: endInjectedPixel >= 0 ? endInjectedPixel : Math.min(totalPixels - 1, 600),
+        endPixel: endInjectedPixel >= 0 ? endInjectedPixel : 0,
         startRow: 0,
         endRow: endInjectedPixel >= 0 ? Math.floor(endInjectedPixel / width) : 0,
-        payloadRatio1: payloadTotal > 0 ? Number(((payload1Count / payloadTotal) * 100).toFixed(2)) : 50.0,
-        payloadRatio0: payloadTotal > 0 ? Number(((payload0Count / payloadTotal) * 100).toFixed(2)) : 50.0
+        microscopeSampleCount: injectedBitsSequence.length,
+        totalPlaneBits,
+        totalOnesInPlane,
+        totalZerosInPlane,
+        planeRatio1: totalPlaneBits > 0 ? Number(((totalOnesInPlane / totalPlaneBits) * 100).toFixed(2)) : 50.0,
+        planeRatio0: totalPlaneBits > 0 ? Number(((totalZerosInPlane / totalPlaneBits) * 100).toFixed(2)) : 50.0,
+        sampleRatio1: sampleTotal > 0 ? Number(((sample1Count / sampleTotal) * 100).toFixed(2)) : 50.0,
+        sampleRatio0: sampleTotal > 0 ? Number(((sample0Count / sampleTotal) * 100).toFixed(2)) : 50.0
       }
     };
   }

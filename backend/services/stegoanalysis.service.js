@@ -364,6 +364,39 @@ export function analyzeImagePixels(data, width, height) {
   }
   const flatMismatchRate = flatPairs > 100 ? (mismatchedLsb / flatPairs) : 0.25;
 
+  // 7.1 Detección Forense de Ataques de Mutación de Bits y Glitches Adversarios (Módulo 4 / Bit-Flips)
+  let msbGlitchSpikes = 0;
+  let isolatedBitflipSpikes = 0;
+  let totalCheckedNeighbors = 0;
+
+  for (let i = 4; i < data.length - 8; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      const vPrev = data[i - 4 + c];
+      const vCur = data[i + c];
+      const vNext = data[i + 4 + c];
+
+      totalCheckedNeighbors++;
+
+      // Detección de Glitch MSB (Bit 7): Salto abrupto de ±128 aislado respecto a ambos vecinos
+      const dPrev = vCur - vPrev;
+      const dNext = vCur - vNext;
+      if (Math.abs(dPrev) >= 100 && Math.abs(dNext) >= 100 && Math.sign(dPrev) === Math.sign(dNext)) {
+        msbGlitchSpikes++;
+      }
+
+      // Detección de Bit-Flip individual: (vCur ^ vPrev) es exactamente potencia de 2 y rompe continuidad
+      const xorPrev = vCur ^ vPrev;
+      const isSingleBitJump = xorPrev > 0 && (xorPrev & (xorPrev - 1)) === 0;
+      if (isSingleBitJump && Math.abs(vCur - vNext) >= 28) {
+        isolatedBitflipSpikes++;
+      }
+    }
+  }
+
+  const msbSpikeRatio = totalCheckedNeighbors > 0 ? (msbGlitchSpikes / totalCheckedNeighbors) : 0;
+  const bitflipSpikeRatio = totalCheckedNeighbors > 0 ? (isolatedBitflipSpikes / totalCheckedNeighbors) : 0;
+  const isBitAttackDetected = msbSpikeRatio > 0.0002 || bitflipSpikeRatio > 0.0015;
+
   // 8. Calibración del Veredicto Forense Multicriterio (Sin Falsos Positivos)
   let finalConfidence = 0;
   let verdictStatus = 'IMAGEN_LIMPIA';
@@ -381,6 +414,12 @@ export function analyzeImagePixels(data, width, height) {
     finalConfidence = 99.5;
     verdictStatus = 'ALTO_RIESGO_ESTEGANOGRAFIA';
     verdictSummary = `Se detectó cabecera LSB de texto estructurado en los primeros bytes (longitud del payload: ${detectedPayloadLength.toLocaleString()} bytes).`;
+  } else if (isBitAttackDetected) {
+    // Detección de sabotaje o mutación de bits (Módulo 4 / Glitches / Bit-Flips)
+    finalConfidence = Math.min(99.2, Math.max(89.0, 78 + (msbSpikeRatio * 8000) + (bitflipSpikeRatio * 3000)));
+    finalConfidence = Number(finalConfidence.toFixed(1));
+    verdictStatus = 'ALTO_RIESGO_MANIPULACION_BITS';
+    verdictSummary = `⚠️ ALERTA FORENSE DE INTEGRIDAD: Se detectó un ataque de mutación de bits o inyección de glitches destructivos (anomalía de saltos bruscos en planos de bits). La imagen ha sido manipulada y presenta sabotaje digital.`;
   } else if (hasSustainedPlateau && flatMismatchRate > 0.46) {
     // Esteganografía de terceros sin cabecera reconocida: meseta Westfeld sostenida por >= 2 intervalos
     finalConfidence = Math.min(96.0, 70 + (plateauLength * 2));
@@ -441,6 +480,15 @@ export function analyzeImagePixels(data, width, height) {
       suspicionPercentage: finalConfidence,
       status: verdictStatus,
       summary: verdictSummary
+    },
+    payloadDetection: {
+      detectedHeaderType,
+      detectedPayloadLength,
+      isBitAttackDetected,
+      msbGlitchSpikes,
+      isolatedBitflipSpikes,
+      estimatedPayloadBytes,
+      totalAlteredBits: detectedPayloadLength > 0 ? (4 + detectedPayloadLength) * 8 : (msbGlitchSpikes + isolatedBitflipSpikes)
     }
   };
 }

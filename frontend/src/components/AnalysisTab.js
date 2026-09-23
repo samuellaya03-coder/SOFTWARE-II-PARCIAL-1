@@ -69,15 +69,30 @@ export function renderAnalysisTab(container, initialData = null) {
               </p>
             </div>
 
-            <!-- Controles de Personalización: Modo de Vista, Canal, Paleta y Figura -->
+            <!-- Controles de Personalización: Plano de Bit, Modo de Vista, Canal, Paleta y Figura -->
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <!-- Plano de Bit Objetivo -->
+              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <label style="font-size: 0.7rem; color: var(--accent-rose); font-weight: 700; text-transform: uppercase;">Plano de Bit:</label>
+                <select id="bitplane-index-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto; border: 1px solid var(--accent-rose); background: rgba(16, 22, 34, 0.95); color: #fca5a5; font-weight: 700; border-radius: 4px;">
+                  <option value="0" selected>Bit 0 (LSB - Esteganografía)</option>
+                  <option value="1">Bit 1 (±2)</option>
+                  <option value="2">Bit 2 (±4)</option>
+                  <option value="3">Bit 3 (±8)</option>
+                  <option value="4">Bit 4 (±16)</option>
+                  <option value="5">Bit 5 (±32)</option>
+                  <option value="6">Bit 6 (±64)</option>
+                  <option value="7">Bit 7 (MSB - Glitches / ±128)</option>
+                </select>
+              </div>
+
               <!-- Modo de Vista -->
               <div style="display: flex; flex-direction: column; gap: 0.2rem;">
                 <label style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Modo de Vista:</label>
                 <select id="bitplane-view-select" style="padding: 0.4rem 0.65rem; font-size: 0.8rem; width: auto; border: 1px solid var(--accent-cyan);">
                   <option value="microscope" selected>🔬 Microscopio Digital (Zoom 16x)</option>
                   <option value="highlight">🌐 Resaltador de Zona Inyectada</option>
-                  <option value="full">▦ Plano LSB Completo (Matriz 1:1)</option>
+                  <option value="full">▦ Plano de Bits Completo (Matriz 1:1)</option>
                 </select>
               </div>
 
@@ -249,6 +264,7 @@ export function renderAnalysisTab(container, initialData = null) {
   const resultsSection = container.querySelector('#analysis-results-section');
   const verdictCard = container.querySelector('#verdict-card');
   const bitplanePreviewContainer = container.querySelector('#bitplane-preview-container');
+  const bitplaneIndexSelect = container.querySelector('#bitplane-index-select');
   const bitplaneViewSelect = container.querySelector('#bitplane-view-select');
   const bitplaneChannelSelect = container.querySelector('#bitplane-channel-select');
   const bitplaneColorSelect = container.querySelector('#bitplane-color-select');
@@ -275,6 +291,7 @@ export function renderAnalysisTab(container, initialData = null) {
   let loadedImageElement = null;
   let currentBitplaneCanvas = null;
   let chartInstance = null;
+  let currentForensicReport = null;
 
   // Interacción con Drag & Drop y Selector de Archivo
   dropzoneAnalysis.addEventListener('click', () => fileInput.click());
@@ -346,6 +363,7 @@ export function renderAnalysisTab(container, initialData = null) {
       btnRunAnalysis.innerHTML = '⏳ Procesando bytes en backend y extrayendo plano en B/N...';
 
       const data = await ApiService.analyzeImage(currentAnalysisBlob);
+      currentForensicReport = data;
 
       renderResults(data);
       extractAndRenderBitPlane();
@@ -362,8 +380,13 @@ export function renderAnalysisTab(container, initialData = null) {
 
   function renderResults(report) {
     const verdict = report.verdict;
-    const isHighRisk = verdict.status === 'ALTO_RIESGO_ESTEGANOGRAFIA';
-    const isModerate = verdict.status === 'SOSPECHA_MODERADA';
+    const isHighRisk = verdict.status === 'ALTO_RIESGO_ESTEGANOGRAFIA' || 
+                       verdict.status.includes('ALTO_RIESGO') || 
+                       verdict.status.includes('MANIPULACION') || 
+                       verdict.status.includes('ATAQUE') || 
+                       verdict.suspicionPercentage >= 70;
+    const isModerate = verdict.status === 'SOSPECHA_MODERADA' || 
+                       (!isHighRisk && verdict.suspicionPercentage >= 35);
 
     const borderColor = isHighRisk ? 'var(--accent-rose)' : (isModerate ? 'var(--accent-amber)' : 'var(--accent-emerald)');
     const badgeClass = isHighRisk ? 'badge-rose' : (isModerate ? 'badge-amber' : 'badge-emerald');
@@ -459,17 +482,19 @@ export function renderAnalysisTab(container, initialData = null) {
     }
     if (!loadedImageElement) return;
 
+    const bitIndex = bitplaneIndexSelect ? parseInt(bitplaneIndexSelect.value, 10) : 0;
     const channel = bitplaneChannelSelect ? bitplaneChannelSelect.value : 'all';
     const colorTheme = bitplaneColorSelect ? bitplaneColorSelect.value : 'neon';
     const shapeMode = bitplaneShapeSelect ? bitplaneShapeSelect.value : 'dots';
     const viewMode = bitplaneViewSelect ? bitplaneViewSelect.value : 'microscope';
 
     const result = ForensicComparator.extractBitPlane(loadedImageElement, {
-      bitIndex: 0,
+      bitIndex,
       channel,
       colorTheme,
       shapeMode,
-      viewMode
+      viewMode,
+      forensicReport: currentForensicReport
     });
 
     currentBitplaneCanvas = result.canvas;
@@ -478,36 +503,55 @@ export function renderAnalysisTab(container, initialData = null) {
 
     const s = result.stats;
 
-    bitplaneStats.innerText = `Plano Bit 0 (LSB) — Vista: ${viewMode.toUpperCase()} | Canal: ${channel.toUpperCase()} | Paleta: ${colorTheme.toUpperCase()} | Modo: ${shapeMode.toUpperCase()}`;
+    const bitLabel = bitIndex === 0 ? 'Bit 0 (LSB - Esteganografía)' : (bitIndex === 7 ? 'Bit 7 (MSB - Glitches / ±128)' : `Bit ${bitIndex}`);
+    bitplaneStats.innerText = `Plano ${bitLabel} — Vista: ${viewMode.toUpperCase()} | Canal: ${channel.toUpperCase()} | Muestra microscopio: ${s.microscopeSampleCount.toLocaleString()} celdas (18x) | Paleta: ${colorTheme.toUpperCase()}`;
 
     // 1. Actualizar KPI: Cantidad de Bits Modificados
-    kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
-    kpiBitplaneTotalBytes.innerText = s.hasValidHeader 
-      ? `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`
-      : `(${s.totalInjectedBytes.toLocaleString()} bytes activos inspeccionados)`;
+    if (s.hasValidHeader && bitIndex === 0) {
+      kpiBitplaneTotalBits.innerText = `${s.totalInjectedBits.toLocaleString()} bits`;
+      kpiBitplaneTotalBytes.innerText = `(${s.totalInjectedBytes.toLocaleString()} bytes totales: 4B cabecera + ${s.payloadBytes.toLocaleString()}B payload útil)`;
 
-    // 2. Actualizar KPI: Ocupación de Capacidad
-    kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
-    kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
+      // 2. Actualizar KPI: Ocupación de Capacidad
+      kpiBitplaneCapacityPct.innerText = `${s.capacityUsedPct}%`;
+      kpiBitplaneCapacityDesc.innerText = `de ${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes de capacidad máxima disponible`;
 
-    // 3. Actualizar KPI: Extensión y Coordenadas
-    kpiBitplaneCoords.innerText = s.hasValidHeader 
-      ? `Píxeles #0 a #${s.endPixel.toLocaleString()}` 
-      : `Matriz ${s.dimensions.width} × ${s.dimensions.height} px`;
-    kpiBitplaneCoordsDesc.innerText = s.hasValidHeader 
-      ? `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen` 
-      : `Dispersión en toda la matriz cromática`;
+      // 3. Actualizar KPI: Extensión y Coordenadas
+      kpiBitplaneCoords.innerText = `Píxeles #0 a #${s.endPixel.toLocaleString()}`;
+      kpiBitplaneCoordsDesc.innerText = `Abarca desde fila 0 hasta fila ${s.endRow} de la imagen`;
 
-    // 4. Actualizar KPI: Balance de Bits Cifrados
-    kpiBitplaneEntropyBalance.innerText = `${s.payloadRatio1}% / ${s.payloadRatio0}%`;
-    kpiBitplaneEntropyDesc.innerText = s.hasValidHeader 
-      ? `Proporción 1s vs 0s (Equilibrio de alta entropía AES-256)` 
-      : `Equilibrio natural de bits fotográficos`;
+      // 4. Actualizar KPI: Balance de Bits Cifrados
+      kpiBitplaneEntropyBalance.innerText = `${s.sampleRatio1}% / ${s.sampleRatio0}%`;
+      kpiBitplaneEntropyDesc.innerText = `Proporción 1s vs 0s en el payload cifrado`;
+    } else if (s.isBitAttack) {
+      kpiBitplaneTotalBits.innerText = `${s.attackedBitsCount > 0 ? s.attackedBitsCount.toLocaleString() : 'Mutación'} bits anómalos`;
+      kpiBitplaneTotalBytes.innerText = `(Sabotaje detectado: glitches de bit e inversión brusca)`;
+
+      kpiBitplaneCapacityPct.innerText = `N/A`;
+      kpiBitplaneCapacityDesc.innerText = `Inyección hostil / Ruido malicioso de bits`;
+
+      kpiBitplaneCoords.innerText = `Dispersión Global`;
+      kpiBitplaneCoordsDesc.innerText = `Píxeles afectados distribuidos en toda la matriz`;
+
+      kpiBitplaneEntropyBalance.innerText = `${s.planeRatio1}% / ${s.planeRatio0}%`;
+      kpiBitplaneEntropyDesc.innerText = `Balance global 1s vs 0s en Plano ${bitLabel}`;
+    } else {
+      kpiBitplaneTotalBits.innerText = `0 bits inyectados`;
+      kpiBitplaneTotalBytes.innerText = `(Imagen limpia: Sin cabecera esteganográfica ni ataques)`;
+
+      kpiBitplaneCapacityPct.innerText = `0.000%`;
+      kpiBitplaneCapacityDesc.innerText = `Capacidad 100% íntegra (${(s.dimensions.totalChannels / 8 - 4).toLocaleString()} bytes disponibles)`;
+
+      kpiBitplaneCoords.innerText = `Matriz ${s.dimensions.width} × ${s.dimensions.height} px`;
+      kpiBitplaneCoordsDesc.innerText = `Estructura visual fotográfica intacta`;
+
+      kpiBitplaneEntropyBalance.innerText = `${s.planeRatio1}% / ${s.planeRatio0}%`;
+      kpiBitplaneEntropyDesc.innerText = `Balance global 1s vs 0s en Plano ${bitLabel}`;
+    }
 
     // Fila de Información Técnica Adicional
     bitplaneAdditionalDetails.innerHTML = `
       <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
-        <div><strong>Protocolo Detectado:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua</span>'}</div>
+        <div><strong>Protocolo / Modo:</strong> ${s.hasValidHeader ? '<span style="color:#10b981; font-weight: 600;">Cabecera Big-Endian 32-bit Verificada ✓</span>' : (s.isBitAttack ? '<span style="color:#f43f5e; font-weight: 600;">⚠️ Ataque / Manipulación de Bits Detectada</span>' : (bitIndex === 0 ? '<span style="color:#f59e0b; font-weight: 600;">Dispersión LSB Continua (Sin Payload)</span>' : `<span style="color:#00f0ff; font-weight: 600;">Inspección Plano Bit ${bitIndex}</span>`))}</div>
         <div><strong>Canal Alfa (Transparencia):</strong> <span style="color:#00f0ff; font-weight: 600;">A = 255 (100% Intacto, sin fuga de opacidad)</span></div>
         <div><strong>Modo Visual Activo:</strong> <span style="color:#a855f7; font-weight: 600;">${viewMode.toUpperCase()} • Paleta ${colorTheme.toUpperCase()} • Marcador ${shapeMode.toUpperCase()}</span></div>
       </div>
@@ -516,6 +560,10 @@ export function renderAnalysisTab(container, initialData = null) {
 
   if (btnExtractLsbPlane) {
     btnExtractLsbPlane.addEventListener('click', () => extractAndRenderBitPlane());
+  }
+  if (bitplaneIndexSelect) {
+    bitplaneIndexSelect.addEventListener('change', () => extractAndRenderBitPlane());
+    bitplaneIndexSelect.addEventListener('input', () => extractAndRenderBitPlane());
   }
   if (bitplaneViewSelect) {
     bitplaneViewSelect.addEventListener('change', () => extractAndRenderBitPlane());
@@ -538,7 +586,8 @@ export function renderAnalysisTab(container, initialData = null) {
     if (!currentBitplaneCanvas) return;
     const a = document.createElement('a');
     a.href = currentBitplaneCanvas.toDataURL('image/png');
-    a.download = `plano_lsb_${bitplaneColorSelect.value}_${bitplaneShapeSelect.value}_${Date.now()}.png`;
+    const bitVal = bitplaneIndexSelect ? bitplaneIndexSelect.value : '0';
+    a.download = `plano_bit_${bitVal}_${bitplaneColorSelect.value}_${bitplaneShapeSelect.value}_${Date.now()}.png`;
     a.click();
   });
 

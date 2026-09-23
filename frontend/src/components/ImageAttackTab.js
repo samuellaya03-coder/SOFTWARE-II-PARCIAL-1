@@ -8,29 +8,32 @@ export function renderImageAttackTab(container, initialData = null) {
       <div class="card card-glow-rose" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-color: rgba(244, 63, 94, 0.4); box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.15);">
         <div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-            <span style="font-size: 1.5rem;">💥</span>
-            <h2 style="font-size: 1.45rem; color: var(--text-primary);">Laboratorio de Ataque de Bits a Imágenes en Tiempo Real</h2>
+            <span style="font-size: 1.5rem;">🎬</span>
+            <h2 style="font-size: 1.45rem; color: var(--text-primary);">Simulador Interactivo de Ataque y Mutación de Bits en Tiempo Real</h2>
           </div>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">
-            Demostración visual del impacto de la corrupción de bits en imágenes. Compara a la izquierda los bits invisibles (LSB) y a la derecha la máscara negra con los bits atacados en rojo (o la foto con distorsión visual).
+          <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">
+            Reproduce en vivo la degradación progresiva de imágenes (Modo Vídeo). Compara en paralelo la referencia original, la imagen mutada con glitches cromáticos y el mapa de calor forense térmico con telemetría byte a byte.
           </p>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <span class="badge badge-rose">💥 Ataque de Bits (Bit-Flip)</span>
-          <span class="badge badge-cyan">Máscara Negro / Rojo</span>
-          <span class="badge badge-emerald">Métricas Forenses en Vivo</span>
+          <span class="badge badge-rose">🎬 Modo Vídeo Interactivo</span>
+          <span class="badge badge-cyan">🔬 Vista Tripartita</span>
+          <span class="badge badge-emerald">📟 Telemetría Forense</span>
         </div>
       </div>
 
-      <!-- Barra de Carga de Imagen -->
+      <!-- 1. Barra de Carga de Imagen -->
       <div class="card" style="display: flex; flex-direction: column; gap: 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
           <h3 style="font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem;">
-            <span>🖼️</span> 1. Imagen en Análisis
+            <span>🖼️</span> 1. Imagen Portadora en Análisis
           </h3>
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button id="btn-download-attacked-top" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.45rem 1rem; color: #fca5a5; border-color: rgba(244, 63, 94, 0.45); display: none; align-items: center; gap: 0.4rem;" title="Descargar imagen atacada en formato PNG">
+              <span>💾</span> Descargar Imagen Atacada (PNG)
+            </button>
             <button id="btn-reset-attack" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.45rem 1rem;" disabled>
-              🔄 Restablecer Ataque
+              🔄 Restablecer Todo
             </button>
           </div>
         </div>
@@ -40,7 +43,7 @@ export function renderImageAttackTab(container, initialData = null) {
             <input type="file" id="attack-file-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/bmp, image/*" style="display: none;" />
             <div style="font-size: 2rem; margin-bottom: 0.35rem;">📂</div>
             <p style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">Arrastra una imagen o haz clic para seleccionarla</p>
-            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Soporta PNG, JPEG, WebP o cualquier foto para atacar sus bits</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Soporta PNG, JPEG, WebP o BMP para someter a mutación de bits</p>
           </div>
 
           <div style="background: rgba(0,0,0,0.3); padding: 1.25rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.75rem;">
@@ -60,134 +63,241 @@ export function renderImageAttackTab(container, initialData = null) {
         </div>
       </div>
 
-      <!-- SECCIÓN PRINCIPAL: CONSOLA DE ATAQUES Y LIENZOS EN TIEMPO REAL -->
+      <!-- WORKSPACE PRINCIPAL (Se activa al cargar imagen) -->
       <div id="attack-workspace" style="display: none; flex-direction: column; gap: 1.5rem;">
         
-        <!-- 2. Consola de Ataque Malicioso en Vivo -->
+        <!-- 2. PRESETS RÁPIDOS DIDÁCTICOS & CONSOLA DE CONFIGURACIÓN -->
         <div class="card space-y-4" style="border-left: 4px solid var(--accent-rose);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
               <h3 style="font-size: 1.15rem; color: #f87171; display: flex; align-items: center; gap: 0.5rem;">
-                <span>💥</span> 2. Consola de Ataque de Bits (Inyección Hostil Bit-Flip)
+                <span>⚡</span> 2. Presets Didácticos & Configuración del Ataque
               </h3>
               <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                Invierte bits en tiempo real para observar cómo se degradan los diferentes planos binarios de la imagen.
+                Elige un escenario preconfigurado para demostrar la diferencia entre ataques invisibles y destrucción masiva.
               </p>
             </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <span class="badge" style="background: rgba(244, 63, 94, 0.15); color: #f87171; border: 1px solid rgba(244, 63, 94, 0.3);">
-                Vector Activo: Bit-Flip en Vivo
-              </span>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button id="preset-stealth" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+                🕵️ Modo Sigiloso (Bit 0 LSB)
+              </button>
+              <button id="preset-glitch" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(244, 63, 94, 0.4); color: #f87171;">
+                💥 Glitch Destructivo (Bit 7 MSB)
+              </button>
+              <button id="preset-sabotage" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
+                🌪 Sabotaje Total (Ruido Puro)
+              </button>
             </div>
           </div>
 
-          <!-- Panel Único: Bit-Flip -->
-          <div id="attack-controls-panel" style="background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div id="panel-attack-bitflip" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="background: rgba(0,0,0,0.25); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Controles de Bit e Intensidad -->
+            <div class="grid-3" style="gap: 1rem; align-items: center;">
               <div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem;">
-                  <span style="color: var(--text-secondary); font-weight: 600;">Intensidad del Ataque (% de píxeles con bit invertido):</span>
-                  <span id="label-bitflip-pct" class="font-mono" style="color: var(--accent-rose); font-weight: 700;">0.00%</span>
-                </div>
-                <input type="range" id="slider-bitflip-pct" min="0" max="5" step="0.01" value="0" style="width: 100%; cursor: pointer;" />
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
-                  <span>0% (Canal Seguro / Limpio)</span>
-                  <span>0.05% (Micro-ataque de 1-2 bits)</span>
-                  <span>1.0% (Corrupción media)</span>
-                  <span>5.0% (Sabotaje masivo)</span>
-                </div>
-                <div id="slider-hint-box" style="font-size: 0.75rem; color: #fca5a5; margin-top: 0.4rem; display: flex; align-items: center; gap: 0.35rem; background: rgba(244, 63, 94, 0.1); padding: 0.35rem 0.6rem; border-radius: 4px; border: 1px solid rgba(244, 63, 94, 0.25);">
-                  <span>💡</span> <strong>Regla del ataque:</strong> La intensidad debe ser mayor a 0% para que los bits se inviertan. Al cambiar de plano se activa automáticamente.
-                </div>
-              </div>
-
-              <div class="grid-2" style="gap: 1rem;">
-                <div>
-                  <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
-                    Plano de Bit Objetivo del Ataque:
-                  </label>
-                  <select id="select-target-bit">
-                    <option value="0" selected>Bit 0 (LSB - Invisible al ojo humano, capa esteganográfica)</option>
-                    <option value="1">Bit 1 (Casi invisible)</option>
-                    <option value="2">Bit 2 (Textura leve)</option>
-                    <option value="7">Bit 7 (MSB - Glitch visual extremo y distorsión radical)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
-                    Canales de Color Afectados:
-                  </label>
-                  <select id="select-target-channel">
-                    <option value="all" selected>Todos los Canales (R, G, B)</option>
-                    <option value="r">Solo Canal Rojo (R)</option>
-                    <option value="g">Solo Canal Verde (G)</option>
-                    <option value="b">Solo Canal Azul (B)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. LIENZOS DE VISUALIZACIÓN DIVIDIDA EN TIEMPO REAL -->
-        <div class="grid-2" style="gap: 1.25rem;">
-          
-          <!-- Lienzo 1 (Izquierda): Imagen Original con los Bits Invisibles -->
-          <div class="card" style="display: flex; flex-direction: column; gap: 0.75rem; border-color: rgba(0, 240, 255, 0.35);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-              <h4 style="font-size: 1rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.4rem;">
-                <span>🔬</span> Imagen Original (Bits Invisibles / LSB)
-              </h4>
-              <select id="select-left-view-mode" style="padding: 0.25rem 0.55rem; font-size: 0.75rem; width: auto; border: 1px solid var(--accent-cyan); background: rgba(16, 22, 34, 0.9); color: var(--accent-cyan); font-weight: 600; border-radius: 6px;">
-                <option value="lsb-bw" selected>Plano LSB (Bits que los humanos no ven)</option>
-                <option value="lsb-rgb">Plano LSB Cromático (Canales R, G, B)</option>
-                <option value="photo">Foto Original Visible</option>
-              </select>
-            </div>
-            <div class="image-preview-box" style="min-height: 280px; max-height: 440px; overflow: auto; background: #000000; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(0, 240, 255, 0.3);">
-              <canvas id="canvas-left-view" style="max-width: 100%; object-fit: contain;"></canvas>
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
-              <span id="left-view-desc">Muestra los bits menos significativos (LSB) imperceptibles al ojo humano</span>
-              <span id="left-view-coords" class="font-mono text-white">-</span>
-            </div>
-          </div>
-
-          <!-- Lienzo 2 (Derecha): Todo Negro con Bits Atacados Resaltando en Rojo -->
-          <div class="card" style="display: flex; flex-direction: column; gap: 0.75rem; border-color: rgba(244, 63, 94, 0.4); box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.15);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-              <h4 style="font-size: 1rem; color: #f87171; display: flex; align-items: center; gap: 0.4rem;">
-                <span>💥</span> Imagen Atacada / Bits Alterados
-              </h4>
-              <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <span id="badge-attack-indicator" class="badge badge-emerald" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">ESTADO: INTACTO</span>
-                <select id="select-heatmap-theme" style="padding: 0.25rem 0.55rem; font-size: 0.75rem; width: auto; border: 1px solid rgba(244, 63, 94, 0.5); background: rgba(16, 22, 34, 0.9); color: #f87171; font-weight: 600; border-radius: 6px;">
-                  <option value="lsb-rgb-attacked">Plano LSB Cromático Atacado (Canales R, G, B)</option>
-                  <option value="lsb-bw-attacked">Plano LSB Atacado (B/N)</option>
-                  <option value="pure-red" selected>Fondo Negro + Bits en Rojo (Diferencia Forense)</option>
-                  <option value="photo-attacked">📸 Foto Atacada con Glitch Visual</option>
-                  <option value="matrix">Verde Matrix</option>
-                  <option value="cyan-glow">Cian Fosforescente</option>
+                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
+                  Plano de Bit Objetivo:
+                </label>
+                <select id="select-target-bit">
+                  <option value="0" selected>Bit 0 (LSB - Regla Esteganográfica, ±1)</option>
+                  <option value="1">Bit 1 (±2, Textura micro-sutil)</option>
+                  <option value="2">Bit 2 (±4, Textura leve)</option>
+                  <option value="4">Bit 4 (±16, Distorsión media)</option>
+                  <option value="7">Bit 7 (MSB - Glitch Radical Máximo, ±128)</option>
+                  <option value="random">Ruido Aleatorio Puro (0 a 255)</option>
                 </select>
               </div>
+
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
+                  Canales de Color Afectados:
+                </label>
+                <select id="select-target-channel">
+                  <option value="all" selected>Todos los Canales (R, G, B)</option>
+                  <option value="r">Solo Canal Rojo (R)</option>
+                  <option value="g">Solo Canal Verde (G)</option>
+                  <option value="b">Solo Canal Azul (B)</option>
+                </select>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">Objetivo del Ataque (% Píxeles):</span>
+                  <span id="label-bitflip-pct" class="font-mono" style="color: var(--accent-rose); font-weight: 700;">2.00%</span>
+                </div>
+                <input type="range" id="slider-bitflip-pct" min="0.05" max="10" step="0.05" value="2" style="width: 100%; cursor: pointer;" />
+              </div>
             </div>
-            <div class="image-preview-box" style="min-height: 280px; max-height: 440px; overflow: auto; background: #000000; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(244, 63, 94, 0.4);">
-              <canvas id="canvas-heatmap-view" style="max-width: 100%; object-fit: contain;"></canvas>
+
+            <!-- 3. BARRA DE REPRODUCCIÓN / TRANSPORTE (MODO VÍDEO) -->
+            <div class="sim-transport-bar">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="btn-sim-play" class="btn sim-btn-play" style="font-size: 0.85rem; padding: 0.45rem 1rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <span>▶️</span> Iniciar Simulación
+                </button>
+                <button id="btn-sim-pause" class="btn sim-btn-pause" style="font-size: 0.85rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.35rem;" disabled>
+                  <span>⏸️</span> Pausar
+                </button>
+                <button id="btn-sim-step" class="btn sim-btn-step" style="font-size: 0.85rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <span>⏭️</span> Paso a Paso
+                </button>
+                <button id="btn-sim-stop" class="btn sim-btn-stop" style="font-size: 0.85rem; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <span>⏹️</span> Reiniciar
+                </button>
+              </div>
+
+              <!-- Selector de Velocidad Didáctica -->
+              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">⏱️ Velocidad:</span>
+                <select id="select-sim-speed" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-weight: 600;">
+                  <option value="350">Ultra Lento (350 ms/paso - Clase explicativa)</option>
+                  <option value="120">Didáctico Lento (120 ms/paso)</option>
+                  <option value="40" selected>Normal (40 ms/paso)</option>
+                  <option value="15">Rápido (15 ms/paso)</option>
+                </select>
+
+                <!-- Badge de Estado Dinámico -->
+                <span id="badge-sim-status" class="badge badge-cyan" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;">
+                  ● EN ESPERA
+                </span>
+              </div>
             </div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
-              <span id="right-view-desc">Muestra los bits alterados de la imagen atacada</span>
-              <span id="heatmap-modified-counter" class="font-mono" style="color: #f87171; font-weight: 700;">0 píxeles alterados</span>
+
+            <!-- Barra de Progreso de la Simulación -->
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem;">
+                <span>Progreso de Inyección en el Lienzo:</span>
+                <span id="sim-progress-label" class="font-mono" style="color: var(--accent-cyan); font-weight: 700;">0% / 2.00%</span>
+              </div>
+              <div class="progress-container" style="height: 8px;">
+                <div id="sim-progress-bar" class="progress-bar progress-normal" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. VISTA TRIPLE COMPARATIVA SINCRONIZADA (3 CANVASES) -->
+        <div>
+          <div style="margin-bottom: 0.75rem;">
+            <h3 style="font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+              <span>🔬</span> 3. Vista Tripartita Sincronizada (Original vs Atacada vs Máscara Forense)
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">
+              Tres proyecciones simultáneas calculadas en memoria gráfica para evidenciar la detección forense de anomalías.
+            </p>
+          </div>
+
+          <div class="grid-3-canvases">
+            
+            <!-- LIENZO 1: IMAGEN ORIGINAL (REFERENCIA LIMPIA) -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; border-color: rgba(0, 240, 255, 0.35);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                <h4 style="font-size: 0.92rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+                  <span>🖼️</span> 1. Referencia Limpia
+                </h4>
+                <select id="select-left-view-mode" style="padding: 0.2rem 0.45rem; font-size: 0.72rem; border: 1px solid var(--accent-cyan); background: rgba(16, 22, 34, 0.9); color: var(--accent-cyan); font-weight: 600; border-radius: 4px;">
+                  <option value="photo" selected>Foto Natural Visible</option>
+                  <option value="lsb-bw">Plano LSB (B/N)</option>
+                  <option value="lsb-rgb">Plano LSB Cromático (RGB)</option>
+                </select>
+              </div>
+
+              <div class="image-preview-box" style="height: 260px; overflow: auto; background: #000000; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(0, 240, 255, 0.25);">
+                <canvas id="canvas-orig-view" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
+              </div>
+
+              <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                <span id="orig-view-desc">Imagen intacta sin corrupción</span>
+                <span id="orig-view-coords" class="font-mono text-white">-</span>
+              </div>
+            </div>
+
+            <!-- LIENZO 2: IMAGEN ATACADA EN VIVO (GLITCHES & MUTACIÓN) -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; border-color: rgba(244, 63, 94, 0.45); box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.15);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                <h4 style="font-size: 0.92rem; color: #f87171; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+                  <span>💥</span> 2. Atacada en Vivo
+                </h4>
+                <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                  <button id="btn-download-attacked" class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.6rem; color: #fca5a5; border-color: rgba(244, 63, 94, 0.45); display: flex; align-items: center; gap: 0.3rem;" title="Descargar imagen mutada / atacada en formato PNG">
+                    <span>💾</span> Descargar PNG
+                  </button>
+                  <span id="badge-attack-mode-label" class="badge badge-rose" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">
+                    GLITCH EN VIVO
+                  </span>
+                </div>
+              </div>
+
+              <div class="image-preview-box" style="height: 260px; overflow: auto; background: #000000; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(244, 63, 94, 0.3);">
+                <canvas id="canvas-attacked-view" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
+              </div>
+
+              <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                <span id="attacked-view-desc">Mutaciones reflejadas en tiempo real</span>
+                <span id="attacked-pixel-counter" class="font-mono" style="color: #f87171; font-weight: 700;">0 px mutados</span>
+              </div>
+            </div>
+
+            <!-- LIENZO 3: MÁSCARA FORENSE DE DIFERENCIAS (HEATMAP TÉRMICO) -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; border-color: rgba(168, 85, 247, 0.45);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                <h4 style="font-size: 0.92rem; color: #d8b4fe; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+                  <span>🎯</span> 3. Máscara Forense
+                </h4>
+                <select id="select-heatmap-theme" style="padding: 0.2rem 0.45rem; font-size: 0.72rem; border: 1px solid rgba(168, 85, 247, 0.4); background: rgba(16, 22, 34, 0.9); color: #d8b4fe; font-weight: 600; border-radius: 4px;">
+                  <option value="pure-red" selected>Rojo Neón Forense</option>
+                  <option value="matrix">Verde Matrix</option>
+                  <option value="cyan-glow">Cian Térmico</option>
+                  <option value="lsb-rgb-attacked">Plano LSB Atacado (RGB)</option>
+                  <option value="lsb-bw-attacked">Plano LSB Atacado (B/N)</option>
+                </select>
+              </div>
+
+              <div class="image-preview-box" style="height: 260px; overflow: auto; background: #000000; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(168, 85, 247, 0.3);">
+                <canvas id="canvas-heatmap-view" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
+              </div>
+
+              <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                <span>Fondo negro: ilumina las coordenadas alteradas</span>
+                <span id="heatmap-coords" class="font-mono text-white">-</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 4. CONSOLA DE TELEMETRÍA DE BYTES EN VIVO -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.6rem;">
+            <h3 style="font-size: 1.05rem; color: #00f2fe; text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.5rem; margin: 0; text-shadow: 0 0 12px rgba(0, 242, 254, 0.35);">
+              <span>🔬</span> CONSOLA DE TELEMETRÍA DE BYTES EN VIVO:
+            </h3>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span id="telemetry-event-count" class="badge badge-cyan" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+                0 eventos registrados
+              </span>
+              <button id="btn-toggle-autoscroll" class="btn btn-secondary" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-color: rgba(255,255,255,0.15);">
+                📌 Auto-Scroll: ON
+              </button>
+              <button id="btn-clear-telemetry" class="btn btn-secondary" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-color: rgba(255,255,255,0.15);">
+                🧹 Limpiar Terminal
+              </button>
             </div>
           </div>
 
+          <div class="telemetry-terminal-card">
+            <div id="telemetry-log-body" class="telemetry-terminal-body">
+              <div style="color: #64748b; font-style: italic; padding: 0.5rem 0.25rem;">
+                [Esperando inicio de la simulación... Pulsa "▶️ Iniciar Simulación" o "⏭️ Paso a Paso" para registrar mutaciones binarias]
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 3. MONITOR DE INTEGRIDAD Y DAÑO DE BITS -->
+        <!-- 5. AUDITORÍA CUANTITATIVA DE INTEGRIDAD (MÉTRICAS MATEMÁTICAS) -->
         <div class="card space-y-4" style="background: rgba(16, 22, 34, 0.95); border: 1px solid var(--border-glow);">
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-            <h3 style="font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem;">
-              <span>📊</span> 3. Diagnóstico de Impacto del Ataque en la Imagen
+            <h3 style="font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+              <span>📊</span> 5. Auditoría Cuantitativa de Integridad Forense
             </h3>
             <span id="attack-verdict-pill" class="badge badge-emerald" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">
               ● IMAGEN INTACTA
@@ -195,7 +305,7 @@ export function renderImageAttackTab(container, initialData = null) {
           </div>
 
           <!-- Alerta de Diagnóstico del Ataque -->
-          <div id="attack-verdict-alert" class="alert-box alert-success" style="line-height: 1.6;">
+          <div id="attack-verdict-alert" class="alert-box alert-success" style="line-height: 1.6; margin: 0;">
             <strong>✅ Imagen Limpia:</strong> No se ha aplicado corrupción de bits. Todos los píxeles coinciden exactamente con la imagen original.
           </div>
 
@@ -225,7 +335,7 @@ export function renderImageAttackTab(container, initialData = null) {
 
             <!-- KPI 4: Severidad del Daño de Bits -->
             <div style="background: rgba(0,0,0,0.3); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
-              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Severidad del Ataque</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Severidad del Canal</div>
               <div id="kpi-attack-severity" class="font-mono" style="font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">CANAL LIMPIO</div>
               <div id="kpi-attack-severity-desc" style="font-size: 0.75rem; color: var(--text-secondary);">0 bits atacados</div>
             </div>
@@ -237,7 +347,7 @@ export function renderImageAttackTab(container, initialData = null) {
     </div>
   `;
 
-  // Referencias DOM
+  // --- REFERENCIAS AL DOM ---
   const btnResetAttack = container.querySelector('#btn-reset-attack');
   const dropzoneAttack = container.querySelector('#dropzone-attack');
   const attackFileInput = container.querySelector('#attack-file-input');
@@ -246,25 +356,51 @@ export function renderImageAttackTab(container, initialData = null) {
   const carrierPixelsLabel = container.querySelector('#carrier-pixels-label');
   const attackWorkspace = container.querySelector('#attack-workspace');
 
-  // Controles de ataque malicioso (Bit-Flip)
-  const sliderBitflipPct = container.querySelector('#slider-bitflip-pct');
-  const labelBitflipPct = container.querySelector('#label-bitflip-pct');
+  // Presets
+  const presetStealth = container.querySelector('#preset-stealth');
+  const presetGlitch = container.querySelector('#preset-glitch');
+  const presetSabotage = container.querySelector('#preset-sabotage');
+
+  // Configuración del ataque
   const selectTargetBit = container.querySelector('#select-target-bit');
   const selectTargetChannel = container.querySelector('#select-target-channel');
+  const sliderBitflipPct = container.querySelector('#slider-bitflip-pct');
+  const labelBitflipPct = container.querySelector('#label-bitflip-pct');
+
+  // Reproductor / Transporte
+  const btnSimPlay = container.querySelector('#btn-sim-play');
+  const btnSimPause = container.querySelector('#btn-sim-pause');
+  const btnSimStep = container.querySelector('#btn-sim-step');
+  const btnSimStop = container.querySelector('#btn-sim-stop');
+  const selectSimSpeed = container.querySelector('#select-sim-speed');
+  const badgeSimStatus = container.querySelector('#badge-sim-status');
+  const simProgressBar = container.querySelector('#sim-progress-bar');
+  const simProgressLabel = container.querySelector('#sim-progress-label');
 
   // Lienzos
-  const canvasLeftView = container.querySelector('#canvas-left-view');
+  const canvasOrigView = container.querySelector('#canvas-orig-view');
   const selectLeftViewMode = container.querySelector('#select-left-view-mode');
-  const leftViewDesc = container.querySelector('#left-view-desc');
-  const leftViewCoords = container.querySelector('#left-view-coords');
+  const origViewDesc = container.querySelector('#orig-view-desc');
+  const origViewCoords = container.querySelector('#orig-view-coords');
+
+  const canvasAttackedView = container.querySelector('#canvas-attacked-view');
+  const btnDownloadAttacked = container.querySelector('#btn-download-attacked');
+  const btnDownloadAttackedTop = container.querySelector('#btn-download-attacked-top');
+  const badgeAttackModeLabel = container.querySelector('#badge-attack-mode-label');
+  const attackedViewDesc = container.querySelector('#attacked-view-desc');
+  const attackedPixelCounter = container.querySelector('#attacked-pixel-counter');
 
   const canvasHeatmapView = container.querySelector('#canvas-heatmap-view');
-  const badgeAttackIndicator = container.querySelector('#badge-attack-indicator');
-  const heatmapModifiedCounter = container.querySelector('#heatmap-modified-counter');
   const selectHeatmapTheme = container.querySelector('#select-heatmap-theme');
-  const rightViewDesc = container.querySelector('#right-view-desc');
+  const heatmapCoords = container.querySelector('#heatmap-coords');
 
-  // KPIs y Diagnóstico
+  // Live Byte Inspector (Terminal)
+  const telemetryEventCount = container.querySelector('#telemetry-event-count');
+  const btnToggleAutoscroll = container.querySelector('#btn-toggle-autoscroll');
+  const btnClearTelemetry = container.querySelector('#btn-clear-telemetry');
+  const telemetryLogBody = container.querySelector('#telemetry-log-body');
+
+  // Métricas Cuantitativas
   const attackVerdictPill = container.querySelector('#attack-verdict-pill');
   const attackVerdictAlert = container.querySelector('#attack-verdict-alert');
   const kpiAttackPsnr = container.querySelector('#kpi-attack-psnr');
@@ -276,20 +412,128 @@ export function renderImageAttackTab(container, initialData = null) {
   const kpiAttackSeverity = container.querySelector('#kpi-attack-severity');
   const kpiAttackSeverityDesc = container.querySelector('#kpi-attack-severity-desc');
 
-  // Estado local
+  // --- ESTADO INTERNO DEL SIMULADOR ---
   let originalCarrierImageData = null;
   let currentAttackedImageData = null;
+  let imageWidth = 0;
+  let imageHeight = 0;
+  let totalPixels = 0;
 
-  // --- Subida de Imágenes por Dropzone ---
+  // Estado del bucle de simulación
+  let simTimer = null;
+  let isSimPlaying = false;
+  let currentMutatedPixelsCount = 0;
+  let targetTotalPixelsToMutate = 0;
+  let autoScrollEnabled = true;
+  let totalEventsLogged = 0;
+
+  // Cronómetro de telemetría de alta precisión
+  let simStartTime = null;
+  let simAccumulatedTime = 0;
+  let simLastResumeTime = null;
+
+  function getSimElapsedSeconds() {
+    if (!simStartTime) return '0.00';
+    let total = simAccumulatedTime;
+    if (isSimPlaying && simLastResumeTime) {
+      total += (performance.now() - simLastResumeTime);
+    }
+    return (total / 1000).toFixed(2);
+  }
+
+  // Helper de conversión a binario de 8 bits
+  const toByte8 = (n) => n.toString(2).padStart(8, '0');
+
+  // --- Sistema de Notificaciones Toast ---
+  const showToast = ({ title, message, icon = 'ℹ️', type = 'info', duration = 2500 }) => {
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'toast-container';
+      toastContainer.className = 'toast-container';
+      document.body.appendChild(toastContainer);
+    }
+    const toast = document.createElement('div');
+    toast.className = `crypto-toast crypto-toast-${type}`;
+    toast.innerHTML = `
+      <div class="crypto-toast-icon">${icon}</div>
+      <div class="crypto-toast-content">
+        <div class="crypto-toast-title">${title}</div>
+        <div class="crypto-toast-body">${message}</div>
+      </div>
+      <div class="crypto-toast-progress" style="animation-duration: ${duration}ms;"></div>
+    `;
+    toastContainer.appendChild(toast);
+    const timer = setTimeout(() => {
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        toast.remove();
+        if (toastContainer && toastContainer.children.length === 0) toastContainer.remove();
+      }, 300);
+    }, duration);
+    toast.style.cursor = 'pointer';
+    toast.addEventListener('click', () => {
+      clearTimeout(timer);
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        toast.remove();
+        if (toastContainer && toastContainer.children.length === 0) toastContainer.remove();
+      }, 300);
+    });
+  };
+
+  // --- Función para Descargar la Imagen Atacada ---
+  function downloadAttackedImage() {
+    if (!currentAttackedImageData || !imageWidth || !imageHeight) {
+      showToast({
+        title: 'Sin Imagen',
+        message: 'Primero debes cargar una imagen para poder descargarla.',
+        icon: '⚠️',
+        type: 'warning'
+      });
+      return;
+    }
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = imageWidth;
+    tempCanvas.height = imageHeight;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.putImageData(currentAttackedImageData, 0, 0);
+
+    const targetBitVal = selectTargetBit ? selectTargetBit.value : '0';
+    const bitLabel = targetBitVal === 'random' ? 'ruido_puro' : `bit_${targetBitVal}`;
+    const filename = `imagen_atacada_${bitLabel}_${currentMutatedPixelsCount}px_mutados.png`;
+
+    tempCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast({
+        title: 'Imagen Atacada Descargada',
+        message: `Guardado como "${filename}" (${currentMutatedPixelsCount.toLocaleString()} píxeles mutados).`,
+        icon: '💾',
+        type: 'success'
+      });
+    }, 'image/png');
+  }
+
+  // --- SUBIDA Y CARGA DE IMÁGENES ---
   dropzoneAttack.addEventListener('click', () => attackFileInput.click());
   dropzoneAttack.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropzoneAttack.classList.add('active');
+    dropzoneAttack.classList.add('drag-active');
   });
-  dropzoneAttack.addEventListener('dragleave', () => dropzoneAttack.classList.remove('active'));
+  dropzoneAttack.addEventListener('dragleave', () => dropzoneAttack.classList.remove('drag-active'));
   dropzoneAttack.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropzoneAttack.classList.remove('active');
+    dropzoneAttack.classList.remove('drag-active');
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleImageUpload(e.dataTransfer.files[0]);
     }
@@ -315,59 +559,89 @@ export function renderImageAttackTab(container, initialData = null) {
     }
   }
 
-  // --- Inicializar la Imagen en el Entorno de Ataque ---
   function loadCarrierFromCanvas(canvas, name) {
+    stopSimulation();
+
+    imageWidth = canvas.width;
+    imageHeight = canvas.height;
+    totalPixels = imageWidth * imageHeight;
+
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    originalCarrierImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    originalCarrierImageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
     currentAttackedImageData = ImageAttackEngine.cloneImageData(originalCarrierImageData);
 
-    const totalPx = canvas.width * canvas.height;
     carrierStatusTag.textContent = name;
-    carrierDimLabel.textContent = `${canvas.width} × ${canvas.height} px`;
-    carrierPixelsLabel.textContent = `${totalPx.toLocaleString()} px`;
+    carrierDimLabel.textContent = `${imageWidth} × ${imageHeight} px`;
+    carrierPixelsLabel.textContent = `${totalPixels.toLocaleString()} px`;
 
     attackWorkspace.style.display = 'flex';
     btnResetAttack.disabled = false;
+    if (btnDownloadAttackedTop) btnDownloadAttackedTop.style.display = 'inline-flex';
 
-    canvasLeftView.width = canvas.width;
-    canvasLeftView.height = canvas.height;
-    canvasHeatmapView.width = canvas.width;
-    canvasHeatmapView.height = canvas.height;
+    // Dimensionar los 3 Canvases
+    canvasOrigView.width = imageWidth;
+    canvasOrigView.height = imageHeight;
+    canvasAttackedView.width = imageWidth;
+    canvasAttackedView.height = imageHeight;
+    canvasHeatmapView.width = imageWidth;
+    canvasHeatmapView.height = imageHeight;
 
-    sliderBitflipPct.value = 0;
-    labelBitflipPct.textContent = '0.00%';
+    // Inicializar estado de mutación
+    currentMutatedPixelsCount = 0;
+    calculateTargetPixels();
+    clearTelemetryLogs();
 
-    renderCurrentState();
+    updateProgressUI();
+    renderOriginalCanvas();
+    renderAttackedCanvas();
+    renderHeatmapCanvas();
+    updateMetricsAndDiagnostics();
   }
 
-  // --- Ejecución y Renderizado de Ataques en Vivo ---
-  function renderCurrentState() {
-    if (!originalCarrierImageData || !currentAttackedImageData) return;
+  function calculateTargetPixels() {
+    const pct = parseFloat(sliderBitflipPct.value) || 2;
+    targetTotalPixelsToMutate = Math.max(1, Math.round(totalPixels * (pct / 100)));
+  }
 
-    const targetBitVal = parseInt(selectTargetBit.value, 10) || 0;
+  // --- RENDERIZADO DE LOS 3 CANVASES ---
 
-    // 1. DIBUJAR LIENZO IZQUIERDO: Imagen Original con los Bits que los humanos no ven
-    const leftMode = selectLeftViewMode.value;
-    if (leftMode === 'lsb-bw') {
-      ImageAttackEngine.renderLSBPlane(originalCarrierImageData, canvasLeftView, 'bw', targetBitVal);
-      leftViewDesc.textContent = `Plano de Bit ${targetBitVal} Original (B/N): Bits originales sin ataque`;
-    } else if (leftMode === 'lsb-rgb') {
-      ImageAttackEngine.renderLSBPlane(originalCarrierImageData, canvasLeftView, 'rgb', targetBitVal);
-      leftViewDesc.textContent = `Plano de Bit ${targetBitVal} Cromático Original: Proyección R, G y B limpia`;
+  // 1. Lienzo Original
+  function renderOriginalCanvas() {
+    if (!originalCarrierImageData) return;
+    const mode = selectLeftViewMode.value;
+    const bitVal = parseInt(selectTargetBit.value, 10) || 0;
+
+    if (mode === 'lsb-bw') {
+      ImageAttackEngine.renderLSBPlane(originalCarrierImageData, canvasOrigView, 'bw', bitVal);
+      origViewDesc.textContent = `Plano de Bit ${bitVal} (B/N) limpio sin corruptores`;
+    } else if (mode === 'lsb-rgb') {
+      ImageAttackEngine.renderLSBPlane(originalCarrierImageData, canvasOrigView, 'rgb', bitVal);
+      origViewDesc.textContent = `Plano de Bit ${bitVal} Cromático limpio (RGB)`;
     } else {
-      const ctxLeft = canvasLeftView.getContext('2d');
-      ctxLeft.putImageData(originalCarrierImageData, 0, 0);
-      leftViewDesc.textContent = 'Fotografía original visible sin procesar';
+      const ctx = canvasOrigView.getContext('2d');
+      ctx.putImageData(originalCarrierImageData, 0, 0);
+      origViewDesc.textContent = 'Fotografía original visible sin procesar';
     }
+  }
 
-    // 2. DIBUJAR LIENZO DERECHO: Imagen Atacada / Bits Alterados
+  // 2. Lienzo Atacado en Vivo
+  function renderAttackedCanvas() {
+    if (!currentAttackedImageData) return;
+    const ctx = canvasAttackedView.getContext('2d');
+    ctx.putImageData(currentAttackedImageData, 0, 0);
+    attackedPixelCounter.textContent = `${currentMutatedPixelsCount.toLocaleString()} px mutados`;
+  }
+
+  // 3. Lienzo Máscara Forense de Diferencias
+  function renderHeatmapCanvas() {
+    if (!originalCarrierImageData || !currentAttackedImageData) return;
     const theme = selectHeatmapTheme.value || 'pure-red';
+    const bitVal = parseInt(selectTargetBit.value, 10) || 0;
+
     if (theme === 'lsb-rgb-attacked') {
-      ImageAttackEngine.renderLSBPlane(currentAttackedImageData, canvasHeatmapView, 'rgb', targetBitVal);
-      if (rightViewDesc) rightViewDesc.textContent = `Plano de Bit ${targetBitVal} Cromático Atacado: Compara con la izquierda para ver los bits alterados`;
+      ImageAttackEngine.renderLSBPlane(currentAttackedImageData, canvasHeatmapView, 'rgb', bitVal);
     } else if (theme === 'lsb-bw-attacked') {
-      ImageAttackEngine.renderLSBPlane(currentAttackedImageData, canvasHeatmapView, 'bw', targetBitVal);
-      if (rightViewDesc) rightViewDesc.textContent = `Plano de Bit ${targetBitVal} Atacado (B/N): Bits con la corrupción aplicada`;
+      ImageAttackEngine.renderLSBPlane(currentAttackedImageData, canvasHeatmapView, 'bw', bitVal);
     } else {
       ImageAttackEngine.renderDifferenceHeatmap(
         originalCarrierImageData,
@@ -375,21 +649,342 @@ export function renderImageAttackTab(container, initialData = null) {
         canvasHeatmapView,
         theme
       );
-      if (rightViewDesc) {
-        if (theme === 'photo-attacked') {
-          rightViewDesc.textContent = 'Fotografía con distorsión visual directa del ataque';
+    }
+  }
+
+  // --- MOTOR DE SIMULACIÓN Y MUTACIÓN PROGRESIVA (MODO VÍDEO) ---
+
+  function applyMutationBatch(batchSize = 1, isManualStep = false) {
+    if (!originalCarrierImageData || !currentAttackedImageData) return false;
+
+    const targetBitStr = selectTargetBit.value;
+    const channel = selectTargetChannel.value;
+    const isRandomBit = targetBitStr === 'random';
+    const bitShift = isRandomBit ? 0 : parseInt(targetBitStr, 10);
+    const bitMask = isRandomBit ? 0 : (1 << bitShift);
+
+    const origData = originalCarrierImageData.data;
+    const attData = currentAttackedImageData.data;
+
+    let mutationsApplied = 0;
+    const logsToAdd = [];
+
+    // Paso de dispersión pseudoaleatoria para cubrir toda la imagen
+    for (let b = 0; b < batchSize; b++) {
+      if (currentMutatedPixelsCount >= targetTotalPixelsToMutate) {
+        break;
+      }
+
+      // Distribución equidistante con jitter para realismo
+      const step = totalPixels / targetTotalPixelsToMutate;
+      const baseIdx = Math.floor(currentMutatedPixelsCount * step);
+      const pixelIndex = Math.min(totalPixels - 1, Math.max(0, baseIdx));
+      const byteIdx = pixelIndex * 4;
+
+      const pxX = pixelIndex % imageWidth;
+      const pxY = Math.floor(pixelIndex / imageWidth);
+
+      // Determinar canales a mutar
+      const channelsToMutate = [];
+      if (channel === 'all') channelsToMutate.push('r', 'g', 'b');
+      else channelsToMutate.push(channel);
+
+      const stepStr = String(currentMutatedPixelsCount + 1).padStart(4, '0');
+      const timeStr = `T+${getSimElapsedSeconds()}s`;
+
+      for (const ch of channelsToMutate) {
+        const offset = ch === 'r' ? 0 : (ch === 'g' ? 1 : 2);
+        const origVal = origData[byteIdx + offset];
+        let newVal = attData[byteIdx + offset];
+
+        if (isRandomBit) {
+          newVal = Math.floor(Math.random() * 256);
         } else {
-          rightViewDesc.textContent = 'Fondo negro absoluto: resalta los bits y píxeles alterados';
+          newVal ^= bitMask;
+        }
+
+        attData[byteIdx + offset] = newVal;
+        const delta = newVal - origVal;
+
+        if (logsToAdd.length < (isManualStep ? 10 : 4)) {
+          logsToAdd.push({
+            stepStr,
+            timeStr,
+            x: pxX,
+            y: pxY,
+            channel: ch.toUpperCase(),
+            origVal,
+            newVal,
+            delta,
+            bitShift: isRandomBit ? 'RAND' : bitShift
+          });
         }
       }
+
+      currentMutatedPixelsCount++;
+      mutationsApplied++;
     }
 
-    // 3. Calcular Métricas Cuantitativas
-    const metrics = ImageAttackEngine.computeMetrics(originalCarrierImageData, currentAttackedImageData);
+    if (mutationsApplied > 0) {
+      renderAttackedCanvas();
+      renderHeatmapCanvas();
+      updateMetricsAndDiagnostics();
+      updateProgressUI();
+
+      // Agregar a la terminal de telemetría
+      logsToAdd.forEach(log => appendTelemetryRow(log));
+    }
+
+    // Verificar si alcanzó el objetivo
+    if (currentMutatedPixelsCount >= targetTotalPixelsToMutate) {
+      stopSimulation(true);
+      return false;
+    }
+
+    return true;
+  }
+
+  function runSimulationLoop() {
+    if (!isSimPlaying) return;
+
+    const speed = parseInt(selectSimSpeed.value, 10) || 40;
     
+    // Ajustar el tamaño del lote según la velocidad para fluidez
+    let batchSize = 1;
+    if (speed <= 15) batchSize = Math.max(1, Math.round(totalPixels * 0.0003));
+    else if (speed <= 40) batchSize = Math.max(1, Math.round(totalPixels * 0.0001));
+
+    const canContinue = applyMutationBatch(batchSize, false);
+
+    if (canContinue && isSimPlaying) {
+      simTimer = setTimeout(runSimulationLoop, speed);
+    }
+  }
+
+  function startSimulation() {
+    if (!originalCarrierImageData) return;
+    if (currentMutatedPixelsCount >= targetTotalPixelsToMutate) {
+      // Si ya estaba al 100%, reiniciar desde cero
+      resetMutatedImage();
+    }
+
+    if (!simStartTime) {
+      simStartTime = performance.now();
+      simAccumulatedTime = 0;
+    }
+    simLastResumeTime = performance.now();
+
+    isSimPlaying = true;
+    btnSimPlay.disabled = true;
+    btnSimPause.disabled = false;
+    btnSimStep.disabled = true;
+
+    badgeSimStatus.className = 'badge sim-badge-pulsing-active';
+    badgeSimStatus.textContent = '● SIMULACIÓN EN CURSO (MUTANDO)';
+    badgeAttackModeLabel.className = 'badge badge-rose';
+    badgeAttackModeLabel.textContent = 'ATAQUE EN VIVO';
+
+    runSimulationLoop();
+  }
+
+  function pauseSimulation() {
+    isSimPlaying = false;
+    if (simTimer) clearTimeout(simTimer);
+    simTimer = null;
+
+    if (simLastResumeTime) {
+      simAccumulatedTime += (performance.now() - simLastResumeTime);
+      simLastResumeTime = null;
+    }
+
+    btnSimPlay.disabled = false;
+    btnSimPause.disabled = true;
+    btnSimStep.disabled = false;
+
+    badgeSimStatus.className = 'badge sim-badge-pulsing-paused';
+    badgeSimStatus.textContent = '⏸️ SIMULACIÓN PAUSADA';
+  }
+
+  function stopSimulation(isFinished = false) {
+    isSimPlaying = false;
+    if (simTimer) clearTimeout(simTimer);
+    simTimer = null;
+
+    if (!isFinished) {
+      simStartTime = null;
+      simAccumulatedTime = 0;
+      simLastResumeTime = null;
+    } else if (simLastResumeTime) {
+      simAccumulatedTime += (performance.now() - simLastResumeTime);
+      simLastResumeTime = null;
+    }
+
+    btnSimPlay.disabled = false;
+    btnSimPause.disabled = true;
+    btnSimStep.disabled = false;
+
+    if (isFinished) {
+      badgeSimStatus.className = 'badge badge-emerald';
+      badgeSimStatus.textContent = '✅ ATAQUE COMPLETADO (OBJETIVO ALCANZADO)';
+      badgeAttackModeLabel.className = 'badge badge-rose';
+      badgeAttackModeLabel.textContent = 'CORRUPCIÓN TOTAL';
+    } else {
+      badgeSimStatus.className = 'badge badge-cyan';
+      badgeSimStatus.textContent = '● EN ESPERA';
+      badgeAttackModeLabel.className = 'badge badge-cyan';
+      badgeAttackModeLabel.textContent = 'CANAL LIMPIO';
+    }
+  }
+
+  function resetMutatedImage() {
+    if (!originalCarrierImageData) return;
+    currentAttackedImageData = ImageAttackEngine.cloneImageData(originalCarrierImageData);
+    currentMutatedPixelsCount = 0;
+    simStartTime = null;
+    simAccumulatedTime = 0;
+    simLastResumeTime = null;
+    calculateTargetPixels();
+    clearTelemetryLogs();
+
+    renderAttackedCanvas();
+    renderHeatmapCanvas();
+    updateMetricsAndDiagnostics();
+    updateProgressUI();
+  }
+
+  function updateProgressUI() {
+    const targetPct = parseFloat(sliderBitflipPct.value) || 2;
+    const currentPct = totalPixels > 0 ? (currentMutatedPixelsCount / totalPixels) * 100 : 0;
+    const progressTowardTarget = targetTotalPixelsToMutate > 0 
+      ? Math.min(100, (currentMutatedPixelsCount / targetTotalPixelsToMutate) * 100) 
+      : 0;
+
+    simProgressBar.style.width = `${progressTowardTarget}%`;
+    simProgressLabel.textContent = `${currentPct.toFixed(2)}% / ${targetPct.toFixed(2)}% (${currentMutatedPixelsCount.toLocaleString()} px)`;
+
+    if (progressTowardTarget >= 100) {
+      simProgressBar.className = 'progress-bar progress-danger';
+    } else if (progressTowardTarget >= 50) {
+      simProgressBar.className = 'progress-bar progress-warning';
+    } else {
+      simProgressBar.className = 'progress-bar progress-normal';
+    }
+  }
+
+  // --- TERMINAL DE TELEMETRÍA (CONSOLA DE TELEMETRÍA DE BYTES EN VIVO) ---
+
+  function appendTelemetryRow(log) {
+    totalEventsLogged++;
+    telemetryEventCount.textContent = `${totalEventsLogged.toLocaleString()} eventos registrados`;
+
+    // Si había mensaje de espera inicial, removerlo
+    if (totalEventsLogged === 1) {
+      telemetryLogBody.innerHTML = '';
+    }
+
+    const row = document.createElement('div');
+    row.className = 'telemetry-log-row';
+
+    const deltaSign = log.delta >= 0 ? `+${log.delta}` : `${log.delta}`;
+    const isMsb = log.bitShift === 7 || Math.abs(log.delta) >= 64;
+    const isLsb = log.bitShift === 0 || Math.abs(log.delta) === 1;
+    const isRand = log.bitShift === 'RAND';
+
+    let channelColor = '#60a5fa';
+    let channelLabel = 'Canal Azul';
+    if (log.channel === 'R' || log.channel === 'ROJO') {
+      channelColor = '#f87171';
+      channelLabel = 'Canal Rojo';
+    } else if (log.channel === 'G' || log.channel === 'VERDE') {
+      channelColor = '#4ade80';
+      channelLabel = 'Canal Verde';
+    } else if (log.channel === 'B' || log.channel === 'AZUL') {
+      channelColor = '#60a5fa';
+      channelLabel = 'Canal Azul';
+    }
+
+    let bitVerdictHtml = '';
+    if (isRand) {
+      bitVerdictHtml = `
+        <span style="color: #f472b6;">Byte mutado por ruido aleatorio (Δ = ${deltaSign})</span>
+        <span style="color: #64748b;"> | </span>
+        <span style="color: #fb7185; font-weight: 800;">🌪️ ¡SABOTAJE TOTAL DE PÍXEL (RUIDO PURO)!</span>
+      `;
+    } else if (isMsb) {
+      bitVerdictHtml = `
+        <span style="color: #fca5a5;">Bit 7 (MSB) invertido (Δ = ${deltaSign})</span>
+        <span style="color: #64748b;"> | </span>
+        <span style="color: #ef4444; font-weight: 800;">💥 ¡GLITCH VISUAL DESTRUCTIVO EN LA FOTO!</span>
+      `;
+    } else if (isLsb) {
+      bitVerdictHtml = `
+        <span style="color: #6ee7b7;">Bit 0 (LSB) invertido (Δ = ${deltaSign})</span>
+        <span style="color: #64748b;"> | </span>
+        <span style="color: #10b981; font-weight: 800;">🕵️ ¡CAMBIO INVISIBLE AL OJO HUMANO (ESTEGANOGRAFÍA)!</span>
+      `;
+    } else if (typeof log.bitShift === 'number' && log.bitShift <= 3) {
+      bitVerdictHtml = `
+        <span style="color: #93c5fd;">Bit ${log.bitShift} invertido (Δ = ${deltaSign})</span>
+        <span style="color: #64748b;"> | </span>
+        <span style="color: #38bdf8; font-weight: 800;">🔍 ¡ALTERACIÓN SUBPERCEPTUAL (MICRO-TEXTURA)!</span>
+      `;
+    } else {
+      bitVerdictHtml = `
+        <span style="color: #fde047;">Bit ${log.bitShift} invertido (Δ = ${deltaSign})</span>
+        <span style="color: #64748b;"> | </span>
+        <span style="color: #f59e0b; font-weight: 800;">⚠️ ¡DISTORSIÓN CROMÁTICA VISIBLE!</span>
+      `;
+    }
+
+    row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+        <span style="color: #fbbf24; font-size: 0.85rem;">⚡</span>
+        <span style="color: #38bdf8; font-weight: 700;">[Paso #${log.stepStr} | ${log.timeStr}]</span>
+        <span style="color: #f8fafc; font-weight: 600;">Píxel (${log.x}, ${log.y})</span>
+        <span style="color: ${channelColor}; font-weight: 700;">[${channelLabel}]</span>
+      </div>
+      <div style="padding-left: 1.25rem; color: #cbd5e1; margin-top: 0.15rem;">
+        <span style="color: #94a3b8;">• Byte Original:</span>
+        <span style="color: #f1f5f9; font-weight: 600;">${log.origVal} (0b${toByte8(log.origVal)})</span>
+        <span style="color: #94a3b8;"> → Mutado:</span>
+        <span style="color: #ef4444; font-weight: 700;">${log.newVal} (0b${toByte8(log.newVal)})</span>
+      </div>
+      <div style="padding-left: 1.25rem; margin-top: 0.15rem;">
+        <span style="color: #94a3b8;">• </span>${bitVerdictHtml}
+      </div>
+    `;
+
+    telemetryLogBody.appendChild(row);
+
+    // Limitar el buffer a 100 registros en el DOM para rendimiento óptimo
+    if (telemetryLogBody.children.length > 100) {
+      telemetryLogBody.removeChild(telemetryLogBody.firstChild);
+    }
+
+    if (autoScrollEnabled) {
+      telemetryLogBody.scrollTop = telemetryLogBody.scrollHeight;
+    }
+  }
+
+  function clearTelemetryLogs() {
+    totalEventsLogged = 0;
+    telemetryEventCount.textContent = '0 eventos registrados';
+    telemetryLogBody.innerHTML = `
+      <div style="color: #64748b; font-style: italic; padding: 0.5rem 0.25rem;">
+        [Esperando inicio de la simulación... Pulsa "▶️ Iniciar Simulación" o "⏭️ Paso a Paso" para registrar mutaciones binarias]
+      </div>
+    `;
+  }
+
+  // --- RECALCULO DE MÉTRICAS MATEMÁTICAS ---
+  function updateMetricsAndDiagnostics() {
+    if (!originalCarrierImageData || !currentAttackedImageData) return;
+
+    const metrics = ImageAttackEngine.computeMetrics(originalCarrierImageData, currentAttackedImageData);
+
     kpiAttackPsnr.textContent = metrics.psnr >= 99 ? '∞ (Limpio)' : `${metrics.psnr} dB`;
     if (metrics.psnr >= 50) {
-      kpiAttackPsnrDesc.textContent = 'Fidelidad imperceptible al ojo';
+      kpiAttackPsnrDesc.textContent = 'Fidelidad imperceptible al ojo humano';
       kpiAttackPsnr.style.color = 'var(--accent-cyan)';
     } else if (metrics.psnr >= 35) {
       kpiAttackPsnrDesc.textContent = 'Leve degradación visible';
@@ -401,15 +996,11 @@ export function renderImageAttackTab(container, initialData = null) {
 
     kpiAttackModifiedPixels.textContent = `${metrics.modifiedPixels.toLocaleString()} (${metrics.modifiedPct}%)`;
     kpiAttackPixelsDesc.textContent = `${metrics.modifiedPixels.toLocaleString()} / ${metrics.totalPixels.toLocaleString()} px`;
-    heatmapModifiedCounter.textContent = `${metrics.modifiedPixels.toLocaleString()} píxeles alterados`;
 
     kpiAttackMse.textContent = metrics.mse.toFixed(2);
     kpiAttackMseDesc.textContent = metrics.mse === 0 ? 'Sin distorsión cromática' : `Error cuadrático promedio: ${metrics.mse.toFixed(2)}`;
 
     if (metrics.modifiedPixels === 0) {
-      badgeAttackIndicator.className = 'badge badge-emerald';
-      badgeAttackIndicator.textContent = 'ESTADO: INTACTO';
-
       attackVerdictPill.className = 'badge badge-emerald';
       attackVerdictPill.textContent = '● IMAGEN INTACTA';
 
@@ -422,150 +1013,178 @@ export function renderImageAttackTab(container, initialData = null) {
       kpiAttackSeverity.style.color = 'var(--accent-emerald)';
       kpiAttackSeverityDesc.textContent = 'Canal limpio (0 bits alterados)';
     } else {
-      badgeAttackIndicator.className = 'badge badge-rose';
-      badgeAttackIndicator.textContent = `ATAQUE ACTIVO (${metrics.modifiedPct}%)`;
-
       attackVerdictPill.className = 'badge badge-rose';
-      attackVerdictPill.textContent = '⚠️ IMAGEN CORROMPIDA';
+      attackVerdictPill.textContent = '⚠️ CANAL CORROMPIDO';
 
-      const targetBitVal = parseInt(selectTargetBit.value, 10);
-      const isLsb = targetBitVal === 0;
+      const targetBitVal = selectTargetBit.value;
+      const isLsb = targetBitVal === '0';
+      const isMsb = targetBitVal === '7';
 
       attackVerdictAlert.className = 'alert-box alert-danger';
       attackVerdictAlert.innerHTML = `
-        <strong>💥 Ataque Activo (${metrics.modifiedPixels.toLocaleString()} píxeles alterados - ${metrics.modifiedPct}%):</strong>
-        Se ha invertido el <strong>Bit ${targetBitVal}</strong> (${isLsb ? 'LSB invisible' : 'MSB / Plano Superior'}).
-        ${isLsb ? 'La foto luce visualmente intacta al ojo humano, pero la capa de datos binarios ha sido mutada.' : 'El ataque produce distorsión visual severa y glitch perceptible en los colores.'}
+        <strong>💥 Simulación Activa (${metrics.modifiedPixels.toLocaleString()} píxeles alterados - ${metrics.modifiedPct}%):</strong>
+        Se está mutando el <strong>Bit ${targetBitVal}</strong> ${isLsb ? '(LSB - Regla Esteganográfica de ±1)' : (isMsb ? '(MSB - Peso Máximo de ±128)' : '')}.
+        ${isLsb ? 'La foto luce visualmente intacta al ojo humano, pero la máscara térmica forense delata la alteración.' : 'El ataque produce distorsión agresiva, glitches cromáticos y destrucción de planos.'}
       `;
 
-      if (metrics.modifiedPct < 0.1) {
-        kpiAttackSeverity.textContent = 'MICRO-ATAQUE';
-        kpiAttackSeverity.style.color = 'var(--accent-amber)';
-        kpiAttackSeverityDesc.textContent = 'Alteración sutil de pocos bits';
-      } else if (metrics.modifiedPct < 2) {
+      if (metrics.modifiedPct < 0.2 && isLsb) {
+        kpiAttackSeverity.textContent = 'SIGILOSO (LSB)';
+        kpiAttackSeverity.style.color = '#34d399';
+        kpiAttackSeverityDesc.textContent = 'Regla esteganográfica cumplida';
+      } else if (metrics.modifiedPct < 1.5 && !isMsb) {
         kpiAttackSeverity.textContent = 'MODERADO';
         kpiAttackSeverity.style.color = 'var(--accent-amber)';
-        kpiAttackSeverityDesc.textContent = 'Corrupción palpable en la máscara';
+        kpiAttackSeverityDesc.textContent = 'Corrupción detectable en la máscara';
       } else {
-        kpiAttackSeverity.textContent = 'SEVERO';
+        kpiAttackSeverity.textContent = 'CRÍTICO (GLITCH)';
         kpiAttackSeverity.style.color = '#f87171';
-        kpiAttackSeverityDesc.textContent = 'Sabotaje masivo del plano de bits';
+        kpiAttackSeverityDesc.textContent = 'Sabotaje severo de planos binarios';
       }
     }
   }
 
-  // Evento mousemove sobre los canvas para mostrar coordenadas
-  function handleCanvasCoords(e, canvas) {
+  // --- EVENT LISTENERS DE CONTROLES ---
+
+  // Botones de Reproducción
+  btnSimPlay.addEventListener('click', () => startSimulation());
+  btnSimPause.addEventListener('click', () => pauseSimulation());
+  btnSimStep.addEventListener('click', () => {
     if (!originalCarrierImageData) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
-    leftViewCoords.textContent = `X: ${x}, Y: ${y}`;
-  }
+    if (!simStartTime) {
+      simStartTime = performance.now();
+      simAccumulatedTime = 0;
+    } else {
+      simAccumulatedTime += 120;
+    }
+    pauseSimulation();
+    applyMutationBatch(1, true);
+  });
+  btnSimStop.addEventListener('click', () => {
+    stopSimulation();
+    resetMutatedImage();
+  });
 
-  canvasLeftView.addEventListener('mousemove', (e) => handleCanvasCoords(e, canvasLeftView));
-  canvasHeatmapView.addEventListener('mousemove', (e) => handleCanvasCoords(e, canvasHeatmapView));
-
-  // --- Eventos de Controles Reactivos en Tiempo Real ---
-
-  // Selector de vista izquierda (Plano LSB vs Foto)
-  selectLeftViewMode.addEventListener('change', () => renderCurrentState());
-
-  // 1. Bit-Flip Slider
+  // Slider de Porcentaje Objetivo
   sliderBitflipPct.addEventListener('input', () => {
-    if (!originalCarrierImageData) return;
-    const pct = parseFloat(sliderBitflipPct.value);
-    labelBitflipPct.textContent = `${pct.toFixed(2)}%`;
-
-    const targetBit = parseInt(selectTargetBit.value, 10);
-    const channel = selectTargetChannel.value;
-
-    const { attackedImageData } = ImageAttackEngine.applyBitFlip(
-      originalCarrierImageData,
-      pct,
-      targetBit,
-      channel
-    );
-    currentAttackedImageData = attackedImageData;
-    renderCurrentState();
+    const val = parseFloat(sliderBitflipPct.value);
+    labelBitflipPct.textContent = `${val.toFixed(2)}%`;
+    calculateTargetPixels();
+    updateProgressUI();
   });
 
+  // Selector de Plano de Bit
   selectTargetBit.addEventListener('change', () => {
-    // Si la intensidad está en 0%, la activamos automáticamente para que el cambio tenga efecto visible inmediato
-    if (parseFloat(sliderBitflipPct.value) === 0) {
-      sliderBitflipPct.value = 0.50;
-      labelBitflipPct.textContent = '0.50%';
-    }
-    sliderBitflipPct.dispatchEvent(new Event('input'));
+    renderOriginalCanvas();
+    renderHeatmapCanvas();
+    updateMetricsAndDiagnostics();
   });
 
+  // Selector de Canales
   selectTargetChannel.addEventListener('change', () => {
-    if (parseFloat(sliderBitflipPct.value) === 0) {
-      sliderBitflipPct.value = 0.50;
-      labelBitflipPct.textContent = '0.50%';
-    }
-    sliderBitflipPct.dispatchEvent(new Event('input'));
+    updateMetricsAndDiagnostics();
   });
 
-  // Selector de tema del mapa de calor
-  selectHeatmapTheme.addEventListener('change', () => renderCurrentState());
+  // Selector de Vista Izquierda
+  selectLeftViewMode.addEventListener('change', () => {
+    renderOriginalCanvas();
+  });
 
-  // Botón Restablecer Ataque
+  // Selector de Tema de Calor
+  selectHeatmapTheme.addEventListener('change', () => {
+    renderHeatmapCanvas();
+  });
+
+  // Terminal: Auto-scroll y Limpiar
+  btnToggleAutoscroll.addEventListener('click', () => {
+    autoScrollEnabled = !autoScrollEnabled;
+    btnToggleAutoscroll.textContent = `📌 Auto-Scroll: ${autoScrollEnabled ? 'ON' : 'OFF'}`;
+  });
+  btnClearTelemetry.addEventListener('click', () => {
+    clearTelemetryLogs();
+  });
+
+  // Botón Restablecer Todo
   btnResetAttack.addEventListener('click', () => {
-    if (!originalCarrierImageData) return;
-    sliderBitflipPct.value = 0;
-    labelBitflipPct.textContent = '0.00%';
-    currentAttackedImageData = ImageAttackEngine.cloneImageData(originalCarrierImageData);
-    renderCurrentState();
+    stopSimulation();
+    resetMutatedImage();
   });
 
-  // Generador de imagen de prueba predeterminada para que el laboratorio esté listo de inmediato
-  function createDefaultSampleCanvas() {
-    const width = 512, height = 512;
-    const demoCanvas = document.createElement('canvas');
-    demoCanvas.width = width;
-    demoCanvas.height = height;
-    const ctx = demoCanvas.getContext('2d');
-
-    const grad = ctx.createLinearGradient(0, 0, width, height);
-    grad.addColorStop(0, '#0a192f');
-    grad.addColorStop(0.5, '#1e293b');
-    grad.addColorStop(1, '#0f172a');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-
-    for (let i = 0; i < 35; i++) {
-      ctx.beginPath();
-      ctx.arc(
-        Math.sin(i * 1.5) * 190 + 256,
-        Math.cos(i * 1.2) * 190 + 256,
-        20 + (i % 5) * 15,
-        0,
-        Math.PI * 2
-      );
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(0, 240, 255, 0.12)' : 'rgba(244, 63, 94, 0.12)';
-      ctx.fill();
-    }
-
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 22px monospace';
-    ctx.fillText('LABORATORIO DE ATAQUE DE BITS', 40, 240);
-    ctx.fillStyle = '#00f0ff';
-    ctx.font = '15px monospace';
-    ctx.fillText('ANÁLISIS DE INTEGRIDAD EN TIEMPO REAL', 65, 275);
-    return demoCanvas;
+  // Botones de Descarga de Imagen Atacada
+  if (btnDownloadAttacked) {
+    btnDownloadAttacked.addEventListener('click', () => downloadAttackedImage());
+  }
+  if (btnDownloadAttackedTop) {
+    btnDownloadAttackedTop.addEventListener('click', () => downloadAttackedImage());
   }
 
-  // --- Inicialización: Cargar datos transferidos o imagen de prueba predeterminada ---
+  // --- PRESETS RÁPIDOS DIDÁCTICOS ---
+
+  // 1. Preset Sigiloso (Bit 0 LSB)
+  presetStealth.addEventListener('click', () => {
+    selectTargetBit.value = '0';
+    selectTargetChannel.value = 'all';
+    sliderBitflipPct.value = 0.5;
+    labelBitflipPct.textContent = '0.50%';
+    selectSimSpeed.value = '120';
+    selectLeftViewMode.value = 'lsb-bw';
+    selectHeatmapTheme.value = 'pure-red';
+
+    calculateTargetPixels();
+    resetMutatedImage();
+    startSimulation();
+  });
+
+  // 2. Preset Glitch Destructivo (Bit 7 MSB)
+  presetGlitch.addEventListener('click', () => {
+    selectTargetBit.value = '7';
+    selectTargetChannel.value = 'all';
+    sliderBitflipPct.value = 2.0;
+    labelBitflipPct.textContent = '2.00%';
+    selectSimSpeed.value = '40';
+    selectLeftViewMode.value = 'photo';
+    selectHeatmapTheme.value = 'pure-red';
+
+    calculateTargetPixels();
+    resetMutatedImage();
+    startSimulation();
+  });
+
+  // 3. Preset Sabotaje Total (Ruido Puro)
+  presetSabotage.addEventListener('click', () => {
+    selectTargetBit.value = 'random';
+    selectTargetChannel.value = 'all';
+    sliderBitflipPct.value = 4.0;
+    labelBitflipPct.textContent = '4.00%';
+    selectSimSpeed.value = '40';
+    selectLeftViewMode.value = 'photo';
+    selectHeatmapTheme.value = 'matrix';
+
+    calculateTargetPixels();
+    resetMutatedImage();
+    startSimulation();
+  });
+
+  // Inspección de Coordenadas con Mouse
+  function bindMouseCoords(canvas, labelElement) {
+    canvas.addEventListener('mousemove', (e) => {
+      if (!imageWidth || !imageHeight) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = imageWidth / rect.width;
+      const scaleY = imageHeight / rect.height;
+      const x = Math.floor((e.clientX - rect.left) * scaleX);
+      const y = Math.floor((e.clientY - rect.top) * scaleY);
+      labelElement.textContent = `X: ${x}, Y: ${y}`;
+    });
+    canvas.addEventListener('mouseleave', () => {
+      labelElement.textContent = '-';
+    });
+  }
+
+  bindMouseCoords(canvasOrigView, origViewCoords);
+  bindMouseCoords(canvasHeatmapView, heatmapCoords);
+
+  // Soporte para datos iniciales
   if (initialData && initialData.canvas) {
-    loadCarrierFromCanvas(
-      initialData.canvas,
-      initialData.filename || 'Imagen Transferida'
-    );
-  } else {
-    const defaultCanvas = createDefaultSampleCanvas();
-    loadCarrierFromCanvas(defaultCanvas, 'Imagen de Muestra Predeterminada');
+    loadCarrierFromCanvas(initialData.canvas, initialData.name || 'muestra_inicial.png');
   }
 }
