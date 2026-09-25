@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laboratorio Web de Criptografía y Esteganografía | Modo Difícil</title>
+    <meta name="description" content="Laboratorio académico avanzado de Ciberseguridad: Criptografía simétrica autenticada AES-256-GCM, KDF PBKDF2-SHA512, Esteganografía LSB en Canvas y Estegoanálisis con Chi-cuadrado y Entropía de Shannon." />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z'/></svg>" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('cyberlab_theme');
+          var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'dark');
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..500,0..1,0" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="cyber-suite-wrapper">
+      <!-- Overlay para móvil -->
+      <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+      <!-- 1. LATERAL COMMAND DOCK / SIDEBAR (BANNER VERTICAL A LA IZQUIERDA) -->
+      <aside id="cyber-sidebar" class="cyber-sidebar">
+        <div>
+          <!-- Cabecera de la Marca -->
+          <div class="sidebar-header">
+            <div class="sidebar-brand">
+              <div class="brand-hex-logo">
+                <span class="micon" aria-hidden="true">security</span>
+                <div class="logo-ambient-pulse"></div>
+              </div>
+              <div class="brand-text">
+                <h1 class="brand-title">CYBERLAB</h1>
+                <span class="brand-subtitle">Criptografía &amp; Forense Digital</span>
+              </div>
+            </div>
+            <div class="sidebar-spec-badge">
+              <span class="spec-dot"></span>
+              <span>SECURITY LAB • MODO DIFÍCIL</span>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Telemetría del Sistema -->
+          <div class="sidebar-telemetry-card">
+            <div class="telemetry-row">
+              <span class="telemetry-label">ESTADO DEL CORE</span>
+              <div id="backend-status-badge" class="badge badge-emerald">
+                ● ONLINE
+              </div>
+            </div>
+            <div class="telemetry-specs">
+              <span class="spec-chip">AES-256-GCM</span>
+              <span class="spec-chip">RSA-4096</span>
+              <span class="spec-chip">PBKDF2-600K</span>
+            </div>
+          </div>
+
+          <!-- Navegación de Módulos (Vertical Command Center) -->
+          <div class="sidebar-nav-section">
+            <div class="nav-section-title">SUITE DE MÓDULOS FORENSES</div>
+            <nav class="sidebar-nav" aria-label="Módulos del Laboratorio">
+              <!-- Módulo 1 -->
+              <button id="tab-stego-btn" class="sidebar-nav-item active" type="button">
+                <div class="nav-item-icon-box cyan-glow">
+                  <span class="micon" aria-hidden="true">enhanced_encryption</span>
+                </div>
+                <div class="nav-item-content">
+                  <div class="nav-item-header">
+                    <span class="nav-item-title">Módulo 1</span>
+                    <span class="nav-item-tag tag-cyan">LSB 32-BIT</span>
+                  </div>
+                  <div class="nav-item-desc">Esteganografía Digital</div>
+                </div>
+                <div class="nav-item-active-bar"></div>
+              </button>
+
+              <!-- Módulo 2 -->
+              <button id="tab-crypto-btn" class="sidebar-nav-item" type="button">
+                <div class="nav-item-icon-box purple-glow">
+                  <span class="micon" aria-hidden="true">vpn_key</span>
+                </div>
+                <div class="nav-item-content">
+                  <div class="nav-item-header">
+                    <span class="nav-item-title">Módulo 2</span>
+                    <span class="nav-item-tag tag-purple">RSA + AES</span>
+                  </div>
+                  <div class="nav-item-desc">Criptografía &amp; Resistencia</div>
+                </div>
+                <div class="nav-item-active-bar"></div>
+              </button>
+
+              <!-- Módulo 3 -->
+              <button id="tab-analysis-btn" class="sidebar-nav-item" type="button">
+                <div class="nav-item-icon-box emerald-glow">
+                  <span class="micon" aria-hidden="true">analytics</span>
+                </div>
+                <div class="nav-item-content">
+                  <div class="nav-item-header">
+                    <span class="nav-item-title">Módulo 3</span>
+                    <span class="nav-item-tag tag-emerald">CHI² &amp; H(X)</span>
+                  </div>
+                  <div class="nav-item-desc">Estegoanálisis Pericial</div>
+                </div>
+                <div class="nav-item-active-bar"></div>
+              </button>
+
+              <!-- Módulo 4 -->
+              <button id="tab-attack-btn" class="sidebar-nav-item" type="button">
+                <div class="nav-item-icon-box rose-glow">
+                  <span class="micon" aria-hidden="true">dangerous</span>
+                </div>
+                <div class="nav-item-content">
+                  <div class="nav-item-header">
+                    <span class="nav-item-title">Módulo 4</span>
+                    <span class="nav-item-tag tag-rose">ADVERSARIO</span>
+                  </div>
+                  <div class="nav-item-desc">Ataques &amp; Integridad</div>
+                </div>
+                <div class="nav-item-active-bar"></div>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Pie del Sidebar con CyberTutor IA y datos del proyecto -->
+        <div class="sidebar-footer">
+          <button id="btn-quick-ai-launch" class="sidebar-ai-btn" type="button">
+            <span class="micon" aria-hidden="true">smart_toy</span>
+            <span>Consultar CyberTutor IA</span>
+          </button>
+          <div class="sidebar-academic-tag">
+            <span>Proyecto de Ciberseguridad</span>
+            <span>Software II • Parcial 1</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 2. MAIN VIEWPORT (TOPBAR + WORKSPACE CANVAS) -->
+      <div class="cyber-viewport">
+        <!-- Top Command Bar -->
+        <header class="cyber-topbar">
+          <div class="topbar-left">
+            <button id="sidebar-toggle-btn" class="sidebar-toggle-mobile" type="button" aria-label="Abrir menú de navegación">
+              <span class="micon" aria-hidden="true">menu</span>
+            </button>
+            <div class="topbar-breadcrumbs">
+              <span class="bc-root"><span class="micon" aria-hidden="true">security</span> CYBERLAB</span>
+              <span class="bc-sep">/</span>
+              <span id="active-module-breadcrumb" class="bc-active">MÓDULO 1: ESTEGANOGRAFÍA LSB (CANVAS 32-BIT)</span>
+            </div>
+          </div>
+
+          <div class="topbar-right">
+            <!-- Badges de Cumplimiento Criptográfico -->
+            <div class="topbar-crypto-pills">
+              <span class="crypto-pill"><span class="micon" aria-hidden="true">lock</span> AES-256-GCM</span>
+              <span class="crypto-pill"><span class="micon" aria-hidden="true">speed</span> 600K PBKDF2</span>
+              <span class="crypto-pill"><span class="micon" aria-hidden="true">verified_user</span> RSA-4096</span>
+            </div>
+
+            <!-- THEME SWITCHER: Modern Animated Pill Toggle -->
+            <div class="theme-switch-container">
+              <button id="theme-toggle-btn" class="theme-switch-pill" type="button" aria-label="Cambiar tema claro u oscuro">
+                <span class="theme-switch-opt light-opt">
+                  <span class="micon" aria-hidden="true">light_mode</span>
+                  <span class="theme-opt-text">Claro</span>
+                </span>
+                <span class="theme-switch-opt dark-opt">
+                  <span class="micon" aria-hidden="true">dark_mode</span>
+                  <span class="theme-opt-text">Oscuro</span>
+                </span>
+                <span class="theme-switch-slider"></span>
+              </button>
+              <span id="theme-toggle-icon" style="display:none;"></span>
+              <span id="theme-toggle-label" style="display:none;"></span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Main Workspace Canvas -->
+        <main class="cyber-canvas">
+          <div id="tab-content" class="cyber-content-container"></div>
+        </main>
+
+        <!-- Executive Footer -->
+        <footer class="cyber-footer">
+          <div class="footer-left">
+            <span class="micon" aria-hidden="true">terminal</span>
+            <span>Arquitectura Criptográfica: <strong>NIST SP 800-38D (AES-GCM)</strong> | RFC 8018 (PBKDF2-SHA512) | RFC 8017 (RSA-OAEP-4096)</span>
+          </div>
+          <div>
+            <span>Estándar Académico de Alta Seguridad • Universidad</span>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

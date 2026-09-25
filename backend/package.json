@@ -1,0 +1,19 @@
+{
+  "name": "crypto-stego-backend",
+  "version": "1.0.0",
+  "description": "Backend API para Laboratorio Web de Criptografía y Esteganografía",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "benchmark": "node benchmark-pbkdf2.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^10.0.10",
+    "pngjs": "^7.0.0"
+  }
+}
