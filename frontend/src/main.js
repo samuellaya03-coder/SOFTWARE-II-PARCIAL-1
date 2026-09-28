@@ -29,11 +29,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function checkBackendStatus() {
     try {
       const health = await ApiService.getHealth();
-      backendStatusBadge.className = 'badge badge-emerald';
-      backendStatusBadge.innerHTML = '● BACKEND ONLINE (AES-GCM / 600k PBKDF2)';
+      if (backendStatusBadge) {
+        backendStatusBadge.className = 'badge badge-emerald';
+        backendStatusBadge.innerHTML = '● BACKEND ONLINE (AES-GCM / 600k PBKDF2)';
+      }
     } catch {
-      backendStatusBadge.className = 'badge badge-rose';
-      backendStatusBadge.innerHTML = '● BACKEND OFFLINE (Ejecuta: npm start en /backend)';
+      if (backendStatusBadge) {
+        backendStatusBadge.className = 'badge badge-rose';
+        backendStatusBadge.innerHTML = '● BACKEND OFFLINE (Ejecuta: npm start en /backend)';
+      }
     }
   }
 

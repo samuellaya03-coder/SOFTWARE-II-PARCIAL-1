@@ -12,42 +12,15 @@ export class AiService {
    * Genera el contexto dinámico del código y configuración activa del laboratorio.
    */
   static getLiveSystemContext(activeTab = 'general') {
-    return `
-Eres "CyberTutor IA", el profesor y asistente de ciberseguridad experto integrado en el "Laboratorio Web de Criptografía & Esteganografía (Modo Difícil)".
+    return `Eres CyberTutor IA, profesor y tutor experto en ciberseguridad del "Laboratorio Web de Criptografía & Esteganografía (Modo Difícil)".
+Contexto del laboratorio:
+1. Módulo 1 (Esteganografía LSB en Canvas): Inserción/extracción en canales R, G, B (3 bits/píxel). Canal Alfa intacto (255). Primeros 32 bits codifican la longitud en Big-Endian.
+2. Módulo 2 (Cifrado Híbrido & Auditoría): Cifrado simétrico AES-256-GCM con IV de 12 bytes y AuthTag GHASH de 16 bytes. Derivación PBKDF2-HMAC-SHA512 (600,000 iteraciones). Cifrado asimétrico RSA-4096 bits con relleno OAEP (SHA-256 / MGF1).
+Consola Forense de Ataques de Eve (27 comandos): challenge-weak (CTF Pollard rho 32-bit), inspect/target, factorize (GNFS 4096 bits), fermat (-n), pollard-p1, ecm, wiener, hastad, coppersmith (LLL lattice), franklin-reiter, common-modulus, batch-gcd, shor (computación cuántica), timing-attack (O(1)), power-analysis (DPA), bellcore (CRT fault injection), entropy (Shannon ~7.99), bleichenbacher, padding-oracle, bit-flipping, nonce-reuse (Joux), inject-fake-key, bruteforce-gcm, mitm, replay, dictionary (RockYou), y motor universal.
+3. Módulo 3 (Estegoanálisis Forense): Prueba Chi-cuadrado (χ²) sobre Pares de Valores (PoVs Westfeld & Pfitzmann), Entropía de Shannon H(X).
+4. Módulo 4 (Ataques a Imágenes y Planos de Bits): 8 planos de bits (0 a 7), inyección de ruido, detección de manipulación por AuthTag.
 
-ESTADO ACTUAL Y CONFIGURACIÓN VIVA DEL CÓDIGO:
-1. MÓDULO 1 - ESTEGANOGRAFÍA LSB (Canvas HTML5):
-   - Inserción y extracción en el plano de bits menos significativos (LSB) de los canales R, G y B (3 bits por píxel).
-   - El canal Alfa (A) se preserva intacto (255) para evitar distorsiones visuales y artefactos del compositor del navegador.
-   - Protocolo binario: Los primeros 32 bits codifican la longitud exacta del payload en formato Big-Endian (Uint32).
-   - Capacidad teórica máxima: (Ancho × Alto × 3) / 8 bytes.
-
-2. MÓDULO 2 - CRIPTOGRAFÍA HÍBRIDA & AUDITORÍA DE SEGURIDAD:
-   - Cifrado Simétrico: AES-256-GCM (NIST SP 800-38D) con IV de 12 bytes (96 bits) generado con CSPRNG (crypto.randomBytes).
-   - Autenticación: Authentication Tag (MAC) de 16 bytes (128 bits) calculado mediante GHASH sobre el cuerpo cifrado. Cero tolerancia a manipulación (rechaza bit-flips).
-   - Derivación de Claves (KDF): PBKDF2-HMAC-SHA512 con 600,000 iteraciones (superando recomendaciones OWASP 2023) y Salt aleatorio de 16 bytes.
-   - Cifrado Asimétrico: RSA-4096 bits con esquema de relleno RSA-OAEP (SHA-256 y función de máscara MGF1-SHA256).
-   - Simulación Man-in-the-Middle (Espía / Eve):
-     * Eve intercepta el paquete en tránsito e intenta descifrar sin la clave privada de Bob -> Falla por el problema de factorización de números enteros N = p * q de 4096 bits (error de decodificación OAEP de OpenSSL).
-     * Eve altera 1 bit en el texto cifrado -> Rechazo inmediato por mismatch del Authentication Tag en AES-GCM (GHASH).
-
-3. MÓDULO 3 - ESTEGOANÁLISIS FORENSE MULTIMEDIA:
-   - Prueba Chi-cuadrado (χ²) sobre Pares de Valores (PoVs / Pairs of Values) según Westfeld & Pfitzmann (1999). Compara frecuencias observadas vs esperadas (2k y 2k+1) a lo largo de las muestras.
-   - Grados de libertad: k - 1. P-value: probabilidad acumulada de incrustación oculta.
-   - Entropía de Shannon: H = - sum(p_i * log2(p_i)), mide el desorden en bits/canal (máximo teórico 8.0). Cifrados AES aumentan la entropía a ~7.99.
-
-4. MÓDULO 4 - ATAQUES A IMÁGENES Y PLANOS DE BITS:
-   - Inyección de ruido y alteración bit a bit (bit flips) en planos específicos (0 a 7).
-   - Extracción y renderizado de planos LSB cromáticos (proyección de bits puros 0 y 1 a blanco/negro o canales de color).
-   - Mapa de calor de diferencias térmicas (Heatmap) para auditar la dispersión de la alteración.
-
-MODO DE RESPUESTA:
-- Eres CyberTutor IA, un asistente y tutor inteligente. Tienes total libertad para responder CUALQUIER pregunta que te plantee el usuario: desde el funcionamiento del laboratorio y ciberseguridad, hasta programación, algoritmos, matemáticas, tecnología o cualquier consulta general.
-- Responde siempre de forma clara, didáctica, amigable y profesional.
-- Si el usuario pregunta sobre los módulos del laboratorio (AES-256-GCM, RSA-4096, PBKDF2, LSB, Chi-cuadrado, etc.), utiliza el contexto del código para dar explicaciones exactas y rigurosas.
-- Si el usuario hace preguntas generales o abiertas, responde con total conocimiento y naturalidad como un LLM completo.
-- Utiliza formato Markdown con negritas, listas y bloques de código cuando sea pertinente.
-`;
+Directiva: Responde siempre en español, de forma pedagógica, clara y directa usando Markdown. Explica conceptos con profundidad académica y rigor técnico.`;
   }
 
   /**
@@ -96,7 +69,12 @@ MODO DE RESPUESTA:
    */
   static async queryGemini(prompt, activeTab, apiKey) {
     const systemContext = this.getLiveSystemContext(activeTab);
-    const candidateModels = ['gemini-3-flash-preview', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    const candidateModels = [
+      'gemini-3.6-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-flash-latest',
+      'gemma-4-26b-a4b-it'
+    ];
     
     let lastError = null;
 
@@ -104,27 +82,50 @@ MODO DE RESPUESTA:
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-        const body = {
-          systemInstruction: {
-            parts: [{ text: systemContext }]
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `[Pestaña activa del alumno: ${activeTab}]\n\nPregunta del alumno:\n${prompt}` }]
+        let body;
+        if (modelName.startsWith('gemma')) {
+          body = {
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { 
+                    text: `${systemContext}\n\n[Pestaña activa del alumno: ${activeTab}]\n\nPregunta del alumno:\n${prompt}\n\nDirectiva: Responde directamente al alumno en español con formato Markdown claro y profesional sin notas de pensamiento.` 
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.6,
+              maxOutputTokens: 4096
             }
-          ],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 2048
-          }
-        };
+          };
+        } else {
+          body = {
+            systemInstruction: {
+              parts: [{ text: systemContext }]
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `[Pestaña activa del alumno: ${activeTab}]\n\nPregunta del alumno:\n${prompt}` }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.5,
+              maxOutputTokens: 4096
+            }
+          };
+        }
 
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-goog-api-key': apiKey
+          },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(25000)
+          signal: AbortSignal.timeout(12000)
         });
 
         if (res.ok) {
@@ -138,16 +139,38 @@ MODO DE RESPUESTA:
             };
           }
 
-          let text = candidate?.content?.parts?.[0]?.text;
+          const parts = candidate?.content?.parts || [];
+          const answerPart = parts.find(p => !p.thought) || parts[parts.length - 1];
+          let text = answerPart?.text || parts[0]?.text;
+
           if (text) {
+            // Limpieza de marcadores residuales si existen
+            if (text.includes('User Persona:') || text.includes('*   Topic:') || text.includes('*   Role:') || text.includes('*   User:')) {
+              const bodyMatch = text.match(/(?:(?:\n\s*#{1,4}\s+[^\n]+)|(?:\n\s*(?:¡Hola|Hola|En el Módulo|El Módulo|Los comandos|Este laboratorio|Para responder)[^\n]+))[\s\S]+/i);
+              if (bodyMatch && bodyMatch[0] && bodyMatch[0].trim().length > 30) {
+                text = bodyMatch[0].trim();
+              }
+            } else if (text.includes('Content:')) {
+              const contentMatch = text.match(/Content:\s*([\s\S]+?)(?=\n\s*\*+\s*(?:Does it|Concise|Final|Check)|$)/i);
+              if (contentMatch && contentMatch[1] && contentMatch[1].trim().length > 10) {
+                text = contentMatch[1].trim();
+              }
+            } else if (/Draft(?:\s*\d+)?(?:\s*\([^)]*\))?\s*:/i.test(text)) {
+              const allDrafts = [...text.matchAll(/(?:Draft(?:\s*\d+)?(?:\s*\([^)]*\))?\s*:)\s*([\s\S]+?)(?=\n\s*\*+\s*(?:Draft|Concise|Final|Check|Result|Greeting|Does it)|$)/gi)];
+              if (allDrafts.length > 0) {
+                const lastDraft = allDrafts[allDrafts.length - 1][1].trim();
+                if (lastDraft.length > 10) text = lastDraft;
+              }
+            }
+
             if (candidate?.finishReason === 'MAX_TOKENS') {
               text += '\n\n*(Nota: La respuesta alcanzó la extensión máxima del turno. Si deseas continuar profundizando en algún módulo o concepto, por favor indícamelo).*';
             }
-            return { text, model: modelName };
+            return { text: text.trim(), model: modelName };
           }
         } else {
           const errText = await res.text();
-          lastError = new Error(`Model ${modelName} returned status ${res.status}: ${errText.substring(0, 200)}`);
+          lastError = new Error(`Model ${modelName} returned status ${res.status}: ${errText.substring(0, 150)}`);
         }
       } catch (netErr) {
         lastError = netErr;
@@ -162,6 +185,64 @@ MODO DE RESPUESTA:
    */
   static getLocalKnowledgeAnswer(prompt, activeTab) {
     const p = prompt.toLowerCase();
+
+    // 0. Explicación de los Comandos de Ataque del Módulo 2 (Eve Terminal)
+    if (
+      p.includes('comando') || 
+      p.includes('comandos') || 
+      p.includes('comadno') || 
+      p.includes('comadnos') || 
+      p.includes('terminal') || 
+      p.includes('eve') || 
+      p.includes('exploit') ||
+      ((p.includes('modulo 2') || p.includes('módulo 2') || p.includes('modulo2') || activeTab === 'crypto') && 
+       (p.includes('ataque') || p.includes('com') || p.includes('explica') || p.includes('que son') || p.includes('cuales son') || p.includes('lista')))
+    ) {
+      return `### ⚡ Comandos Forenses de Criptoanálisis (Módulo 2: Eve Exploit Framework)
+
+El Módulo 2 cuenta con una **Consola Interactiva de Eve** equipada con **27 comandos forenses reales** agrupados en 6 categorías para auditar la seguridad del sobre digital híbrido (RSA-4096 + AES-256-GCM):
+
+---
+
+#### 1. 🎯 Desafíos CTF e Inspección
+* **\`challenge-weak\`**: Genera un par RSA débil de 32 bits y ejecuta el algoritmo $\\rho$ de Pollard en tiempo real para factorizar el módulo y descifrar la bandera en milisegundos.
+* **\`inspect\`** / **\`target\`**: Desensambla y extrae la telemetría del sobre de Alice: módulo $N$ (4096 bits), exponente $e=65537$, IV (96 bits) y AuthTag GHASH (128 bits).
+
+#### 2. ⚡ Factorización Asintótica & Álgebra
+* **\`factorize\`** / **\`gnfs\`**: Ejecuta la Criba de Cuerpo Numérico General (GNFS) contra RSA-4096. Demuestra empíricamente la barrera asintótica $L_N[1/3, c]$ que exige más de **100 Trillones de Años**.
+* **\`fermat [-n num]\`**: Criptoanálisis por diferencia de cuadrados ($a^2 - b^2$). Inmune en RSA-4096 porque $|p - q| \\approx 10^{616}$. Admite \`-n\` para factorizar números de prueba del evaluador.
+* **\`pollard-p1\`**: Algoritmo $p-1$ de Pollard (efectivo si $p-1$ es liso). Neutralizado por uso de primos seguros.
+* **\`ecm\`**: Curvas Elípticas de Lenstra (ECM). Inviable cuando los factores $p$ y $q$ son simétricos de 2048 bits.
+
+#### 3. 🔬 Criptoanálisis Estructural RSA
+* **\`wiener\`**: Intenta deducir la clave privada si $d < \\frac{1}{3}N^{1/4}$. Inmune ($d$ tiene 4096 bits completos).
+* **\`hastad\`**: Ataque de difusión con $e=3$. Inmune por uso de $e=65537$ y relleno probabilístico OAEP.
+* **\`coppersmith\`** / **\`lattice\`**: Búsqueda de raíces modulares mediante reducción de retículos LLL (Boneh-Durfee).
+* **\`franklin-reiter\`**: Ataque contra mensajes relacionados linealmente ($M_2 = aM_1 + b$). Inmune: la máscara MGF1 destruye cualquier relación afín.
+* **\`common-modulus\`**: Recuperación por teorema de Bézout si se comparte $N$. Inaplicable (módulos únicos por usuario).
+* **\`batch-gcd\`**: Búsqueda de primos compartidos entre módulos por baja entropía. Inmune: generación con CSPRNG hardware.
+
+#### 4. ⏱️ Canales Laterales & Cuántica
+* **\`shor\`**: Auditoría de computación cuántica (requiere 8,194 qubits lógicos estables para RSA-4096 vs Grover en AES-256).
+* **\`timing-attack\`**: Mide 40,000 comparaciones con \`timingSafeEqual()\` demostrando tiempo constante $O(1)$ sin fuga temporal.
+* **\`power-analysis\`** / **\`dpa\`**: Análisis diferencial de potencia electromagnética. Inmune por cegado criptográfico (RSA Blinding).
+* **\`bellcore\`**: Inyección de fallos de hardware en el descifrado modular CRT. Neutralizado por validación previa de OAEP.
+* **\`entropy\`**: Mide la entropía de Shannon $H(X)$ sobre el IV y Tag ($H \\approx 7.99$ bits/byte, máxima aleatoriedad).
+
+#### 5. 🛡️ Criptoanálisis Simétrico & Protocolo
+* **\`bleichenbacher\`**: Oráculo de relleno MMA de 1 millón de mensajes contra PKCS#1 v1.5. Inmune: OAEP ofrece seguridad probada IND-CCA2.
+* **\`padding-oracle\`**: Ataque de Vaudenay contra modos CBC con PKCS#7. Inaplicable: AES-GCM es modo flujo sin relleno de bloques.
+* **\`bit-flipping\`**: Modifica 1 bit del texto cifrado e intenta descifrar. Demuestra el rechazo instantáneo por AuthTag GHASH en $\\text{GF}(2^{128})$.
+* **\`nonce-reuse\`**: Forbidden Attack de Joux si se repite el IV. Protegido: IVs y claves efímeras únicas por sesión ($P < 2^{-96}$).
+* **\`inject-fake-key\`**: Inyecta una clave privada forjada y captura el error nativo de OpenSSL (\`ERR_OSSL_RSA_OAEP_DECODING_ERROR\`).
+* **\`bruteforce-gcm\`**: Prueba 2,000 claves contra AES-256 demostrando la imposibilidad práctica ($2^{256}$ combinaciones).
+* **\`mitm\`**: Simulación de intercepción Man-in-the-Middle y suplantación de clave pública.
+* **\`replay\`**: Intento de retransmisión de paquetes capturados previamente.
+* **\`dictionary\`**: Ataque de diccionario RockYou (14.3M contraseñas). Inútil contra claves generadas por CSPRNG.
+
+#### 6. 🧠 Motor Universal Dinámico
+* Cualquier comando o vector personalizado introducido por el profesor (ej: \`dlog\`, \`spectre\`, \`rainbow\`) es analizado dinámicamente bajo estándares **NIST SP 800-57 Rev 5** y **FIPS 140-3**.`;
+    }
 
     // 0. Explicación combinada de los Módulos 3 y 4
     if ((p.includes('modulo 3') || p.includes('módulo 3')) && (p.includes('modulo 4') || p.includes('módulo 4') || p.includes('4'))) {
@@ -434,16 +515,16 @@ Nuestro motor utiliza operadores binarios directos en JavaScript para máxima ve
     // Respuesta contextual por defecto
     return `### 🤖 CyberTutor IA — Asistente de Ciberseguridad
 
-He recibido tu consulta: *"**${prompt.replace(/[<>]/g, '')}**"*
+¡Hola! He recibido tu consulta: *"**${prompt.replace(/[<>]/g, '')}**"*
 
-Actualmente el servicio en la nube de Gemini se encuentra en alta demanda temporal, por lo que te respondo con el **motor de conocimiento interno del laboratorio**:
+Como tutor experto del **Laboratorio Web de Criptografía & Esteganografía**, puedo explicarte en detalle cualquiera de las áreas del proyecto:
 
-* Si tu pregunta está orientada a **criptografía**, **esteganografía**, **análisis forense digital** o el funcionamiento de este laboratorio, puedes consultar sobre los siguientes conceptos:
-  - **AES-256-GCM:** Cifrado simétrico autenticado con autenticidad íntegra (Tag GHASH 128-bit).
-  - **RSA-4096 / RSA-OAEP:** Cifrado asimétrico y esquema de sobre digital híbrido.
-  - **PBKDF2-HMAC-SHA512:** Derivación robusta anti-fuerza bruta con 600,000 iteraciones.
-  - **Esteganografía LSB en Canvas:** Inyección imperceptible bit a bit en canales R, G y B.
-  - **Estegoanálisis Chi-cuadrado y Entropía:** Detección de pares de valores (PoVs) y aleatoriedad de Shannon.
-* En breve la nube de Google Gemini volverá a procesar consultas abiertas de cualquier tema.`;
+* **Módulo 1 — Esteganografía LSB en Canvas:** Inserción y extracción imperceptible bit a bit en canales R, G y B (3 bits/píxel) preservando el canal Alfa.
+* **Módulo 2 — Cifrado Híbrido (AES-256-GCM + RSA-OAEP 4096):** Sobre digital con autenticación GHASH (128 bits) y derivación anti-fuerza bruta PBKDF2 (600,000 iteraciones).
+* **Consola Forense de Eve (27 Comandos):** Pruebas de factorización asintótica GNFS, Fermat, Pollard $\\rho$ (CTF 32-bit), ECM, retículos LLL de Coppersmith, canales laterales de tiempo $O(1)$ y resistencia cuántica (Shor vs Grover).
+* **Módulo 3 — Estegoanálisis Forense:** Prueba Chi-cuadrado sobre Pares de Valores (PoVs de Westfeld & Pfitzmann) y Entropía de Shannon en tiempo real.
+* **Módulo 4 — Ataques a Imágenes:** Análisis en 8 planos de bits, simulación de alteración bit a bit y mapas de calor (Heatmaps).
+
+¿Sobre cuál de estos temas o comandos te gustaría profundizar?`;
   }
 }

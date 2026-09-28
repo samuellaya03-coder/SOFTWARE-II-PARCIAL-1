@@ -246,9 +246,9 @@ export function renderStegoTab(container, onNavigateToAnalysis, onNavigateToAtta
               </div>
 
               <!-- Alerta de Detectabilidad Esteganográfica (Chi-cuadrado / Entropía) -->
-              <div id="hud-detectability-alert" class="hud-detectability-alert alert-safe" style="padding: 0.75rem 0.9rem; font-size: 0.92rem;">
-                <span class="micon" style="font-size: 1.45rem;" aria-hidden="true">verified</span>
-                <span id="hud-detectability-text" style="font-size: 0.92rem; font-weight: 600; line-height: 1.4;">
+              <div id="hud-detectability-alert" class="hud-detectability-alert alert-safe" style="padding: 0.75rem 0.9rem; font-size: 0.95rem;">
+                <span class="micon" style="font-size: 1.45rem; flex-shrink: 0;" aria-hidden="true">verified</span>
+                <span id="hud-detectability-text" style="font-size: 0.95rem; font-weight: 700; line-height: 1.4;">
                   Esperando carga de imagen carrier para inicializar telemetría LSB.
                 </span>
               </div>

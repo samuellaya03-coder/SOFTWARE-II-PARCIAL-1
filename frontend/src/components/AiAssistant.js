@@ -77,14 +77,14 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
       <div id="cybertutor-drawer" class="cybertutor-drawer">
         <!-- Header -->
         <div class="cybertutor-header">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
             <div class="cybertutor-avatar"><span class="micon" aria-hidden="true">smart_toy</span> </div>
             <div>
-              <div style="font-weight: 700; font-size: 1rem; color: #ffffff; display: flex; align-items: center; gap: 0.5rem;">
+              <div style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
                 CyberTutor IA
-                <span class="badge badge-cyan" style="font-size: 0.6875rem; padding: 0.1rem 0.4rem;">ONLINE</span>
+                <span class="badge badge-cyan" style="font-size: 0.75rem; padding: 0.15rem 0.55rem; font-weight: 800;">ONLINE</span>
               </div>
-              <div id="cybertutor-context-chip" style="font-size: 0.75rem; color: var(--accent-cyan); font-family: var(--font-mono); display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem;">
+              <div id="cybertutor-context-chip" style="font-size: 0.85rem; color: var(--accent-cyan); font-family: var(--font-mono); font-weight: 600; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.2rem;">
                 <span class="micon" aria-hidden="true" style="vertical-align: -0.15em;">image</span> Módulo 1: Esteganografía LSB
               </div>
             </div>
@@ -98,7 +98,7 @@ Puedo explicarte cómo funciona cualquier algoritmo, por qué fallan los ataques
 
         <!-- Sugerencias de Preguntas Rápidas -->
         <div class="cybertutor-pills-bar">
-          <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;"><span class="micon" aria-hidden="true">lightbulb</span>  PREGUNTAS SUGERIDAS:</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.35rem;"><span class="micon" aria-hidden="true">lightbulb</span>  PREGUNTAS SUGERIDAS:</div>
           <div id="cybertutor-pills-container" class="cybertutor-pills"></div>
         </div>
 

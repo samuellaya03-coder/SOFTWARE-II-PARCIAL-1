@@ -13,7 +13,12 @@ yarn-debug.log*
 
 # Variables de entorno
 .env
-.env.local
+.env.*
+*.env
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
 
 # Archivos de SO y editores
 .DS_Store

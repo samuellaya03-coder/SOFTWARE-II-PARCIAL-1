@@ -165,36 +165,36 @@ export function renderAnalysisTab(container, initialData = null) {
 
             <div class="grid-2" style="gap: 1.25rem;">
               <!-- KPI 1: Bits Modificados -->
-              <div style="background: var(--bg-inset-strong); padding: 1.15rem; border-radius: 10px; border-left: 4px solid var(--accent-cyan);">
-                <div style="font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Cantidad de Bits Modificados</div>
-                <div id="kpi-bitplane-total-bits" class="font-mono" style="font-size: 1.6rem; font-weight: 800; color: var(--accent-cyan); margin: 0.35rem 0;">-</div>
-                <div id="kpi-bitplane-total-bytes" style="font-size: 0.92rem; color: var(--text-secondary);">-</div>
+              <div style="background: var(--bg-inset-strong); padding: 1.25rem; border-radius: 10px; border-left: 5px solid var(--accent-cyan);">
+                <div style="font-size: 1.1rem; color: var(--text-primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em;">Cantidad de Bits Modificados</div>
+                <div id="kpi-bitplane-total-bits" class="font-mono" style="font-size: 2.1rem; font-weight: 900; color: var(--accent-cyan); margin: 0.4rem 0;">-</div>
+                <div id="kpi-bitplane-total-bytes" style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.4;">-</div>
               </div>
 
               <!-- KPI 2: Ocupación de Capacidad -->
-              <div style="background: var(--bg-inset-strong); padding: 1.15rem; border-radius: 10px; border-left: 4px solid var(--accent-purple);">
-                <div style="font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Ocupación de Capacidad Portadora</div>
-                <div id="kpi-bitplane-capacity-pct" class="font-mono" style="font-size: 1.6rem; font-weight: 800; color: var(--accent-purple); margin: 0.35rem 0;">-</div>
-                <div id="kpi-bitplane-capacity-desc" style="font-size: 0.92rem; color: var(--text-secondary);">-</div>
+              <div style="background: var(--bg-inset-strong); padding: 1.25rem; border-radius: 10px; border-left: 5px solid var(--accent-purple);">
+                <div style="font-size: 1.1rem; color: var(--text-primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em;">Ocupación de Capacidad Portadora</div>
+                <div id="kpi-bitplane-capacity-pct" class="font-mono" style="font-size: 2.1rem; font-weight: 900; color: var(--accent-purple); margin: 0.4rem 0;">-</div>
+                <div id="kpi-bitplane-capacity-desc" style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.4;">-</div>
               </div>
 
               <!-- KPI 3: Coordenadas Espaciales -->
-              <div style="background: var(--bg-inset-strong); padding: 1.15rem; border-radius: 10px; border-left: 4px solid var(--accent-emerald);">
-                <div style="font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Extensión Espacial en Matriz</div>
-                <div id="kpi-bitplane-coords" class="font-mono" style="font-size: 1.6rem; font-weight: 800; color: var(--accent-emerald); margin: 0.35rem 0;">-</div>
-                <div id="kpi-bitplane-coords-desc" style="font-size: 0.92rem; color: var(--text-secondary);">-</div>
+              <div style="background: var(--bg-inset-strong); padding: 1.25rem; border-radius: 10px; border-left: 5px solid var(--accent-emerald);">
+                <div style="font-size: 1.1rem; color: var(--text-primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em;">Extensión Espacial en Matriz</div>
+                <div id="kpi-bitplane-coords" class="font-mono" style="font-size: 2.1rem; font-weight: 900; color: var(--accent-emerald); margin: 0.4rem 0;">-</div>
+                <div id="kpi-bitplane-coords-desc" style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.4;">-</div>
               </div>
 
               <!-- KPI 4: Balance de Bits Cifrados -->
-              <div style="background: var(--bg-inset-strong); padding: 1.15rem; border-radius: 10px; border-left: 4px solid var(--accent-amber);">
-                <div style="font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Equilibrio de Bits (Criptoanálisis)</div>
-                <div id="kpi-bitplane-entropy-balance" class="font-mono" style="font-size: 1.6rem; font-weight: 800; color: var(--accent-amber); margin: 0.35rem 0;">-</div>
-                <div id="kpi-bitplane-entropy-desc" style="font-size: 0.92rem; color: var(--text-secondary);">-</div>
+              <div style="background: var(--bg-inset-strong); padding: 1.25rem; border-radius: 10px; border-left: 5px solid var(--accent-amber);">
+                <div style="font-size: 1.1rem; color: var(--text-primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em;">Equilibrio de Bits (Criptoanálisis)</div>
+                <div id="kpi-bitplane-entropy-balance" class="font-mono" style="font-size: 2.1rem; font-weight: 900; color: var(--accent-amber); margin: 0.4rem 0;">-</div>
+                <div id="kpi-bitplane-entropy-desc" style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.4;">-</div>
               </div>
             </div>
 
             <!-- Fila de Detalles Técnicos Adicionales -->
-            <div id="bitplane-additional-details" style="margin-top: 1.25rem; padding: 1rem 1.25rem; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">
+            <div id="bitplane-additional-details" style="margin-top: 1.25rem; padding: 1.15rem 1.35rem; background: rgba(0, 240, 255, 0.07); border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 8px; font-size: 1.1rem; color: var(--text-primary); line-height: 1.7;">
               <!-- Detalles adicionales -->
             </div>
           </div>
@@ -408,72 +408,77 @@ export function renderAnalysisTab(container, initialData = null) {
     // 1. Veredicto
     verdictCard.style.borderColor = borderColor;
     verdictCard.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-        <h3 style="font-size: 1.35rem; font-weight: 800;">Veredicto Forense Digital</h3>
-        <span class="badge ${badgeClass}" style="font-size: 1.05rem; padding: 0.45rem 1rem; font-weight: 800;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <h3 style="font-size: 1.85rem; font-weight: 900; color: var(--text-primary); letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.75rem;">
+          <span class="micon" aria-hidden="true" style="font-size: 2.2rem; color: ${borderColor};">gavel</span>
+          Veredicto Forense Digital
+        </h3>
+        <span class="badge ${badgeClass}" style="font-size: 1.25rem; padding: 0.65rem 1.6rem; font-weight: 900; letter-spacing: 0.05em; border-width: 2px;">
           ${verdict.status.replace(/_/g, ' ')}
         </span>
       </div>
 
-      <div style="display: flex; gap: 1.75rem; align-items: center; margin-bottom: 1.25rem;">
-        <div>
-          <div style="font-size: 2.8rem; font-weight: 800; font-family: var(--font-mono); color: ${borderColor}; line-height: 1;">
+      <div style="display: flex; gap: 2rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div class="verdict-kpi-block" style="min-width: 200px; text-align: center; padding: 1rem 1.6rem; background: rgba(0,0,0,0.45); border-radius: 12px; border: 2px solid ${borderColor}; box-shadow: 0 0 20px ${borderColor}33;">
+          <div class="verdict-percentage" style="font-size: 3.8rem !important; font-weight: 900 !important; font-family: var(--font-mono); color: ${borderColor} !important; line-height: 1 !important; text-shadow: 0 0 25px ${borderColor}55; letter-spacing: -0.02em;">
             ${verdict.suspicionPercentage}%
           </div>
-          <div style="font-size: 0.92rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-top: 0.35rem;">Índice de Sospecha</div>
+          <div class="verdict-label" style="font-size: 1.05rem !important; color: #ffffff !important; text-transform: uppercase !important; font-weight: 800 !important; letter-spacing: 0.06em !important; margin-top: 0.5rem !important;">
+            Índice de Sospecha
+          </div>
         </div>
 
-        <div style="flex: 1; font-size: 1.05rem; color: var(--text-secondary); border-left: 3px solid ${borderColor}; padding-left: 1.25rem; line-height: 1.65;">
+        <div class="verdict-summary-box" style="flex: 1; min-width: 300px; font-size: 1.25rem !important; font-weight: 600 !important; color: #f8fafc !important; border-left: 5px solid ${borderColor} !important; padding: 0.75rem 0 0.75rem 1.6rem !important; line-height: 1.7 !important;">
           ${verdict.summary}
         </div>
       </div>
 
-      <div class="progress-container" style="height: 14px;">
+      <div class="progress-container" style="height: 22px !important; border-radius: 9999px; background: rgba(0,0,0,0.55); overflow: hidden; border: 1px solid ${borderColor}55;">
         <div class="progress-bar ${isHighRisk ? 'progress-danger' : (isModerate ? 'progress-warning' : 'progress-normal')}" 
-             style="width: ${verdict.suspicionPercentage}%;"></div>
+             style="width: ${verdict.suspicionPercentage}%; height: 100%; border-radius: 9999px;"></div>
       </div>
     `;
 
     // 2. Entropía de Shannon
     const ent = report.shannonEntropy;
     entropyMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-inset); border-radius: 6px; font-size: 1rem;">
-        <span style="color: var(--accent-rose); font-weight: 600;">Entropía LSB (Canal R):</span>
-        <span style="color: var(--text-primary); font-weight: 700;">${ent.redLSB} bits/símbolo</span>
+      <div style="display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-inset); border-radius: 6px; font-size: 1.15rem;">
+        <span style="color: var(--accent-rose); font-weight: 700;">Entropía LSB (Canal R):</span>
+        <span style="color: var(--text-primary); font-weight: 800;">${ent.redLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-inset); border-radius: 6px; font-size: 1rem;">
-        <span style="color: #4ade80; font-weight: 600;">Entropía LSB (Canal G):</span>
-        <span style="color: var(--text-primary); font-weight: 700;">${ent.greenLSB} bits/símbolo</span>
+      <div style="display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-inset); border-radius: 6px; font-size: 1.15rem;">
+        <span style="color: #4ade80; font-weight: 700;">Entropía LSB (Canal G):</span>
+        <span style="color: var(--text-primary); font-weight: 800;">${ent.greenLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-inset); border-radius: 6px; font-size: 1rem;">
-        <span style="color: #60a5fa; font-weight: 600;">Entropía LSB (Canal B):</span>
-        <span style="color: var(--text-primary); font-weight: 700;">${ent.blueLSB} bits/símbolo</span>
+      <div style="display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-inset); border-radius: 6px; font-size: 1.15rem;">
+        <span style="color: #60a5fa; font-weight: 700;">Entropía LSB (Canal B):</span>
+        <span style="color: var(--text-primary); font-weight: 800;">${ent.blueLSB} bits/símbolo</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 6px; font-size: 1.05rem; font-weight: bold;">
+      <div style="display: flex; justify-content: space-between; padding: 0.85rem 1rem; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.45); border-radius: 6px; font-size: 1.25rem; font-weight: 800;">
         <span style="color: var(--accent-cyan);">Entropía Global LSB:</span>
         <span style="color: var(--accent-cyan);">${ent.globalLSB} / 1.000000</span>
       </div>
-      <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.5;">
-        ${ent.isAnomalouslyHigh ? '<span class="micon" aria-hidden="true" style="font-size: 1.25rem; vertical-align: middle; color: var(--accent-amber);">warning</span>  <strong>Alerta:</strong> Entropía > 0.9985 indica sustitución deliberada de bits por una fuente pseudo-aleatoria (Cifrado GCM).' : '✓ Dispersión normal de bits de baja significancia.'}
+      <div style="font-size: 1.05rem; color: var(--text-secondary); margin-top: 0.65rem; line-height: 1.6;">
+        ${ent.isAnomalouslyHigh ? '<span class="micon" aria-hidden="true" style="font-size: 1.35rem; vertical-align: middle; color: var(--accent-amber);">warning</span>  <strong>Alerta:</strong> Entropía > 0.9985 indica sustitución deliberada de bits por una fuente pseudo-aleatoria (Cifrado GCM).' : '✓ Dispersión normal de bits de baja significancia.'}
       </div>
     `;
 
     // 3. Chi-Cuadrado PoVs
     const chi = report.chiSquarePoV;
     chiMetricsList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-inset); border-radius: 6px; font-size: 1rem;">
-        <span style="color: var(--accent-rose); font-weight: 600;">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
-        <span style="color: var(--text-primary); font-weight: 700;">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
+      <div style="display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-inset); border-radius: 6px; font-size: 1.15rem;">
+        <span style="color: var(--accent-rose); font-weight: 700;">χ² Canal Rojo (df=${chi.red.degreesOfFreedom}):</span>
+        <span style="color: var(--text-primary); font-weight: 800;">${chi.red.chiSquare} (p=${chi.red.pValue})</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-inset); border-radius: 6px; font-size: 1rem;">
-        <span style="color: #4ade80; font-weight: 600;">χ² Canal Verde (df=${chi.green.degreesOfFreedom}):</span>
-        <span style="color: var(--text-primary); font-weight: 700;">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
+      <div style="display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-inset); border-radius: 6px; font-size: 1.15rem;">
+        <span style="color: #4ade80; font-weight: 700;">χ² Canal Verde (df=${chi.green.degreesOfFreedom}):</span>
+        <span style="color: var(--text-primary); font-weight: 800;">${chi.green.chiSquare} (p=${chi.green.pValue})</span>
       </div>
-      <div style="display: flex; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-inset); border-radius: 6px; font-size: 1rem;">
-        <span style="color: #60a5fa; font-weight: 600;">χ² Canal Azul (df=${chi.blue.degreesOfFreedom}):</span>
-        <span style="color: var(--text-primary); font-weight: 700;">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
+      <div style="display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-inset); border-radius: 6px; font-size: 1.15rem;">
+        <span style="color: #60a5fa; font-weight: 700;">χ² Canal Azul (df=${chi.blue.degreesOfFreedom}):</span>
+        <span style="color: var(--text-primary); font-weight: 800;">${chi.blue.chiSquare} (p=${chi.blue.pValue})</span>
       </div>
-      <div style="font-size: 0.95rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.55;">
+      <div style="font-size: 1.05rem; color: var(--text-secondary); margin-top: 0.65rem; line-height: 1.65;">
         Pares analizados por canal: <strong>${chi.red.pairsAnalyzed} PoVs</strong>. La uniformidad forzada entre valores contiguos (2k y 2k+1) delata inyección secuencial o aleatoria LSB.
       </div>
     `;
